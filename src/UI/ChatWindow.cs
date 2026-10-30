@@ -17,6 +17,9 @@ namespace ProbablyAI.UI
 {
     public sealed class ChatWindow : IDisposable
     {
+        private const string PositionFile = "chat-window.local.json";
+        private static Vector2? savedScreenPosition;
+        private static bool positionLoaded;
         private readonly HandsAgent agent;
         private readonly ToolRegistry registry;
         private readonly ConnectionSettingsStore connection;
@@ -70,8 +73,70 @@ namespace ProbablyAI.UI
             }
             SetBusy(false);
             b.Show(); Render();
+            RestorePosition();
             input.input.ActivateInputField();
         }
+
+        private static Camera UICamera(RectTransform rect)
+        {
+            var canvas = rect.GetComponentInParent<Canvas>()?.rootCanvas;
+            return canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera ?? Camera.main : null;
+        }
+
+        private void RestorePosition()
+        {
+            if (!positionLoaded)
+            {
+                positionLoaded = true;
+                try
+                {
+                    var json = ModHelper.ReadModDataFileText(ModEntry.ModId, PositionFile);
+                    if (!string.IsNullOrWhiteSpace(json))
+                    {
+                        var data = JObject.Parse(json);
+                        if (data["x"] != null && data["y"] != null)
+                        {
+                            var point = new Vector2((float)data["x"], (float)data["y"]);
+                            if (ValidPosition(point)) savedScreenPosition = point;
+                        }
+                    }
+                }
+                catch (Exception) { } // A missing or invalid layout must never block opening chat.
+            }
+            var rect = window?.Rect;
+            if (!savedScreenPosition.HasValue || rect == null || !(rect.parent is RectTransform parent)) return;
+            var screen = Vector2.Scale(savedScreenPosition.Value, new Vector2(Screen.width, Screen.height));
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, UICamera(parent), out var pointInParent))
+                rect.localPosition = new Vector3(pointInParent.x, pointInParent.y, rect.localPosition.z);
+        }
+
+        private void CapturePosition()
+        {
+            var rect = window?.Rect;
+            if (rect == null || Screen.width < 1 || Screen.height < 1) return;
+            // Native dragging can reparent the window into the letterbox dock. Anchored
+            // coordinates cannot be reused in a newly created window's original canvas.
+            var screen = RectTransformUtility.WorldToScreenPoint(UICamera(rect), rect.position);
+            var point = new Vector2(screen.x / Screen.width, screen.y / Screen.height);
+            if (!ValidPosition(point)) return;
+            savedScreenPosition = point;
+        }
+
+        private void RememberPosition()
+        {
+            CapturePosition();
+            if (!savedScreenPosition.HasValue) return;
+            var point = savedScreenPosition.Value;
+            try
+            {
+                ModHelper.WriteModDataFileText(ModEntry.ModId, PositionFile,
+                    new JObject { ["x"] = point.x, ["y"] = point.y }.ToString(Formatting.None));
+            }
+            catch (Exception) { } // Keep the session position if disk persistence is unavailable.
+        }
+
+        private static bool ValidPosition(Vector2 point)
+            => !float.IsNaN(point.x) && !float.IsNaN(point.y) && Mathf.Abs(point.x) <= 2f && Mathf.Abs(point.y) <= 2f;
 
         public void Focus()
         {
@@ -82,7 +147,9 @@ namespace ProbablyAI.UI
 
         public void PollInput()
         {
-            if (!IsOpen || !window.Get("message").input.isFocused) return;
+            if (!IsOpen) return;
+            CapturePosition();
+            if (!window.Get("message").input.isFocused) return;
             if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) &&
                 !Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.RightShift)) Send();
         }
@@ -194,7 +261,7 @@ namespace ProbablyAI.UI
         }
         private void Status(string text) { if (IsOpen) window.Get("status").SetText(text); }
         private void Cancel() => pending?.Cancel();
-        private void OnClosed() { Cancel(); window = null; }
-        public void Dispose() { Cancel(); var closing = window; window = null; closing?.Close(); }
+        private void OnClosed() { if (window != null) RememberPosition(); Cancel(); window = null; }
+        public void Dispose() { if (window != null) RememberPosition(); Cancel(); var closing = window; window = null; closing?.Close(); }
     }
 }

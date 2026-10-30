@@ -13,6 +13,8 @@ GitHub: [https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/P
 
 You need your own compatible API service and credentials. Provider charges are handled by your chosen provider. The mod contains no shared API key or included API credits.
 
+The chat window remembers its dragged position when closed and reopened, including after restarting the game. Its position is saved separately in local `ModData/probably_ai/chat-window.local.json`; this file contains no chat or API key and is excluded from uploads.
+
 ## Things to try
 
 - "Put the food in my inventory on the counter."
@@ -37,4 +39,4 @@ API keys are used only for your configured endpoint and are not put into chat or
 
 The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
 
-Version 0.6.0. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.6.1. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
