@@ -1,26 +1,36 @@
 using UnityEngine;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI
 {
     public sealed class AssistantSettings
     {
-        public ConfigEntry<bool> Visible { get; }
-        public ConfigEntry<float> Height { get; }
-        public ConfigEntry<float> Left { get; }
-        public ConfigEntry<float> Bottom { get; }
-        public ConfigEntry<float> Opacity { get; }
-        public ConfigEntry<KeyCode> ToggleKey { get; }
-        public ConfigEntry<KeyCode> PanelKey { get; }
+        private readonly ModConfig config;
+        public ConfigEntry<bool> Visible { get; private set; }
+        public ConfigEntry<float> Height { get; private set; }
+        public ConfigEntry<float> Left { get; private set; }
+        public ConfigEntry<float> Bottom { get; private set; }
+        public ConfigEntry<float> Opacity { get; private set; }
+        public ConfigEntry<KeyCode> ToggleKey { get; private set; }
+        public ConfigEntry<KeyCode> PanelKey { get; private set; }
 
         public AssistantSettings(ModConfig config)
         {
-            Visible = config.Define("portrait_visible", true, "立绘", () => "显示小鲸立绘");
-            Height = config.Define("portrait_height", 680f, "立绘", () => "立绘高度（1080p 基准）", 240f, 1000f);
-            Left = config.Define("portrait_left", 20f, "立绘", () => "距离左侧", 0f, 900f);
-            Bottom = config.Define("portrait_bottom", 40f, "立绘", () => "距离底部", 0f, 500f);
-            Opacity = config.Define("portrait_opacity", 1f, "立绘", () => "不透明度", 0.2f, 1f);
-            ToggleKey = config.DefineEnum("toggle_key", KeyCode.F6, "快捷键", () => "显示 / 隐藏立绘");
-            PanelKey = config.DefineEnum("panel_key", KeyCode.F7, "快捷键", () => "打开 / 关闭连接配置");
+            this.config = config;
+            RefreshLanguage();
+        }
+
+        internal void RefreshLanguage()
+        {
+            // Redefine through the native API so section headings follow language too.
+            // Native Set persists values; Define reloads those same values by stable key.
+            Visible = config.Define("portrait_visible", true, T("立绘"), () => T("显示小鲸立绘"));
+            Height = config.Define("portrait_height", 680f, T("立绘"), () => T("立绘高度（1080p 基准）"), 240f, 1000f);
+            Left = config.Define("portrait_left", 20f, T("立绘"), () => T("距离左侧"), 0f, 900f);
+            Bottom = config.Define("portrait_bottom", 40f, T("立绘"), () => T("距离底部"), 0f, 500f);
+            Opacity = config.Define("portrait_opacity", 1f, T("立绘"), () => T("不透明度"), 0.2f, 1f);
+            ToggleKey = config.DefineEnum("toggle_key", KeyCode.F6, T("快捷键"), () => T("显示 / 隐藏立绘"));
+            PanelKey = config.DefineEnum("panel_key", KeyCode.F7, T("快捷键"), () => T("打开 / 关闭连接配置"));
         }
     }
 }

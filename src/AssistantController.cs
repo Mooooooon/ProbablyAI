@@ -79,7 +79,9 @@ namespace ProbablyAI
 
         private void Update()
         {
-            if (settings == null || !gameReady) return;
+            if (settings == null) return;
+            if (ModEntry.RefreshLanguage()) ClosePanel();
+            if (!gameReady) return;
             if (InStore())
             {
                 bool typing = StoreUIManager.Instance.IsTyping();

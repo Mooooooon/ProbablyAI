@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.UI
 {
@@ -12,6 +13,7 @@ namespace ProbablyAI.UI
         private readonly RectTransform parent;
         private readonly RawImage image;
         private readonly PortraitInteraction interaction;
+        private readonly CustomUITooltipTrigger tooltip;
         public bool IsAlive => root != null;
 
         public PortraitView(RectTransform parent, Texture2D texture, Action clicked)
@@ -27,7 +29,8 @@ namespace ProbablyAI.UI
             root.AddComponent<StoreUI>().identifier = "probably_ai.portrait";
             interaction = root.AddComponent<PortraitInteraction>();
             interaction.Initialize(image, texture, clicked);
-            root.AddComponent<CustomUITooltipTrigger>().tooltipText = "点击与深空AI聊天";
+            tooltip = root.AddComponent<CustomUITooltipTrigger>();
+            tooltip.tooltipText = T("点击与深空AI聊天");
             texture.filterMode = FilterMode.Point;
             texture.wrapMode = TextureWrapMode.Clamp;
             root.SetActive(false);
@@ -36,6 +39,7 @@ namespace ProbablyAI.UI
         public void Refresh(AssistantSettings settings, bool visible)
         {
             if (!IsAlive) return;
+            tooltip.tooltipText = T("点击与深空AI聊天");
             root.SetActive(visible);
             if (!visible) return;
             var bounds = parent.rect;

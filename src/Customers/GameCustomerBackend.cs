@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using ProbablyAI.Hands;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Customers
 {
@@ -27,9 +28,9 @@ namespace ProbablyAI.Customers
         private void EnsureReady()
         {
             if (Thread.CurrentThread.ManagedThreadId != mainThread)
-                throw new HandsException("wrong_thread", "客人信息必须在游戏主线程读取。");
+                throw new HandsException("wrong_thread", T("客人信息必须在游戏主线程读取。"));
             if (!active || !available() || PlayerStore.Instance == null)
-                throw new HandsException("store_unavailable", "当前无法读取客人，请返回当铺并等待载入完成。");
+                throw new HandsException("store_unavailable", T("当前无法读取客人，请返回当铺并等待载入完成。"));
         }
 
         public CustomerSnapshot Capture()
@@ -64,7 +65,7 @@ namespace ProbablyAI.Customers
                         RefusesHazardousWaterLabel = client.refusesHazardousWaterLabel,
                         AcceptedChemicalProductGrade = client.acceptedChemicalProductGrade,
                         CustomerSellingDisabled = client.isRegularSellDisable,
-                        Note = "原始游戏标签/标识符。ALL_TYPE 表示通用购买，ALL_TYPE_EXCEPT_CONTRABAND 排除违禁品；状态、容器内容和自定义规则仍可能拒收。用 check_customer_item 核对具体物品；普通购买偏好不代表易货或委托条件。CustomerSellingDisabled 表示客人不向店主普通出售。"
+                        Note = T("原始游戏标签/标识符。ALL_TYPE 表示通用购买，ALL_TYPE_EXCEPT_CONTRABAND 排除违禁品；状态、容器内容和自定义规则仍可能拒收。用 check_customer_item 核对具体物品；普通购买偏好不代表易货或委托条件。CustomerSellingDisabled 表示客人不向店主普通出售。")
                     },
                     CurrentDialogue = CurrentDialogue(client), Barter = Barter(client.barterOffer),
                     Procurement = Procurement(client), GunOrder = GunOrder(client.gunOrderData), ServiceCost = client.serviceCost
@@ -76,13 +77,13 @@ namespace ProbablyAI.Customers
         {
             var snapshot = Capture();
             if (snapshot.Customer == null)
-                throw new HandsException("no_customer", snapshot.Status == "arriving" ? "客人尚未到达柜台。" : "当前没有客人。");
+                throw new HandsException("no_customer", snapshot.Status == "arriving" ? T("客人尚未到达柜台。") : T("当前没有客人。"));
             if (snapshot.Customer.Id != expectedCustomerId)
-                throw new HandsException("customer_changed", "当前客人已改变，请重新查询客人及需求后再检查物品。");
+                throw new HandsException("customer_changed", T("当前客人已改变，请重新查询客人及需求后再检查物品。"));
             var client = observed.GetClientBlueprint();
             var world = hands.Capture(); // Refresh the same ID map used by inventory tools, including nested containers.
             var info = world.Items.FirstOrDefault(i => i.Id == itemId);
-            if (info == null) throw new HandsException("item_not_found", "物品已失效或不可访问，请重新查询物品。");
+            if (info == null) throw new HandsException("item_not_found", T("物品已失效或不可访问，请重新查询物品。"));
             var item = hands.ResolveCurrentItem(itemId);
             long value = item.GetNegociatedValue();
             var result = new CustomerItemCheck
@@ -92,7 +93,7 @@ namespace ProbablyAI.Customers
                 MatchesRegularPurchaseRules = client.IsClientBuyingThisItem(item),
                 PurchaseBudget = Budget(client), CurrentItemValue = value,
                 WithinRemainingBudget = client.useClientBudget ? (bool?)(value <= client.GetBudget()) : null,
-                Note = "这是普通购买偏好及当前单件估值的只读检查，不是可成交保证。价格、检查进度和客人状态会变化；放上柜台或谈价后重新查询。预算未启用时不推断现金。匹配某个易货条件不等于凑齐整份易货；本工具不判断采购或枪械委托是否完成，也不购买、出售或移动物品。"
+                Note = T("这是普通购买偏好及当前单件估值的只读检查，不是可成交保证。价格、检查进度和客人状态会变化；放上柜台或谈价后重新查询。预算未启用时不推断现金。匹配某个易货条件不等于凑齐整份易货；本工具不判断采购或枪械委托是否完成，也不购买、出售或移动物品。")
             };
             var conditions = client.barterOffer?.conditions;
             if (conditions != null)
@@ -106,8 +107,8 @@ namespace ProbablyAI.Customers
         {
             Enabled = client.useClientBudget,
             Remaining = client.useClientBudget ? (int?)client.GetBudget() : null,
-            Note = client.useClientBudget ? "客人购买店主物品的实时剩余预算；不是初始预算、店主现金或委托报酬。" :
-                "此客人未启用普通购买预算；没有可报告的剩余数值，不能解释为零或无限现金。"
+            Note = client.useClientBudget ? T("客人购买店主物品的实时剩余预算；不是初始预算、店主现金或委托报酬。") :
+                T("此客人未启用普通购买预算；没有可报告的剩余数值，不能解释为零或无限现金。")
         };
 
         private static DialogueInfo CurrentDialogue(StoreClient client)
@@ -173,22 +174,22 @@ namespace ProbablyAI.Customers
         {
             switch (intent)
             {
-                case StoreClient.ClientIntent.BUY: return "客人来购买店主的物品（店主卖货）。";
-                case StoreClient.ClientIntent.SELL: return "客人来向店主出售物品（店主买货）。";
-                case StoreClient.ClientIntent.SELLNBUY: return "客人既买店主的物品，也向店主卖货。";
-                case StoreClient.ClientIntent.BARTER: return "易货：查看 barter 的具体交换条件。";
-                case StoreClient.ClientIntent.PROCUREMENT_OFFER: return "提出采购委托：查看 procurement 的需求与报酬。";
-                case StoreClient.ClientIntent.PROCUREMENT_COLLECT: return "采购委托交付：查看 procurement 的交货需求。";
-                case StoreClient.ClientIntent.GUNSMITH: return "枪械委托：查看 gun_order 的必需与加分条件。";
-                case StoreClient.ClientIntent.INSPECTION: return "检查来访。";
-                case StoreClient.ClientIntent.RENT: return "租金来访。";
-                case StoreClient.ClientIntent.LOAN_SHARK: return "借贷相关来访。";
-                case StoreClient.ClientIntent.INFORMATION_DEALER: return "情报商来访。";
-                case StoreClient.ClientIntent.WHOLESALE: return "批发交易来访。";
-                case StoreClient.ClientIntent.APPRAISAL_SERVICE: return "鉴定服务来访。";
-                case StoreClient.ClientIntent.EXPEDITION: return "探险相关来访。";
-                case StoreClient.ClientIntent.DIALOGUE: return "对话来访：以当前显示的对话为准。";
-                default: return "特殊或未指定来意：以当前对话和具体需求为准，不推断购买意愿。";
+                case StoreClient.ClientIntent.BUY: return T("客人来购买店主的物品（店主卖货）。");
+                case StoreClient.ClientIntent.SELL: return T("客人来向店主出售物品（店主买货）。");
+                case StoreClient.ClientIntent.SELLNBUY: return T("客人既买店主的物品，也向店主卖货。");
+                case StoreClient.ClientIntent.BARTER: return T("易货：查看 barter 的具体交换条件。");
+                case StoreClient.ClientIntent.PROCUREMENT_OFFER: return T("提出采购委托：查看 procurement 的需求与报酬。");
+                case StoreClient.ClientIntent.PROCUREMENT_COLLECT: return T("采购委托交付：查看 procurement 的交货需求。");
+                case StoreClient.ClientIntent.GUNSMITH: return T("枪械委托：查看 gun_order 的必需与加分条件。");
+                case StoreClient.ClientIntent.INSPECTION: return T("检查来访。");
+                case StoreClient.ClientIntent.RENT: return T("租金来访。");
+                case StoreClient.ClientIntent.LOAN_SHARK: return T("借贷相关来访。");
+                case StoreClient.ClientIntent.INFORMATION_DEALER: return T("情报商来访。");
+                case StoreClient.ClientIntent.WHOLESALE: return T("批发交易来访。");
+                case StoreClient.ClientIntent.APPRAISAL_SERVICE: return T("鉴定服务来访。");
+                case StoreClient.ClientIntent.EXPEDITION: return T("探险相关来访。");
+                case StoreClient.ClientIntent.DIALOGUE: return T("对话来访：以当前显示的对话为准。");
+                default: return T("特殊或未指定来意：以当前对话和具体需求为准，不推断购买意愿。");
             }
         }
     }

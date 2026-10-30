@@ -11,6 +11,7 @@ using ProbablyAI.Tools;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.UI
 {
@@ -39,23 +40,23 @@ namespace ProbablyAI.UI
 
         public void Show()
         {
-            var b = CustomUIManager.Window(ModEntry.ModId + ".chat", Branding.Name + " · 聊天", CustomUIManager.LAYER_PAPER)
+            var b = CustomUIManager.Window(ModEntry.ModId + ".chat", Branding.DisplayName + T(" · 聊天"), CustomUIManager.LAYER_PAPER)
                 .SetSize(760f, 770f).SetPosition(new Vector2(170f, 0f)).SetDraggable(true).SetCloseOnEscape();
             window = b.Handle;
             window.root.SetActive(false);
             b.OnClose(OnClosed).BeginScroll(455f);
             scroll = b.CurrentContainer.GetComponentInParent<ScrollRect>(true);
             b.AddLabel("", "conversation").End()
-                .AddInput("说点什么，比如：帮我把食物放到柜台上", "", id: "message")
-                .AddLabel("Enter 发送 · Shift+Enter 换行")
+                .AddInput(T("说点什么，比如：帮我把食物放到柜台上"), "", id: "message")
+                .AddLabel(T("Enter 发送 · Shift+Enter 换行"))
                 .BeginRow()
-                    .AddButton("发送", Send, "send")
-                    .AddButton("停止", Cancel, "stop")
-                    .AddButton("连接设置", () => openSettings?.Invoke())
-                    .AddButton("手动操作", () => openHands?.Invoke())
-                    .AddButton("清空聊天", Clear, "clear")
+                    .AddButton(T("发送"), Send, "send")
+                    .AddButton(T("停止"), Cancel, "stop")
+                    .AddButton(T("连接设置"), () => openSettings?.Invoke())
+                    .AddButton(T("手动操作"), () => openHands?.Invoke())
+                    .AddButton(T("清空聊天"), Clear, "clear")
                 .End()
-                .AddLabel("准备就绪。", "status");
+                .AddLabel(T("准备就绪。"), "status");
             var input = window.Get("message");
             input.input.lineType = TMP_InputField.LineType.MultiLineNewline;
             input.input.characterLimit = 6000;
@@ -89,7 +90,7 @@ namespace ProbablyAI.UI
         private async void Send()
         {
             if (!IsOpen || busy) return;
-            if (agent.IsRunning) { Status("助手正在处理另一个窗口的请求，请等待完成或先停止。"); return; }
+            if (agent.IsRunning) { Status(T("助手正在处理另一个窗口的请求，请等待完成或先停止。")); return; }
             var message = window.Get("message").GetString().Trim();
             if (message.Length == 0) return;
             currentUser = message; currentActions.Clear();
@@ -99,14 +100,14 @@ namespace ProbablyAI.UI
             try
             {
                 await agent.RunAsync(connection.Current, message, Progress, request.Token, memory);
-                if (IsOpen) { currentUser = null; currentActions.Clear(); Render(); Status("完成。可以继续聊天或安排其他操作。"); }
+                if (IsOpen) { currentUser = null; currentActions.Clear(); Render(); Status(T("完成。可以继续聊天或安排其他操作。")); }
             }
-            catch (OperationCanceledException) { Finished("已停止；已经完成的操作保留。"); }
+            catch (OperationCanceledException) { Finished(T("已停止；已经完成的操作保留。")); }
             catch (ApiRequestException error) { Finished(error.Message); }
             catch (HandsException error) { Finished(error.Message); }
             catch (ArgumentException error) { Finished(error.Message); }
             catch (InvalidOperationException error) { Finished(error.Message); }
-            catch (Exception) { Finished("消息未完成，请检查当前物品状态和连接配置。"); }
+            catch (Exception) { Finished(T("消息未完成，请检查当前物品状态和连接配置。")); }
             finally
             {
                 if (pending == request) pending = null;
@@ -119,13 +120,14 @@ namespace ProbablyAI.UI
         {
             if (!IsOpen) return;
             int separator = text.IndexOf('：');
+            if (separator < 0) separator = text.IndexOf(':');
             if (separator > 0 && registry.ChangesState(text.Substring(0, separator)))
             {
                 currentActions.Add(text.Substring(separator + 1));
                 Render();
-                Status("正在执行你的安排…");
+                Status(T("正在执行你的安排…"));
             }
-            else Status(separator > 0 ? "正在查看当铺中的物品…" : text);
+            else Status(separator > 0 ? T("正在查看当铺中的物品…") : text);
         }
 
         private void Finished(string status)
@@ -154,7 +156,7 @@ namespace ProbablyAI.UI
                         try
                         {
                             var outcome = JObject.Parse((string)message["content"]);
-                            text.AppendLine("操作：" + (string)outcome["message"]);
+                            text.AppendLine(T("操作：") + (string)outcome["message"]);
                         }
                         catch (JsonException) { }
                     }
@@ -163,15 +165,15 @@ namespace ProbablyAI.UI
                 if (role != "user" && role != "assistant") continue;
                 string visible = message["content"]?.Type == JTokenType.String ? (string)message["content"] :
                     message["content"] is JArray parts ? string.Concat(parts.OfType<JObject>().Select(p => (string)p["text"])) : null;
-                if (!string.IsNullOrWhiteSpace(visible)) text.AppendLine((role == "user" ? "你：" : "深空AI：") + visible).AppendLine();
+                if (!string.IsNullOrWhiteSpace(visible)) text.AppendLine((role == "user" ? T("你：") : T("深空AI：")) + visible).AppendLine();
             }
             if (currentUser != null)
             {
-                text.AppendLine("你：" + currentUser).AppendLine();
-                foreach (var action in currentActions) text.AppendLine("操作：" + action);
+                text.AppendLine(T("你：") + currentUser).AppendLine();
+                foreach (var action in currentActions) text.AppendLine(T("操作：") + action);
             }
-            if (text.Length == 0) text.Append("深空AI：你好！可以和我聊天，也可以让我帮你整理当铺。\n\n例如：帮我把食物放到柜台上。");
-            if (text.Length > 24000) text.Remove(0, text.Length - 24000).Insert(0, "（仅显示最近的聊天内容）\n");
+            if (text.Length == 0) text.Append(T("深空AI：你好！可以和我聊天，也可以让我帮你整理当铺。\n\n例如：帮我把食物放到柜台上。"));
+            if (text.Length > 24000) text.Remove(0, text.Length - 24000).Insert(0, T("（仅显示最近的聊天内容）\n"));
             window.Get("conversation").SetText(text.ToString());
             CustomUIBuilder.RebuildLayout(window.ContentRoot);
             Canvas.ForceUpdateCanvases();
@@ -180,8 +182,8 @@ namespace ProbablyAI.UI
 
         private void Clear()
         {
-            if (busy || agent.IsRunning) { Status("请先停止当前请求，再清空聊天。"); return; }
-            memory.Clear(); currentActions.Clear(); currentUser = null; Render(); Status("聊天已清空。");
+            if (busy || agent.IsRunning) { Status(T("请先停止当前请求，再清空聊天。")); return; }
+            memory.Clear(); currentActions.Clear(); currentUser = null; Render(); Status(T("聊天已清空。"));
         }
         private void SetBusy(bool value)
         {

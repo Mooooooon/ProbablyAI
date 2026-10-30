@@ -1,6 +1,14 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.5.2。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。
+Probably Stolen 原生 Mod，当前版本 0.6.0。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+
+Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
+
+## 自动中英文切换
+
+界面、设置标签、操作记录、错误提示、容器名称、客人查询与工具说明自动跟随**游戏内**的语言设置：中文使用中文，英文使用英文，其他语言回退英文。语言切换时会关闭已打开的 Mod 面板，重新打开后显示新语言；不会翻译或改写你输入的文本。
+
+未编辑的内置默认提示词会随游戏语言切换：中文称呼“主人”，英文称呼“Master”，保留女仆设定并默认禁止颜文字和 emoji。已保存的中文或英文默认模板也会适配；自定义提示词完整保留。提示词语言变化后，下次发送会清理旧上下文。
 
 ## 当前功能
 
@@ -120,6 +128,9 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 | `src/Services/ConnectionSettingsStore.cs` | 本机连接配置和可选密钥保存 |
 | `src/Services/ConnectionOptions.cs` | 默认值、验证与 API 地址拼接 |
 | `src/Services/AssistantPrompt.cs` | 完整默认女仆提示词、长度限制及空值回退 |
+| `src/Localization/` | 中英文文本、语言选择及工具说明切换 |
+| `assets/workshop-cover-v1.png` | 像素风鲸鱼娘头像与中英文标题的封面原图 |
+| `assets/workshop-preview-v1.jpg` | 小于 1 MB 的创意工坊封面预览 |
 | `assets/deepseek-npc.png` | 可替换的立绘文件；打包时复制至 Textures |
 | `docs/portrait-prompt.txt` | 立绘生成提示词与工具记录 |
 | `docs/portrait-pixel-v2-prompt.txt` | 像素风女仆站姿版本的编辑提示词与工具记录 |
@@ -137,7 +148,11 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-67 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、未来工具注册、多轮历史、取消后工具配对、客人及预算查询，以及提示词旧配置兼容、多行保存、长度限制、模型请求传递和修改后历史清理。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
+72 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、可编辑提示词，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
+
+## 创意工坊发布包
+
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.6.0/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

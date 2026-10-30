@@ -1,11 +1,15 @@
 using UnityEngine;
 using ProbablyAI.Tools;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI
 {
     public sealed class ModEntry : IMod
     {
         public const string ModId = "probably_ai";
+        private static ModManifest activeManifest;
+        private static string originalDescription;
+        private static AssistantSettings activeSettings;
         private static AssistantController runtime;
         public static ToolRegistry Tools => runtime?.Tools;
         public static event System.Action<ToolRegistry> ToolsReady;
@@ -16,8 +20,24 @@ namespace ProbablyAI
 
         public void Init(ModManifest manifest)
         {
+            activeManifest = manifest;
+            originalDescription = manifest.Description;
+            RefreshLanguage();
             log = new ModLog(manifest);
             settings = new AssistantSettings(ModHelper.GetConfig(ModId));
+            activeSettings = settings;
+        }
+
+        internal static bool RefreshLanguage()
+        {
+            bool changed = ProbablyAI.Localization.Text.UseLocale(LocHelper.GetCurrentLocaleCode());
+            if (changed) activeSettings?.RefreshLanguage();
+            if (activeManifest != null)
+            {
+                activeManifest.Name = Branding.DisplayName;
+                activeManifest.Description = T(originalDescription);
+            }
+            return changed;
         }
 
         public void OnEnable()
@@ -50,7 +70,7 @@ namespace ProbablyAI
             if (ToolsReady == null) return;
             foreach (System.Action<ToolRegistry> register in ToolsReady.GetInvocationList())
                 try { register(tools); }
-                catch (System.Exception) { Debug.LogWarning("[" + Branding.Name + "] 扩展工具注册未完成。"); }
+                catch (System.Exception) { Debug.LogWarning("[" + Branding.Name + T("] 扩展工具注册未完成。")); }
         }
     }
 }

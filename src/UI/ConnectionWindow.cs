@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ProbablyAI.Services;
 using TMPro;
 using UnityEngine;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.UI
 {
@@ -32,48 +33,48 @@ namespace ProbablyAI.UI
 
         public void Show()
         {
-            var builder = CustomUIManager.Window(ModEntry.ModId + ".connection", Branding.ShortName + " · 助手设置", CustomUIManager.LAYER_PAPER)
+            var builder = CustomUIManager.Window(ModEntry.ModId + ".connection", Branding.DisplayShortName + T(" · 助手设置"), CustomUIManager.LAYER_PAPER)
                 .SetSize(680f, 810f).Center().SetDraggable(true).SetCloseOnEscape();
             window = builder.Handle;
             window.root.SetActive(false);
             builder.OnClose(OnClosed)
                 .BeginScroll(620f)
-                    .AddButton("打开聊天", () => openChat?.Invoke())
-                    .AddButton("物品与容器 / 助手操作", () => openHands?.Invoke())
-                    .AddHeader("OpenAI 兼容接口")
-                    .AddLabel("服务地址（Base URL）")
-                    .AddInput("https://api.deepseek.com 或 https://服务地址/v1", draft.BaseUrl,
+                    .AddButton(T("打开聊天"), () => openChat?.Invoke())
+                    .AddButton(T("物品与容器 / 助手操作"), () => openHands?.Invoke())
+                    .AddHeader(T("OpenAI 兼容接口"))
+                    .AddLabel(T("服务地址（Base URL）"))
+                    .AddInput(T("https://api.deepseek.com 或 https://服务地址/v1"), draft.BaseUrl,
                         id: "base_url", onTyping: OnBaseUrlChanged)
                     .AddLabel("API Key")
-                    .AddInput("填写服务商提供的 API Key；本地服务可留空", draft.ApiKey,
+                    .AddInput(T("填写服务商提供的 API Key；本地服务可留空"), draft.ApiKey,
                         id: "api_key", onTyping: OnApiKeyChanged)
-                    .AddToggle("记住 API Key（保存在本机文件中，明文）", draft.RememberApiKey,
+                    .AddToggle(T("记住 API Key（保存在本机文件中，明文）"), draft.RememberApiKey,
                         value => draft.RememberApiKey = value, "remember_key")
-                    .AddLabel("模型 ID（可手动填写）")
+                    .AddLabel(T("模型 ID（可手动填写）"))
                     .AddInput(ConnectionOptions.DefaultModel, draft.Model, id: "model", onTyping: OnModelChanged)
                     .BeginRow()
-                        .AddButton("获取模型列表", FetchModels, "fetch_models")
-                        .AddDropdown(new[] { "获取后可在此选择模型" }, 0, SelectModel, "models")
+                        .AddButton(T("获取模型列表"), FetchModels, "fetch_models")
+                        .AddDropdown(new[] { T("获取后可在此选择模型") }, 0, SelectModel, "models")
                     .End()
                     .AddSeparator(verticalPadding: 10)
-                    .AddHeader("助手提示词")
-                    .AddLabel("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。")
-                    .AddInput("留空使用默认女仆助手提示词", "", id: "system_prompt", onTyping: value => draft.SystemPrompt = value)
-                    .AddButton("恢复默认提示词", ResetPrompt, "reset_prompt")
+                    .AddHeader(T("助手提示词"))
+                    .AddLabel(T("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。"))
+                    .AddInput(T("留空使用默认女仆助手提示词"), "", id: "system_prompt", onTyping: value => draft.SystemPrompt = value)
+                    .AddButton(T("恢复默认提示词"), ResetPrompt, "reset_prompt")
                     .AddSeparator(verticalPadding: 10)
-                    .AddHeader("测试对话")
-                    .AddLabel("使用上方连接与提示词发送测试消息，可在保存前预览效果；不会自动附带存档数据。")
-                    .AddInput("输入一条测试消息", "你好，请用中文简单介绍自己。", id: "test_message")
-                    .AddButton("发送测试消息", TestMessage, "test")
+                    .AddHeader(T("测试对话"))
+                    .AddLabel(T("使用上方连接与提示词发送测试消息，可在保存前预览效果；不会自动附带存档数据。"))
+                    .AddInput(T("输入一条测试消息"), T("你好，请用中文简单介绍自己。"), id: "test_message")
+                    .AddButton(T("发送测试消息"), TestMessage, "test")
                     .BeginScroll(145f)
-                        .AddLabel("回复将显示在这里。", "reply")
+                        .AddLabel(T("回复将显示在这里。"), "reply")
                     .End()
                 .End()
-                .AddLabel(store.LoadWarning ?? "填写后点击“保存配置”。只有点击获取或发送时才会联网。", "status")
+                .AddLabel(store.LoadWarning ?? T("填写后点击“保存配置”。只有点击获取或发送时才会联网。"), "status")
                 .BeginRow()
-                    .AddButton("保存配置", Save, "save")
-                    .AddButton("取消请求", Cancel, "cancel")
-                    .AddButton("关闭", Dispose)
+                    .AddButton(T("保存配置"), Save, "save")
+                    .AddButton(T("取消请求"), Cancel, "cancel")
+                    .AddButton(T("关闭"), Dispose)
                 .End();
 
             ConfigureInput("base_url", 2048);
@@ -115,7 +116,7 @@ namespace ProbablyAI.UI
         {
             draft.SystemPrompt = AssistantPrompt.Default;
             window.Get("system_prompt").SetString(draft.SystemPrompt);
-            Status("已填入默认女仆助手提示词。点击“保存配置”后生效，也可以先发送测试消息预览。");
+            Status(T("已填入默认女仆助手提示词。点击“保存配置”后生效，也可以先发送测试消息预览。"));
         }
 
         private void SetPlainText(string id)
@@ -149,7 +150,7 @@ namespace ProbablyAI.UI
         private void InvalidateModels()
         {
             models.Clear();
-            window.Get("models")?.SetOptions(new[] { "连接已更改，请重新获取" }).SetIndex(0).SetInteractable(false);
+            window.Get("models")?.SetOptions(new[] { T("连接已更改，请重新获取") }).SetIndex(0).SetInteractable(false);
         }
 
         private void SelectModel(int index)
@@ -157,7 +158,7 @@ namespace ProbablyAI.UI
             if (index <= 0 || index > models.Count) return;
             draft.Model = models[index - 1];
             window.Get("model")?.SetString(draft.Model);
-            Status("已选择模型，点击“保存配置”后持久保存。");
+            Status(T("已选择模型，点击“保存配置”后持久保存。"));
         }
 
         private void FetchModels()
@@ -166,17 +167,17 @@ namespace ProbablyAI.UI
             {
                 // Fetching does not require a model to be selected already.
                 var options = ReadDraft().Normalized(false);
-                Status("正在获取模型列表…");
+                Status(T("正在获取模型列表…"));
                 var result = await service.ListModelsAsync(options, cancellation);
                 if (!IsOpen || cancellation.IsCancellationRequested) return;
                 models.Clear();
                 models.AddRange(result);
-                var choices = new List<string> { "手动输入 / 当前模型" };
+                var choices = new List<string> { T("手动输入 / 当前模型") };
                 choices.AddRange(models);
                 window.Get("models").SetOptions(choices).SetIndex(models.IndexOf(draft.Model.Trim()) + 1);
                 Status(models.Count == 0
-                    ? "服务返回空列表。仍可手动输入模型 ID 后保存。"
-                    : $"已获取 {models.Count} 个模型，请从下拉框选择；当前模型不会自动改变。");
+                    ? T("服务返回空列表。仍可手动输入模型 ID 后保存。")
+                    : F("已获取 {0} 个模型，请从下拉框选择；当前模型不会自动改变。", models.Count));
             });
         }
 
@@ -186,12 +187,12 @@ namespace ProbablyAI.UI
             {
                 var options = ReadDraft().Normalized();
                 var message = window.Get("test_message").GetString();
-                if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException("请先输入测试消息。");
-                Status("正在等待模型回复…");
+                if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException(T("请先输入测试消息。"));
+                Status(T("正在等待模型回复…"));
                 var reply = await service.ReplyAsync(options, message, null, cancellation);
                 if (!IsOpen || cancellation.IsCancellationRequested) return;
-                window.Get("reply").SetText(reply.Length > 12000 ? reply.Substring(0, 12000) + "\n（显示已截断）" : reply);
-                Status("连接成功，模型已回复。配置需点击“保存配置”后保存。");
+                window.Get("reply").SetText(reply.Length > 12000 ? reply.Substring(0, 12000) + T("\n（显示已截断）") : reply);
+                Status(T("连接成功，模型已回复。配置需点击“保存配置”后保存。"));
                 CustomUIBuilder.RebuildLayout(window.ContentRoot);
             });
         }
@@ -220,12 +221,12 @@ namespace ProbablyAI.UI
                 draft.Model = saved.Model;
                 draft.SystemPrompt = saved.SystemPrompt;
                 Status(saved.RememberApiKey
-                    ? "配置与提示词已保存，下次发送生效；API Key 保存在本机。"
-                    : "配置与提示词已保存，下次发送生效；API Key 仅本次运行有效。");
+                    ? T("配置与提示词已保存，下次发送生效；API Key 保存在本机。")
+                    : T("配置与提示词已保存，下次发送生效；API Key 仅本次运行有效。"));
             }
             catch (ArgumentException error) { Status(error.Message); }
             catch (InvalidOperationException error) { Status(error.Message); }
-            catch (Exception) { Status("配置保存失败，请稍后重试。"); }
+            catch (Exception) { Status(T("配置保存失败，请稍后重试。")); }
         }
 
         private async void RunRequest(Func<CancellationToken, Task> action)
@@ -235,10 +236,10 @@ namespace ProbablyAI.UI
             pending = request;
             SetBusy(true);
             try { await action(request.Token); }
-            catch (OperationCanceledException) { Status("请求已取消。"); }
+            catch (OperationCanceledException) { Status(T("请求已取消。")); }
             catch (ApiRequestException error) { Status(error.Message); }
             catch (ArgumentException error) { Status(error.Message); }
-            catch (Exception) { Status("请求失败，请检查配置后重试。"); }
+            catch (Exception) { Status(T("请求失败，请检查配置后重试。")); }
             finally
             {
                 if (pending == request) pending = null;

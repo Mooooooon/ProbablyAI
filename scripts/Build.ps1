@@ -17,6 +17,8 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'bin\Release\netstandard2.1\Proba
 Copy-Item -LiteralPath (Join-Path $projectRoot 'manifest.xml') -Destination $package
 Copy-Item -LiteralPath (Join-Path $projectRoot 'assets\deepseek-npc.png') -Destination (Join-Path $package 'Textures\deepseek-npc.png')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination $package
+Copy-Item -LiteralPath (Join-Path $projectRoot 'README.en.md') -Destination $package
+Copy-Item -LiteralPath (Join-Path $projectRoot 'assets\workshop-cover-v1.png') -Destination (Join-Path $package 'preview.png')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\hands-api.md') -Destination (Join-Path $package 'docs\hands-api.md')
 if ($Install) {
     if (Get-Process -Name 'Probably Stolen' -ErrorAction SilentlyContinue) {
@@ -25,7 +27,7 @@ if ($Install) {
     $destination = Join-Path $GameDirectory 'Mods\ProbablyAI'
     New-Item -ItemType Directory -Force -Path (Join-Path $destination 'Textures') | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $destination 'docs') | Out-Null
-    foreach ($file in @('ProbablyAI.dll', 'manifest.xml', 'README.md', 'Textures\deepseek-npc.png', 'docs\hands-api.md')) {
+    foreach ($file in @('ProbablyAI.dll', 'manifest.xml', 'README.md', 'README.en.md', 'preview.png', 'Textures\deepseek-npc.png', 'docs\hands-api.md')) {
         Copy-Item -LiteralPath (Join-Path $package $file) -Destination (Join-Path $destination $file)
     }
     Write-Output "Installed: $destination"

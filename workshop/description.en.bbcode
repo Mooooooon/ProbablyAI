@@ -1,0 +1,26 @@
+[h1]Your pawnshop's whale-girl maid assistant[/h1]
+Chat with Xiaojing and ask her to organize the pawnshop using live game tools. Includes a pixel-art character portrait and cover. Chinese and English follow the language selected in the game automatically; other languages use English.
+
+[h2]Features[/h2]
+[list]
+[*]Click the portrait to chat. F6 hides or shows it; F7 opens settings.
+[*]OpenAI-compatible API connection with editable URL, API key, model and model-list fetching. Bring your own API service and key; no API credits are included.
+[*]Editable system prompt with restore-default and test-chat preview. Default: a lively maid who calls you Master, with no emoji or emoticons unless requested. Custom prompts are preserved when switching language.
+[*]Move items to the counter, storage, archives, trash bin and machine inputs through native game rules. Supports nested folders, bags, storage pages and machine compartments.
+[*]Read the current customer's intent, remaining purchase budget, preferences, refusal rules and barter/procurement/gunsmith requirements. Check specific items against buying preferences and the current budget estimate.
+[/list]
+
+[h2]Examples[/h2]
+"Put the food in my inventory on the counter."
+"What does this customer want, and how much budget do they have left?"
+"Find suitable items, but tell me before moving them."
+
+[h2]Setup and privacy[/h2]
+Enable the mod in the Mods menu, review its network capability, restart, then configure your own API provider in F7. Default endpoint: https://api.deepseek.com ; default model: deepseek-flash. A tool-calling model is required for game operations.
+
+Network requests start only when you fetch models, send a test or use the assistant. Game information queried by tools is sent to your configured provider. Remembered API keys are stored in plain text in your own local mod-data folder; disable Remember API key and save for a session-only key. The uploaded package contains no API keys, personal settings, saves, account data, game DLLs, debug symbols or research caches.
+
+[h2]Scope[/h2]
+The assistant does not complete trades, select dialogue options, unlock containers, spawn items or start machines. Partial moves and native automatic processing follow the game. Stopping cancels later actions; completed moves remain.
+
+Beta v0.6.0, built against application 0.46D / VERSION 100-Rev3. Automated tests simulate game state and HTTP; gameplay and provider compatibility need player testing. Independent fan mod, not an official DeepSeek product. Character and cover artwork generated with AI from a supplied character reference.

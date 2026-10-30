@@ -4,8 +4,10 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>ProbablyAI</AssemblyName>
     <RootNamespace>ProbablyAI</RootNamespace>
-    <Version>0.5.2</Version>
+    <Version>0.6.0</Version>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <PathMap>$(MSBuildProjectDirectory)=/src</PathMap>
     <GameDirectory Condition="'$(GameDirectory)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Probably Stolen</GameDirectory>
     <ManagedDirectory>$(GameDirectory)\Probably Stolen_Data\Managed</ManagedDirectory>
   </PropertyGroup>

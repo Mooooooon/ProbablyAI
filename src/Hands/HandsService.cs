@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Hands
 {
@@ -18,7 +19,7 @@ namespace ProbablyAI.Hands
         {
             try
             {
-                if (arguments == null) throw new HandsException("invalid_arguments", "参数必须是 JSON 对象。");
+                if (arguments == null) throw new HandsException("invalid_arguments", T("参数必须是 JSON 对象。"));
                 var world = backend.Capture(); // Never trust an earlier model/UI snapshot before a move.
                 switch (tool)
                 {
@@ -33,7 +34,7 @@ namespace ProbablyAI.Hands
                     case "list_container":
                         ValidateKeys(arguments, "container_id", "offset", "limit");
                         var container = Container(world, Text(arguments, "container_id"));
-                        if (container.Locked) throw new HandsException("container_locked", "容器已锁定，无法查看内容。");
+                        if (container.Locked) throw new HandsException("container_locked", T("容器已锁定，无法查看内容。"));
                         return HandsResult.Ok(new
                         {
                             container,
@@ -50,7 +51,7 @@ namespace ProbablyAI.Hands
                             (search == "食物" || search == "食品" || string.Equals(search, "food", StringComparison.OrdinalIgnoreCase)))
                         { itemType = "FOOD"; search = null; }
                         if (string.IsNullOrWhiteSpace(search) && string.IsNullOrWhiteSpace(itemType))
-                            throw new HandsException("invalid_arguments", "请提供搜索词 query 或物品类型 item_type。");
+                            throw new HandsException("invalid_arguments", T("请提供搜索词 query 或物品类型 item_type。"));
                         var scope = Text(arguments, "container_id", false);
                         if (!string.IsNullOrEmpty(scope)) Container(world, scope);
                         var items = world.Items.Where(i =>
@@ -70,14 +71,14 @@ namespace ProbablyAI.Hands
                     case "close_container":
                         ValidateKeys(arguments, "container_id");
                         var target = Container(world, Text(arguments, "container_id"));
-                        if (target.Locked) throw new HandsException("container_locked", "容器已锁定，无法打开。");
+                        if (target.Locked) throw new HandsException("container_locked", T("容器已锁定，无法打开。"));
                         backend.SetOpen(target.Id, tool == "open_container");
-                        return HandsResult.Ok(new { container_id = target.Id }, tool == "open_container" ? "已打开容器窗口。" : "已关闭容器窗口。");
-                    default: return HandsResult.Fail("unknown_tool", "不支持的操作接口。");
+                        return HandsResult.Ok(new { container_id = target.Id }, tool == "open_container" ? T("已打开容器窗口。") : T("已关闭容器窗口。"));
+                    default: return HandsResult.Fail("unknown_tool", T("不支持的操作接口。"));
                 }
             }
             catch (HandsException error) { return HandsResult.Fail(error.Code, error.Message); }
-            catch (Exception) { return HandsResult.Fail("game_error", "游戏操作未完成，请刷新列表检查当前物品位置。不要重复执行未核实的操作。"); }
+            catch (Exception) { return HandsResult.Fail("game_error", T("游戏操作未完成，请刷新列表检查当前物品位置。不要重复执行未核实的操作。")); }
         }
 
         private HandsResult Transfer(WorldSnapshot world, JObject arguments, bool preview)
@@ -85,22 +86,22 @@ namespace ProbablyAI.Hands
             var item = Item(world, Text(arguments, "item_id"));
             var source = Container(world, Text(arguments, "source_container_id"));
             var destination = Container(world, Text(arguments, "destination_container_id"));
-            if (arguments["quantity"] == null) throw new HandsException("invalid_arguments", "缺少参数：quantity（0 代表所选这一堆全部）。");
+            if (arguments["quantity"] == null) throw new HandsException("invalid_arguments", T("缺少参数：quantity（0 代表所选这一堆全部）。"));
             var quantity = Number(arguments, "quantity", 0, 0, int.MaxValue);
             if (item.ContainerId != source.Id)
-                throw new HandsException("source_changed", "物品位置已经变化，请重新查询后操作。");
+                throw new HandsException("source_changed", T("物品位置已经变化，请重新查询后操作。"));
             if (source.Id == destination.Id)
-                throw new HandsException("same_container", "物品已在目标容器中。");
+                throw new HandsException("same_container", T("物品已在目标容器中。"));
             if (source.Locked || source.RemoveLocked || destination.Locked || destination.InsertLocked)
-                throw new HandsException("container_locked", "源容器禁止取出，或目标容器禁止放入。");
-            if (!item.Removable) throw new HandsException("item_locked", "游戏当前不允许移动这个物品。");
+                throw new HandsException("container_locked", T("源容器禁止取出，或目标容器禁止放入。"));
+            if (!item.Removable) throw new HandsException("item_locked", T("游戏当前不允许移动这个物品。"));
             if (destination.Kind == "group")
-                throw new HandsException("choose_compartment", "目标含多个分区，请先 list_container，再选择具体的原料、成品或储藏分页。");
+                throw new HandsException("choose_compartment", T("目标含多个分区，请先 list_container，再选择具体的原料、成品或储藏分页。"));
             if (!string.IsNullOrEmpty(item.ContentContainerId) && Inside(world, destination.Id, item.ContentContainerId))
-                throw new HandsException("container_cycle", "不能将容器放进自身或自身的子容器。");
+                throw new HandsException("container_cycle", T("不能将容器放进自身或自身的子容器。"));
             int requested = quantity == 0 ? item.Quantity : quantity;
             if (requested < 1 || requested > item.Quantity)
-                throw new HandsException("invalid_quantity", "数量不足，或物品已不存在，请刷新列表。");
+                throw new HandsException("invalid_quantity", T("数量不足，或物品已不存在，请刷新列表。"));
             var check = backend.CheckMove(item.Id, destination.Id, requested);
             if (!check.Allowed) throw new HandsException("move_rejected", check.Reason);
             if (preview) return HandsResult.Ok(new
@@ -110,13 +111,13 @@ namespace ProbablyAI.Hands
                 destination_container_id = destination.Id,
                 requested,
                 first_slot_quantity = check.FirstSlotQuantity,
-                note = "仅预检，不移动物品；执行时重新检查，空间不足时可能只移动部分。"
-            }, "可以尝试移动。");
+                note = T("仅预检，不移动物品；执行时重新检查，空间不足时可能只移动部分。")
+            }, T("可以尝试移动。"));
 
             var outcome = backend.Move(item.Id, destination.Id, requested);
             if (outcome.Moved < 0 || outcome.Moved > requested)
-                throw new HandsException("invalid_native_result", "原生接口返回了异常数量，请刷新物品列表核实。");
-            string message = $"{item.Name}：{source.Path} → {destination.Path}，已移动 {outcome.Moved}/{requested}。";
+                throw new HandsException("invalid_native_result", T("原生接口返回了异常数量，请刷新物品列表核实。"));
+            string message = F("{0}：{1} → {2}，已移动 {3}/{4}。", item.Name, source.Path, destination.Path, outcome.Moved, requested);
             if (!string.IsNullOrWhiteSpace(outcome.Detail)) message += " " + outcome.Detail;
             history.Enqueue(message);
             while (history.Count > 50) history.Dequeue();
@@ -145,9 +146,9 @@ namespace ProbablyAI.Hands
             => value != null && value.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
 
         private static ContainerInfo Container(WorldSnapshot world, string id)
-            => world.Containers.FirstOrDefault(c => c.Id == id) ?? throw new HandsException("container_not_found", "容器 ID 已失效或不可访问，请重新获取容器列表。");
+            => world.Containers.FirstOrDefault(c => c.Id == id) ?? throw new HandsException("container_not_found", T("容器 ID 已失效或不可访问，请重新获取容器列表。"));
         private static ItemInfo Item(WorldSnapshot world, string id)
-            => world.Items.FirstOrDefault(i => i.Id == id) ?? throw new HandsException("item_not_found", "物品 ID 已失效或不可访问，请重新搜索物品。");
+            => world.Items.FirstOrDefault(i => i.Id == id) ?? throw new HandsException("item_not_found", T("物品 ID 已失效或不可访问，请重新搜索物品。"));
 
         private static bool Inside(WorldSnapshot world, string child, string ancestor)
         {
@@ -163,7 +164,7 @@ namespace ProbablyAI.Hands
         private static void ValidateKeys(JObject arguments, params string[] keys)
         {
             if (arguments.Properties().Any(p => !keys.Contains(p.Name)))
-                throw new HandsException("invalid_arguments", "包含不支持的参数。");
+                throw new HandsException("invalid_arguments", T("包含不支持的参数。"));
         }
 
         private static string Text(JObject arguments, string name, bool required = true)
@@ -172,10 +173,10 @@ namespace ProbablyAI.Hands
             if (value == null || value.Type == JTokenType.Null)
             {
                 if (!required) return null;
-                throw new HandsException("invalid_arguments", "缺少参数：" + name);
+                throw new HandsException("invalid_arguments", T("缺少参数：") + name);
             }
             if (value.Type != JTokenType.String || ((string)value).Length > 2048 || required && string.IsNullOrWhiteSpace((string)value))
-                throw new HandsException("invalid_arguments", "参数无效：" + name);
+                throw new HandsException("invalid_arguments", T("参数无效：") + name);
             return ((string)value).Trim();
         }
 
@@ -184,14 +185,14 @@ namespace ProbablyAI.Hands
             var value = arguments[name];
             if (value == null) return fallback;
             if (value.Type != JTokenType.Integer || !long.TryParse(value.ToString(), out var number) || number < min || number > max)
-                throw new HandsException("invalid_arguments", "数值参数无效：" + name);
+                throw new HandsException("invalid_arguments", T("数值参数无效：") + name);
             return (int)number;
         }
 
         private static bool Flag(JObject arguments, string name)
         {
             if (arguments[name] == null) return false;
-            if (arguments[name].Type != JTokenType.Boolean) throw new HandsException("invalid_arguments", "布尔参数无效：" + name);
+            if (arguments[name].Type != JTokenType.Boolean) throw new HandsException("invalid_arguments", T("布尔参数无效：") + name);
             return (bool)arguments[name];
         }
     }

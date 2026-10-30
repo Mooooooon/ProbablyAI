@@ -11,6 +11,8 @@
     <Compile Include="ChatTests.cs" />
     <Compile Include="CustomerTests.cs" />
     <Compile Include="PromptTests.cs" />
+    <Compile Include="LocalizationTests.cs" />
+    <Compile Include="..\src\Localization\*.cs" Link="Localization\%(Filename)%(Extension)" />
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
     <Compile Include="..\src\Customers\CustomerProtocol.cs" Link="CustomerProtocol.cs" />
     <Compile Include="..\src\Customers\CustomerService.cs" Link="CustomerService.cs" />

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Services
 {
@@ -43,7 +44,7 @@ namespace ProbablyAI.Services
             var connection = options.Normalized();
             var prompt = connection.SystemPrompt;
             if (context != null)
-                prompt += $" 当前是第 {context.Day} 天，持有 {context.Cash} 信用点，当铺内：{context.InStore}。";
+                prompt += F(" 当前是第 {0} 天，持有 {1} 信用点，当铺内：{2}。", context.Day, context.Cash, context.InStore);
             return client.CompleteAsync(connection, message, prompt, cancellationToken);
         }
     }

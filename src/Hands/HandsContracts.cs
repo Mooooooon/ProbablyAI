@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Hands
 {
@@ -66,7 +67,7 @@ namespace ProbablyAI.Hands
     public sealed class HandsException : Exception
     {
         public string Code { get; }
-        public HandsException(string code, string message) : base(message) => Code = code;
+        public HandsException(string code, string message) : base(T(message)) => Code = code;
     }
 
     public sealed class HandsResult
@@ -76,8 +77,8 @@ namespace ProbablyAI.Hands
         public string Message { get; set; }
         public object Data { get; set; }
         public static HandsResult Ok(object data, string message = "查询成功。")
-            => new HandsResult { Success = true, Code = "ok", Message = message, Data = data };
+            => new HandsResult { Success = true, Code = "ok", Message = T(message), Data = data };
         public static HandsResult Fail(string code, string message)
-            => new HandsResult { Success = false, Code = code, Message = message };
+            => new HandsResult { Success = false, Code = code, Message = T(message) };
     }
 }

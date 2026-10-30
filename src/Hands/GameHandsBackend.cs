@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Hands
 {
@@ -40,11 +41,11 @@ namespace ProbablyAI.Hands
         private void EnsureReady()
         {
             if (Thread.CurrentThread.ManagedThreadId != mainThread)
-                throw new HandsException("wrong_thread", "物品操作必须在游戏主线程执行。");
+                throw new HandsException("wrong_thread", T("物品操作必须在游戏主线程执行。"));
             if (!active || !available() || EmporiumEntry.Instance == null)
-                throw new HandsException("store_unavailable", "当前无法操作当铺，请先关闭暂停界面、返回当铺并等待载入完成。");
+                throw new HandsException("store_unavailable", T("当前无法操作当铺，请先关闭暂停界面、返回当铺并等待载入完成。"));
             if (ItemMouseDragHandler.current != null && ItemMouseDragHandler.current.IsDraggingItem || UIDragHandler.isDraggingAnyUI)
-                throw new HandsException("player_dragging", "你正在拖动物品或窗口，请松开后重试。");
+                throw new HandsException("player_dragging", T("你正在拖动物品或窗口，请松开后重试。"));
         }
 
         public WorldSnapshot Capture()
@@ -53,13 +54,13 @@ namespace ProbablyAI.Hands
             items.Clear(); containers.Clear(); visited.Clear();
             world = new WorldSnapshot();
             var e = EmporiumEntry.Instance;
-            AddLeaf(e.invElement, e.invWindow, "inventory", "物品栏（主储藏区）", null, null, null, 0);
-            AddLeaf(e.backInvinvElement, e.backInvWindow, "counter", "柜台（交易区）", null, null, null, 0);
-            AddLeaf(e.frontInvinvElement, e.frontInvWindow, "customer", "窗口（客人储存区）", null, null, null, 0);
-            AddWindow(e.dossier?.contentWindow, e.dossier, "档案架", null, "documents", 0);
-            AddWindow(e.trashcan?.contentWindow, e.trashcan, "垃圾桶", null, "trash", 0);
-            AddLeaf(e.showcaseElement, e.showcaseWindow, "showcase", "展示柜", null, null, null, 0);
-            AddLeaf(e.hiddenElement, e.hiddenWindow, "hidden", "隐藏储藏区", null, null, null, 0);
+            AddLeaf(e.invElement, e.invWindow, "inventory", T("物品栏（主储藏区）"), null, null, null, 0);
+            AddLeaf(e.backInvinvElement, e.backInvWindow, "counter", T("柜台（交易区）"), null, null, null, 0);
+            AddLeaf(e.frontInvinvElement, e.frontInvWindow, "customer", T("窗口（客人储存区）"), null, null, null, 0);
+            AddWindow(e.dossier?.contentWindow, e.dossier, T("档案架"), null, "documents", 0);
+            AddWindow(e.trashcan?.contentWindow, e.trashcan, T("垃圾桶"), null, "trash", 0);
+            AddLeaf(e.showcaseElement, e.showcaseWindow, "showcase", T("展示柜"), null, null, null, 0);
+            AddLeaf(e.hiddenElement, e.hiddenWindow, "hidden", T("隐藏储藏区"), null, null, null, 0);
             return world;
         }
 
@@ -94,7 +95,7 @@ namespace ProbablyAI.Hands
             int index = 0;
             foreach (var region in regions)
             {
-                var name = string.IsNullOrWhiteSpace(region.Name) ? "分区 " + (++index) : region.Name;
+                var name = string.IsNullOrWhiteSpace(region.Name) ? T("分区 ") + (++index) : region.Name;
                 AddLeaf(region.Inventory, window, Stable(inventoryIds, region.Inventory, "c"), path + " → " + name,
                     id, owner, region.Role, depth + 1);
             }
@@ -123,7 +124,7 @@ namespace ProbablyAI.Hands
                 if (items.ContainsKey(itemId)) continue;
                 items[itemId] = item;
                 var name = Plain(item.GetDisplayName(true));
-                if (string.IsNullOrWhiteSpace(name)) name = item.identifier ?? "未命名物品";
+                if (string.IsNullOrWhiteSpace(name)) name = item.identifier ?? T("未命名物品");
                 var itemInfo = new ItemInfo
                 {
                     Id = itemId, Identifier = item.identifier, Name = name, Path = path + " → " + name,
@@ -192,15 +193,15 @@ namespace ProbablyAI.Hands
             EnsureReady();
             var item = NativeItem(itemId);
             var target = NativeContainer(destinationId);
-            if (target.Inventory == null) return Rejected("请选择机器的具体分区或容器分页。");
-            if (!item.MayRemove() || item.MaxNumRemove() < 1) return Rejected("游戏禁止取出此物品，可能被锁定、固定或处于工作中。");
-            if (target.Window != null && target.Window.isLocked || target.Inventory.IsInsertLocked()) return Rejected("目标容器已锁定或禁止放入。");
-            if (!GeneralHelper.MayPlayerInsertInto(target.Inventory)) return Rejected("游戏不允许向这个容器放入物品。");
-            if (!target.Inventory.MayHaveValidInventorySlot(item)) return Rejected("目标不接受该物品：请检查所有权、材料类型、尺寸和容器限制。");
+            if (target.Inventory == null) return Rejected(T("请选择机器的具体分区或容器分页。"));
+            if (!item.MayRemove() || item.MaxNumRemove() < 1) return Rejected(T("游戏禁止取出此物品，可能被锁定、固定或处于工作中。"));
+            if (target.Window != null && target.Window.isLocked || target.Inventory.IsInsertLocked()) return Rejected(T("目标容器已锁定或禁止放入。"));
+            if (!GeneralHelper.MayPlayerInsertInto(target.Inventory)) return Rejected(T("游戏不允许向这个容器放入物品。"));
+            if (!target.Inventory.MayHaveValidInventorySlot(item)) return Rejected(T("目标不接受该物品：请检查所有权、材料类型、尺寸和容器限制。"));
             var slot = target.Inventory.TryFindOneValidInventorySlot(item);
-            if (slot == null || slot.numTransfer < 1) return Rejected("目标没有合适的空位，或此物品当前无法放入。");
+            if (slot == null || slot.numTransfer < 1) return Rejected(T("目标没有合适的空位，或此物品当前无法放入。"));
             if (!ReferenceEquals(slot.inventory, target.Inventory))
-                return Rejected("游戏将自动转入另一个子容器。请查询并明确选择该子容器后重试。");
+                return Rejected(T("游戏将自动转入另一个子容器。请查询并明确选择该子容器后重试。"));
             return new MoveCheck { Allowed = true, FirstSlotQuantity = Math.Min(quantity, slot.numTransfer) };
         }
 
@@ -220,7 +221,7 @@ namespace ProbablyAI.Hands
                 var slot = target.Inventory.TryFindOneValidInventorySlot(item);
                 if (slot == null || !ReferenceEquals(slot.inventory, target.Inventory)) break;
                 int accepted = slot.TryAcceptOnce(quantity - moved);
-                if (accepted < 1) { detail = "原生转移未继续，请刷新列表检查。"; break; }
+                if (accepted < 1) { detail = T("原生转移未继续，请刷新列表检查。"); break; }
                 moved += accepted;
             }
             return new MoveOutcome { Moved = moved, Detail = detail };
@@ -230,8 +231,8 @@ namespace ProbablyAI.Hands
         {
             EnsureReady();
             var binding = NativeContainer(containerId);
-            if (binding.Window == null) throw new HandsException("no_window", "这个容器没有可显示的窗口。");
-            if (binding.Window.isLocked) throw new HandsException("container_locked", "容器已锁定。");
+            if (binding.Window == null) throw new HandsException("no_window", T("这个容器没有可显示的窗口。"));
+            if (binding.Window.isLocked) throw new HandsException("container_locked", T("容器已锁定。"));
             if (open) { binding.Window.Show(); binding.Window.ToFront(); }
             else binding.Window.Hide();
         }
@@ -244,9 +245,9 @@ namespace ProbablyAI.Hands
         }
 
         private GameItem NativeItem(string id)
-            => items.TryGetValue(id, out var item) && item.parentInventory != null ? item : throw new HandsException("item_not_found", "物品已不在当前容器树中。");
+            => items.TryGetValue(id, out var item) && item.parentInventory != null ? item : throw new HandsException("item_not_found", T("物品已不在当前容器树中。"));
         private Binding NativeContainer(string id)
-            => containers.TryGetValue(id, out var binding) ? binding : throw new HandsException("container_not_found", "容器已失效，请重新获取。");
+            => containers.TryGetValue(id, out var binding) ? binding : throw new HandsException("container_not_found", T("容器已失效，请重新获取。"));
         private static MoveCheck Rejected(string reason) => new MoveCheck { Reason = reason };
         private string Stable<T>(Dictionary<T, string> registry, T value, string prefix)
         {
@@ -259,12 +260,12 @@ namespace ProbablyAI.Hands
         {
             switch (role)
             {
-                case "input": return "原料";
-                case "output": return "成品";
-                case "power": return "电池";
-                case "module": return "模块";
-                case "note": return "说明文件";
-                default: return role ?? "储藏";
+                case "input": return T("原料");
+                case "output": return T("成品");
+                case "power": return T("电池");
+                case "module": return T("模块");
+                case "note": return T("说明文件");
+                default: return role ?? T("储藏");
             }
         }
     }

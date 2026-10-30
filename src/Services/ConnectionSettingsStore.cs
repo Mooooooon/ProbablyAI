@@ -1,5 +1,6 @@
 using System;
 using Newtonsoft.Json;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Services
 {
@@ -8,8 +9,9 @@ namespace ProbablyAI.Services
     {
         private readonly Action<string> write;
         private ConnectionOptions current = new ConnectionOptions();
-        public string LoadWarning { get; private set; }
-        public ConnectionOptions Current => current.Copy();
+        private bool loadFailed;
+        public string LoadWarning => loadFailed ? T("配置无法读取，已使用默认连接和提示词。请重新填写并保存。") : null;
+        public ConnectionOptions Current => current.Normalized(); // Built-in prompts follow the current game language; custom text is preserved.
 
         public ConnectionSettingsStore(Func<string> read, Action<string> write)
         {
@@ -25,7 +27,7 @@ namespace ProbablyAI.Services
             }
             catch (Exception)
             {
-                LoadWarning = "配置无法读取，已使用默认连接和提示词。请重新填写并保存。";
+                loadFailed = true;
             }
         }
 
@@ -40,10 +42,10 @@ namespace ProbablyAI.Services
             }
             catch (Exception)
             {
-                throw new InvalidOperationException("配置保存失败，请检查本机配置目录是否可写。");
+                throw new InvalidOperationException(T("配置保存失败，请检查本机配置目录是否可写。"));
             }
             current = normalized;
-            LoadWarning = null;
+            loadFailed = false;
         }
     }
 }
