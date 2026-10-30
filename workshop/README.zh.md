@@ -25,6 +25,11 @@
 3. **自备 API Key**：本 Mod 为本地直连模型服务商，需玩家自备 API Key，不内置额度。API Key 仅保存在本机游戏配置中，请妥善保管。
 4. **游戏规则**：小鲸的所有搬运操作均严格遵循原生游戏规则，不会凭空刷取物品，也不会擅自帮你点击交易完成或做经济结算。
 
+## 🔗 开源项目地址
+
+- GitHub: [https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)
+- 创意工坊: [深空AI：可能是DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)
+
 ## 💬 留言与反馈
 
 如果你希望小鲸未来学会什么新技能、或者对经营当铺有新的好玩想法，欢迎在创意工坊评论区留言交流！

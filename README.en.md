@@ -2,6 +2,8 @@
 
 A native Probably Stolen mod featuring Xiaojing, a pixel-art whale-girl maid assistant. Chinese and English UI, built-in prompts and tool descriptions follow the game's language setting automatically. Other languages use English. Your custom prompt and your own text are preserved.
 
+GitHub: [https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI) | Steam Workshop: [https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)
+
 ## Getting started
 
 1. Subscribe in Steam Workshop, enable the mod in the game's Mods menu, review its **network** capability and restart the game.
