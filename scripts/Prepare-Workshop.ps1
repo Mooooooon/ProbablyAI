@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 & (Join-Path $PSScriptRoot 'Build.ps1') -GameDirectory $GameDirectory
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
-[xml]$manifest = Get-Content -LiteralPath (Join-Path $projectRoot 'manifest.xml') -Raw
+[xml]$manifest = Get-Content -LiteralPath (Join-Path $projectRoot 'manifest.xml') -Raw -Encoding utf8
 $releaseRoot = Join-Path $projectRoot ('dist\workshop\' + $manifest.Manifest.ModVersion)
 $contentRoot = Join-Path $releaseRoot 'content'
 New-Item -ItemType Directory -Force -Path (Join-Path $contentRoot 'Textures') | Out-Null

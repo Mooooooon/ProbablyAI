@@ -1,26 +1,44 @@
-[h1]Your pawnshop's whale-girl maid assistant[/h1]
-Chat with Xiaojing and ask her to organize the pawnshop using live game tools. Includes a pixel-art character portrait and cover. Chinese and English follow the language selected in the game automatically; other languages use English.
+[h1]Deep Space AI: Probably DeepSeek — Pawnshop Maid Assistant "Xiaojing"[/h1]
+Looking for a helpful hand around your pawnshop? This mod introduces "Xiaojing", an interactive AI maid assistant (inspired by the DeepSeek mascot).
+Chat with her naturally, and let her help you organize your pawnshop, sort your inventory, and check customer budgets and preferences!
 
-[h2]Features[/h2]
+[h2]💡 A Note on Early Development[/h2]
+This mod is currently in [b]early active development, with a limited and basic set of features[/b].
+Xiaojing is still learning and growing, and more features and interactions will be added over time.
+[b]If you have any suggestions, feature requests, or run into any bugs, please feel free to leave a comment below![/b]
+Every comment is warmly welcomed and directly helps guide future updates!
+
+[h2]✨ Current Features[/h2]
 [list]
-[*]Click the portrait to chat. F6 hides or shows it; F7 opens settings.
-[*]OpenAI-compatible API connection with editable URL, API key, model and model-list fetching. Bring your own API service and key; no API credits are included.
-[*]Editable system prompt with restore-default and test-chat preview. Default: a lively maid who calls you Master, with no emoji or emoticons unless requested. Custom prompts are preserved when switching language.
-[*]Move items to the counter, storage, archives, trash bin and machine inputs through native game rules. Supports nested folders, bags, storage pages and machine compartments.
-[*]Read the current customer's intent, remaining purchase budget, preferences, refusal rules and barter/procurement/gunsmith requirements. Check specific items against buying preferences and the current budget estimate.
+[*]💬 [b]Interactive Portrait & Natural Language Chat[/b]
+Xiaojing stays on the left side of your pawnshop. Simply click on her portrait to open the chat window and talk freely (press [b]F6[/b] anytime to show or hide the portrait).
+[*]📦 [b]Hands to Organize Your Shop[/b]
+Tired of rummaging through bags and containers? Just tell her naturally:
+· “Put all the food from my inventory onto the counter.”
+· “Move the scrap metal into the furnace input.”
+· “Fetch a specific note from the mentor's notes in the archive.”
+Supports inventory, bags, nested folders, storage tabs, and machine compartments while respecting native game rules.
+[*]👥 [b]Customer & Budget Inquiries[/b]
+Unsure about a customer's intentions? Ask Xiaojing directly:
+· “Who is this customer, and are they here to buy or sell?”
+· “How much budget does this customer have left, and what are their preferences?”
+· “Check if I have items they want in my inventory, but let me know first before moving anything.”
+She will query live customer preferences, refusal rules, and barter/order requirements.
+[*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]
+Press [b]F7[/b] to open the settings window. Supports any OpenAI-compatible API endpoint (such as DeepSeek, OpenAI, or local models via Ollama/vLLM).
+Comes with a lively maid persona by default, and you can freely customize the system prompt in the settings to shape her personality to your liking!
+[*]🌐 [b]Automatic Bilingual Support[/b]
+UI, system prompts, and tool descriptions automatically adapt to the game's language (Chinese / English).
 [/list]
 
-[h2]Examples[/h2]
-"Put the food in my inventory on the counter."
-"What does this customer want, and how much budget do they have left?"
-"Find suitable items, but tell me before moving them."
+[h2]🛠️ Quick Start & Notes[/h2]
+[list]
+[*]1. When enabling the mod in the game's Mods menu, confirm the network permission prompt, then restart the game.
+[*]2. In the pawnshop, press [b]F7[/b] to configure your API endpoint and API Key (DeepSeek's official API is recommended for quality and affordability). Use the test button to verify your connection.
+[*]3. [b]Bring Your Own API Key[/b]: The mod connects directly from your local client to your chosen provider; no built-in API quota is included. Your API key is stored locally on your PC.
+[*]4. [b]Native Game Rules[/b]: Xiaojing only moves items according to normal game rules. She will not spawn items, auto-complete deals, or alter game balance.
+[/list]
 
-[h2]Setup and privacy[/h2]
-Enable the mod in the Mods menu, review its network capability, restart, then configure your own API provider in F7. Default endpoint: https://api.deepseek.com ; default model: deepseek-flash. A tool-calling model is required for game operations.
-
-Network requests start only when you fetch models, send a test or use the assistant. Game information queried by tools is sent to your configured provider. Remembered API keys are stored in plain text in your own local mod-data folder; disable Remember API key and save for a session-only key. The uploaded package contains no API keys, personal settings, saves, account data, game DLLs, debug symbols or research caches.
-
-[h2]Scope[/h2]
-The assistant does not complete trades, select dialogue options, unlock containers, spawn items or start machines. Partial moves and native automatic processing follow the game. Stopping cancels later actions; completed moves remain.
-
-Beta v0.6.0, built against application 0.46D / VERSION 100-Rev3. Automated tests simulate game state and HTTP; gameplay and provider compatibility need player testing. Independent fan mod, not an official DeepSeek product. Character and cover artwork generated with AI from a supplied character reference.
+[h2]💬 Feedback & Suggestions[/h2]
+What tasks or features would you like Xiaojing to help with in future updates?
+Feel free to leave your thoughts, ideas, and feature requests in the comments. Thank you for your support and feedback!
