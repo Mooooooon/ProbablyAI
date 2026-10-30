@@ -1,6 +1,33 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.4.0）
+# 深空AI：可能是DeepSeek · 工具接口（v0.5.0）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
+
+## 客人查询（只读）
+
+`CustomerService` / `ICustomerBackend` 在相同注册表中提供两个工具，聊天和 F7 的助手指令均可调用。
+
+| 工具 | 参数 | 作用 |
+| --- | --- | --- |
+| `get_current_customer` | `{}` | 当前客人、意图、实时预算、购买偏好、拒收规则、当前显示的对话及特殊委托 |
+| `check_customer_item` | `customer_id`、`item_id` | 原生普通购买规则、当前估值与预算检查、匹配的易货条件索引 |
+
+`get_current_customer` 的 `data.status` 为 `absent`、`arriving` 或 `present`。只有 `present` 返回 `data.customer`，其中：
+
+- `id` 是本次到访的会话 ID，不能把姓名或客人类型标识当作到访 ID；换存档后也不可复用。
+- `intent` / `intent_description` 说明来意。`BUY` 是客人买店主的货；`SELL` 是客人向店主卖货；`SELLNBUY` 两者均有。
+- `purchase_budget.enabled` 表示是否启用普通购买预算；仅启用时返回 `remaining`。它是当前剩余额度，不是原始额度或现金；未启用不代表零或无限现金。
+- `preferences` 包含购买 / 拒收标签与物品标识、多样性及已买过的类型、违禁品与水标签限制、自定义购买规则的存在标记。`ALL_TYPE`、`ALL_TYPE_EXCEPT_CONTRABAND` 是原始游戏规则。自定义条件、物品状态和容器内容可能影响实际接受结果；用具体物品检查核对。
+- `current_dialogue` 仅包含当前已显示对话的说话人和文字，不遍历后续分支。
+- `barter.requirements` 保留每条易货条件的零起始 `index`、要求的物品 / 标签及拒收状态，不合并重复条件。每条条件需要游戏认可的独立物品，不能自行把堆叠数量当作条件数。
+- `procurement` 返回当前采购阶段的描述、预付与交付报酬；`gun_order` 返回说明、基础报酬及分开的 `mandatory` / `bonus` 条件。报酬与购买预算分开，不估算最终奖励。
+
+示例：先以 `{}` 调用 `get_current_customer`，再查询真实物品，然后检查：
+
+```json
+{"customer_id":"用当前 customer.id 替换","item_id":"用物品查询结果 id 替换"}
+```
+
+`check_customer_item` 每次重新读取客人与物品，返回 `customer_changed`、`no_customer`、`item_not_found` 或 `store_unavailable` 时必须重新查询。它返回 `matches_regular_purchase_rules`、`current_item_value`、`value_is_estimate=true`、`purchase_budget`、可选的 `within_remaining_budget` 和 `matching_barter_requirement_indexes`。物品估值是当前单件值，不是整个堆叠价格；未启用预算时省略可负担性结论。上柜台、检查与谈价会影响结果。普通购买规则匹配不保证成交，某条易货匹配不代表整份易货完成；此工具不验证采购 / 枪械委托交付，也不执行选择对话、交易或移动。
 
 ## 查询
 
@@ -55,7 +82,7 @@
 
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义当前 8 个容器工具，由 `ToolRegistry.ForHands` 注册。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 8 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 2 个客人只读工具，共 10 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 

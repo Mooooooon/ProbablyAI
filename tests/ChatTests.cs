@@ -14,7 +14,7 @@ internal static partial class Program
     private static async Task RunChatTests()
     {
         await Check("branding preserves the requested exact display name", () =>
-            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.4.0", "branding mismatch"));
+            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.5.0", "branding mismatch"));
         await Check("portrait alpha hit test passes through transparent pixels and bounds", () =>
         {
             var mask = new AlphaHitMask(2, 2, new byte[] { 0, 254, 12, 240 });

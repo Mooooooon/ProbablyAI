@@ -2,6 +2,7 @@ using ProbablyAI.Services;
 using ProbablyAI.UI;
 using ProbablyAI.Hands;
 using ProbablyAI.Tools;
+using ProbablyAI.Customers;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -17,6 +18,7 @@ namespace ProbablyAI
         private ConnectionWindow panel;
         private HandsWindow handsPanel;
         private GameHandsBackend handsBackend;
+        private GameCustomerBackend customerBackend;
         private HandsService hands;
         private HandsAgent agent;
         private IChatTransport transport;
@@ -45,9 +47,12 @@ namespace ProbablyAI
             ClosePanel();
             gameReady = true;
             handsBackend?.Invalidate();
+            customerBackend?.Invalidate();
             handsBackend = new GameHandsBackend(CanShow);
             hands = new HandsService(handsBackend);
             Tools = ToolRegistry.ForHands(hands);
+            customerBackend = new GameCustomerBackend(CanShow, handsBackend);
+            new CustomerService(customerBackend).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);
             agent = new HandsAgent(transport, Tools);
             conversation = new ConversationMemory();
@@ -155,6 +160,7 @@ namespace ProbablyAI
         {
             gameReady = false;
             handsBackend?.Invalidate();
+            customerBackend?.Invalidate();
             ClosePanel();
             portrait?.Dispose();
             portrait = null;
@@ -170,6 +176,7 @@ namespace ProbablyAI
             }
             gameReady = false;
             handsBackend?.Invalidate();
+            customerBackend?.Invalidate();
             ClosePanel();
             portrait?.Dispose();
             portrait = null;

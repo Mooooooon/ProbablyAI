@@ -236,6 +236,13 @@ namespace ProbablyAI.Hands
             else binding.Window.Hide();
         }
 
+        // Only resolve IDs from the latest Capture; callers must refresh the world first.
+        internal GameItem ResolveCurrentItem(string id)
+        {
+            EnsureReady();
+            return NativeItem(id);
+        }
+
         private GameItem NativeItem(string id)
             => items.TryGetValue(id, out var item) && item.parentInventory != null ? item : throw new HandsException("item_not_found", "物品已不在当前容器树中。");
         private Binding NativeContainer(string id)
