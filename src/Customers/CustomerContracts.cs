@@ -111,8 +111,35 @@ namespace ProbablyAI.Customers
         public CustomerBudget PurchaseBudget { get; set; }
         public long CurrentItemValue { get; set; }
         public bool ValueIsEstimate { get; set; } = true;
+        public CustomerPrice Pricing { get; set; }
         public List<int> MatchingBarterRequirementIndexes { get; set; } = new List<int>();
         public string Note { get; set; }
+    }
+
+    public sealed class CustomerPrice
+    {
+        // counter_offer is the native live quote; projected_counter_offer is a read-only preview.
+        public string Source { get; set; }
+        public long BaseValue { get; set; }
+        public int MarketScaledValue { get; set; }
+        public int MiscValue { get; set; }
+        public int ContentsValue { get; set; }
+        public long InnatePercent { get; set; }
+        public long MarketPercent { get; set; }
+        public double FinalMultiplier { get; set; }
+        public List<PriceModifier> Modifiers { get; set; } = new List<PriceModifier>();
+        internal long Value { get; set; }
+    }
+
+    public sealed class PriceModifier
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        // innate and market add within their stage; each final modifier multiplies independently.
+        public string Stage { get; set; }
+        public long Percent { get; set; }
+        public bool Projected { get; set; }
+        public bool InheritsToContents { get; set; }
     }
 
     public interface ICustomerBackend

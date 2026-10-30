@@ -85,15 +85,17 @@ namespace ProbablyAI.Customers
             var info = world.Items.FirstOrDefault(i => i.Id == itemId);
             if (info == null) throw new HandsException("item_not_found", T("物品已失效或不可访问，请重新查询物品。"));
             var item = hands.ResolveCurrentItem(itemId);
-            long value = item.GetNegociatedValue();
+            var pricing = GameCustomerPricing.Read(item, client);
+            var budget = Budget(client);
             var result = new CustomerItemCheck
             {
                 CustomerId = snapshot.Customer.Id, ItemId = info.Id, ItemName = info.Name, ContainerId = info.ContainerId,
                 BusinessComplete = client.isBusinessComplete,
                 MatchesRegularPurchaseRules = client.IsClientBuyingThisItem(item),
-                PurchaseBudget = Budget(client), CurrentItemValue = value,
-                WithinRemainingBudget = client.useClientBudget ? (bool?)(value <= client.GetBudget()) : null,
-                Note = T("这是普通购买偏好及当前单件估值的只读检查，不是可成交保证。价格、检查进度和客人状态会变化；放上柜台或谈价后重新查询。预算未启用时不推断现金。匹配某个易货条件不等于凑齐整份易货；本工具不判断采购或枪械委托是否完成，也不购买、出售或移动物品。")
+                PurchaseBudget = budget, CurrentItemValue = pricing.Value, Pricing = pricing,
+                ValueIsEstimate = pricing.Source != "counter_offer",
+                WithinRemainingBudget = CustomerPriceCalculator.WithinBudget(pricing, budget, GeneralHelper.IsItemOwned(item) && client.IsClientBuying()),
+                Note = T("current_item_value 已按游戏的属性、市场、最终谈价乘区计算，勿再次叠加 pricing 中的百分比。柜台顶层物品使用原生实时报价；自有物品上柜台前预估包含多种多样、当前价格事件、零售加价及已知客人效果。未知自定义回调、检查或谈价可能改变价格，上柜台后须重新查询。预算结论仅用于客人购买自有物品；未启用预算时不推断现金。单件预算足够不表示多件合计足够，选择多件时合计各报价并重新查询剩余预算。偏好或易货条件匹配不保证成交或完成委托；此工具不交易或移动物品。")
             };
             var conditions = client.barterOffer?.conditions;
             if (conditions != null)

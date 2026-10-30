@@ -206,6 +206,7 @@ internal static partial class Program
         await RunHandsTests();
         await RunChatTests();
         await RunCustomerTests();
+        await RunPricingTests();
         await RunPromptTests();
         await RunLocalizationTests();
         Console.WriteLine($"{passed} passed; {failed} failed. Game state and HTTP responses were simulated; no real save, API key or external endpoint was used.");

@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.6.1。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.6.2。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -47,7 +47,7 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 
 `BUY` 表示客人买店主的货，`SELL` 表示客人向店主卖货。预算是客人的实时剩余购买额度，与店主现金、初始额度和委托报酬分开。未启用预算时不填数值，不能理解为零或无限现金。
 
-助手可使用 `check_customer_item` 按游戏原生购买规则核对真实物品，包括嵌套容器里的物品；旧客人 ID 会被拒绝。结果包含当前单件估值、是否在剩余预算内，以及匹配的易货条件索引。估值在上柜台或谈价后可能变化，符合购买偏好也不保证立即成交或完成整份特殊委托。以上两个接口只查询；是否搬上柜台仍取决于你的指令，目前不提供自动成交或选择对话选项。
+助手可使用 `check_customer_item` 按游戏原生购买规则核对真实物品，包括嵌套容器里的物品；旧客人 ID 会被拒绝。柜台顶层物品直接读取原生实时报价；自有物品上柜台前会预估多种多样、当前价格事件、零售加价及已知客人效果，按属性、市场、最终谈价乘区计算，并返回价格明细。预算比较使用已含加成的报价，模型不应重复叠加百分比；挑选多件时还需合计报价。未知自定义回调、检查或谈价仍可能改变价格，上柜台后须重新查询。符合购买偏好也不保证立即成交或完成整份特殊委托。以上两个接口只查询；是否搬上柜台仍取决于你的指令，目前不提供自动成交或选择对话选项。
 
 ## 连接配置（F7）
 
@@ -151,11 +151,11 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-72 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、可编辑提示词，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
+92 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、可编辑提示词，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。其中 20 项价格回归测试直接运行生产定价适配器或计算器，覆盖乘区、实时事件与零售波动、多种多样、预算临界值、防止重复加价、嵌套内容继承和只读查询。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.6.1/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.6.2/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.6.1）
+# 深空AI：可能是DeepSeek · 工具接口（v0.6.2）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -27,7 +27,20 @@
 {"customer_id":"用当前 customer.id 替换","item_id":"用物品查询结果 id 替换"}
 ```
 
-`check_customer_item` 每次重新读取客人与物品，返回 `customer_changed`、`no_customer`、`item_not_found` 或 `store_unavailable` 时必须重新查询。它返回 `matches_regular_purchase_rules`、`current_item_value`、`value_is_estimate=true`、`purchase_budget`、可选的 `within_remaining_budget` 和 `matching_barter_requirement_indexes`。物品估值是当前单件值，不是整个堆叠价格；未启用预算时省略可负担性结论。上柜台、检查与谈价会影响结果。普通购买规则匹配不保证成交，某条易货匹配不代表整份易货完成；此工具不验证采购 / 枪械委托交付，也不执行选择对话、交易或移动。
+`check_customer_item` 每次重新读取客人与物品，返回 `customer_changed`、`no_customer`、`item_not_found` 或 `store_unavailable` 时必须重新查询。它返回 `matches_regular_purchase_rules`、`current_item_value`、`value_is_estimate`、`pricing`、`purchase_budget`、可选的 `within_remaining_budget` 和 `matching_barter_requirement_indexes`。物品报价沿用原生单个物品对象的计价方式，不自行乘堆叠数量；仅客人购买自有物品且启用预算时返回可负担性结论。
+
+`pricing.source=counter_offer` 表示柜台顶层的原生 `GetNegociatedValue()` 实时报价，`value_is_estimate=false`。`projected_counter_offer` 表示自有物品上柜台前的只读预估，包含多种多样、实时价格事件、当前零售加价、香水、已知客人效果等；不执行上柜台回调、不改动真实特性、容器或所有权。其他情况使用 `current_value`，不把客人物品的买入价与客人购买预算比较。未知自定义回调、检查或谈价可能影响最终价格，上柜台后必须重新查询。
+
+价格明细包含 `base_value`（含复杂物品附加价值）、`market_scaled_value`（水等按市场区缩放的价值）、`misc_value`（包含 `contents_value`）、`innate_percent`、`market_percent`、`final_multiplier` 和 `modifiers`。每条效果包含 `stage`、`percent`、`projected`、`inherits_to_contents` 及可见名称。仅使用当前公开/已揭露状态的数值，不读取未揭露的真实状态来估价。计算顺序与游戏一致：
+
+```text
+属性值 = max(0, base_value × (1 + innate_percent / 100))
+报价 = max(0, Round(((属性值 + market_scaled_value) × max(0, 1 + market_percent / 100) + misc_value) × final_multiplier))
+```
+
+属性区、市场区各自相加；最终谈价的每个因子分别相乘，最后按原生方式四舍六入五取偶。容器内容按原生展开方式只计一次，可继承的客人市场加成传入内容物；零售、事件和最终谈价不作为继承百分比重复传入。`current_item_value` 已含全部明细效果，模型不得再次加价。例如基础价 100，多种多样 +15%、零售 +15%、价格事件 +50%，报价为 180，预算 170 时不够。多件货品需要合计各报价并读取最新剩余预算，不能把单件分别够用当作合计够用。
+
+普通购买规则匹配不保证成交，某条易货匹配不代表整份易货完成；此工具不验证采购 / 枪械委托交付，也不执行选择对话、交易或移动。
 
 ## 查询
 

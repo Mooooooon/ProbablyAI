@@ -10,12 +10,16 @@
     <Compile Include="HandsTests.cs" />
     <Compile Include="ChatTests.cs" />
     <Compile Include="CustomerTests.cs" />
+    <Compile Include="PricingTests.cs" />
+    <Compile Include="PricingNativeStubs.cs" />
     <Compile Include="PromptTests.cs" />
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="..\src\Localization\*.cs" Link="Localization\%(Filename)%(Extension)" />
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
     <Compile Include="..\src\Customers\CustomerProtocol.cs" Link="CustomerProtocol.cs" />
     <Compile Include="..\src\Customers\CustomerService.cs" Link="CustomerService.cs" />
+    <Compile Include="..\src\Customers\CustomerPriceCalculator.cs" Link="CustomerPriceCalculator.cs" />
+    <Compile Include="..\src\Customers\GameCustomerPricing.cs" Link="GameCustomerPricing.cs" />
     <Compile Include="..\src\Branding.cs" Link="Branding.cs" />
     <Compile Include="..\src\Tools\ToolRegistry.cs" Link="ToolRegistry.cs" />
     <Compile Include="..\src\UI\AlphaHitMask.cs" Link="AlphaHitMask.cs" />

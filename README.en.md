@@ -23,7 +23,7 @@ The chat window remembers its dragged position when closed and reopened, includi
 - "Move the note in Archives → Mentor Notes to the counter."
 - "Put the scrap metal into the furnace's input compartment."
 
-The assistant queries live containers and items, including nested folders, bags, storage pages and machine compartments. It can inspect items, move them through the game's native rules and open or close container windows. Customer queries include buying preferences, remaining purchase budgets and barter, procurement and gunsmith requirements. Item checks compare native buying rules with the current budget estimate.
+The assistant queries live containers and items, including nested folders, bags, storage pages and machine compartments. It can inspect items, move them through the game's native rules and open or close container windows. Customer queries include buying preferences, remaining purchase budgets and barter, procurement and gunsmith requirements. Top-level counter items use the native live quote. Owned items preview variety bonuses, current price events, retail markup and known customer effects before placement, using the game's innate, market and final negotiation stages. Budget checks use that complete quote and return a price breakdown; percentages must not be applied twice. Multiple items require a combined budget check. Recheck after placement, inspection or negotiation, since custom callbacks may affect the final quote.
 
 The mod does not complete purchases or sales, choose dialogue options, unlock containers, spawn items or start machines. Native game callbacks and automatic processing still behave normally. Moves can partially succeed. Stopping a request cancels later actions; completed moves remain. The model must support Chat Completions tool calling to use game tools.
 
@@ -39,4 +39,4 @@ API keys are used only for your configured endpoint and are not put into chat or
 
 The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
 
-Version 0.6.1. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.6.2. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
