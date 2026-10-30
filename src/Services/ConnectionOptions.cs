@@ -10,6 +10,7 @@ namespace ProbablyAI.Services
         public string BaseUrl { get; set; } = DefaultBaseUrl;
         public string ApiKey { get; set; } = "";
         public string Model { get; set; } = DefaultModel;
+        public string SystemPrompt { get; set; } = AssistantPrompt.Default;
         public bool RememberApiKey { get; set; } = true;
 
         public ConnectionOptions Copy() => new ConnectionOptions
@@ -17,6 +18,7 @@ namespace ProbablyAI.Services
             BaseUrl = BaseUrl,
             ApiKey = ApiKey,
             Model = Model,
+            SystemPrompt = SystemPrompt,
             RememberApiKey = RememberApiKey
         };
 
@@ -26,6 +28,7 @@ namespace ProbablyAI.Services
             copy.BaseUrl = (copy.BaseUrl ?? "").Trim().TrimEnd('/');
             copy.ApiKey = (copy.ApiKey ?? "").Trim();
             copy.Model = (copy.Model ?? "").Trim();
+            copy.SystemPrompt = AssistantPrompt.Normalize(copy.SystemPrompt);
             if (!Uri.TryCreate(copy.BaseUrl, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp) ||
                 string.IsNullOrEmpty(uri.Host))

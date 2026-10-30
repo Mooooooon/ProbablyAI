@@ -40,10 +40,11 @@ namespace ProbablyAI.Services
 
         public Task<string> ReplyAsync(ConnectionOptions options, string message, AssistantContext context, CancellationToken cancellationToken)
         {
-            var prompt = "你是『深空AI：可能是DeepSeek』中的助手小鲸。请用简洁的中文回答。没有足够信息时明确说明，不要编造游戏物品数值。";
+            var connection = options.Normalized();
+            var prompt = connection.SystemPrompt;
             if (context != null)
                 prompt += $" 当前是第 {context.Day} 天，持有 {context.Cash} 信用点，当铺内：{context.InStore}。";
-            return client.CompleteAsync(options, message, prompt, cancellationToken);
+            return client.CompleteAsync(connection, message, prompt, cancellationToken);
         }
     }
 }

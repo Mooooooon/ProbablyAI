@@ -26,8 +26,9 @@ namespace ProbablyAI.Services
         {
             var normalized = options.Normalized();
             string hash;
+            var identity = JsonConvert.SerializeObject(new[] { normalized.BaseUrl, normalized.Model, normalized.ApiKey, normalized.SystemPrompt });
             using (var sha = SHA256.Create())
-                hash = System.Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(normalized.BaseUrl + "\n" + normalized.Model + "\n" + normalized.ApiKey)));
+                hash = System.Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(identity)));
             bool changed = connectionHash != null && connectionHash != hash;
             if (changed) Clear();
             connectionHash = hash;

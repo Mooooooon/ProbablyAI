@@ -10,6 +10,7 @@
     <Compile Include="HandsTests.cs" />
     <Compile Include="ChatTests.cs" />
     <Compile Include="CustomerTests.cs" />
+    <Compile Include="PromptTests.cs" />
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
     <Compile Include="..\src\Customers\CustomerProtocol.cs" Link="CustomerProtocol.cs" />
     <Compile Include="..\src\Customers\CustomerService.cs" Link="CustomerService.cs" />
@@ -23,6 +24,7 @@
     <Compile Include="..\src\Hands\HandsAgent.cs" Link="HandsAgent.cs" />
     <Compile Include="..\src\Services\ChatTurn.cs" Link="ChatTurn.cs" />
     <Compile Include="..\src\Services\ConnectionOptions.cs" Link="ConnectionOptions.cs" />
+    <Compile Include="..\src\Services\AssistantPrompt.cs" Link="AssistantPrompt.cs" />
     <Compile Include="..\src\Services\ConnectionSettingsStore.cs" Link="ConnectionSettingsStore.cs" />
     <Compile Include="..\src\Services\OpenAiApiClient.cs" Link="OpenAiApiClient.cs" />
     <Reference Include="Newtonsoft.Json"><HintPath>$(GameDirectory)\Probably Stolen_Data\Managed\Newtonsoft.Json.dll</HintPath></Reference>

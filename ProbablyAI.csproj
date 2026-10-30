@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>ProbablyAI</AssemblyName>
     <RootNamespace>ProbablyAI</RootNamespace>
-    <Version>0.5.0</Version>
+    <Version>0.5.1</Version>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GameDirectory Condition="'$(GameDirectory)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Probably Stolen</GameDirectory>
     <ManagedDirectory>$(GameDirectory)\Probably Stolen_Data\Managed</ManagedDirectory>

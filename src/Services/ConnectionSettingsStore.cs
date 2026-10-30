@@ -25,7 +25,7 @@ namespace ProbablyAI.Services
             }
             catch (Exception)
             {
-                LoadWarning = "连接配置无法读取，已使用默认地址和模型。请重新填写并保存。";
+                LoadWarning = "配置无法读取，已使用默认连接和提示词。请重新填写并保存。";
             }
         }
 

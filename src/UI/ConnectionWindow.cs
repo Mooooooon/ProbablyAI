@@ -32,7 +32,7 @@ namespace ProbablyAI.UI
 
         public void Show()
         {
-            var builder = CustomUIManager.Window(ModEntry.ModId + ".connection", Branding.ShortName + " · 连接配置", CustomUIManager.LAYER_PAPER)
+            var builder = CustomUIManager.Window(ModEntry.ModId + ".connection", Branding.ShortName + " · 助手设置", CustomUIManager.LAYER_PAPER)
                 .SetSize(680f, 810f).Center().SetDraggable(true).SetCloseOnEscape();
             window = builder.Handle;
             window.root.SetActive(false);
@@ -56,8 +56,13 @@ namespace ProbablyAI.UI
                         .AddDropdown(new[] { "获取后可在此选择模型" }, 0, SelectModel, "models")
                     .End()
                     .AddSeparator(verticalPadding: 10)
+                    .AddHeader("助手提示词")
+                    .AddLabel("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。")
+                    .AddInput("留空使用默认女仆助手提示词", "", id: "system_prompt", onTyping: value => draft.SystemPrompt = value)
+                    .AddButton("恢复默认提示词", ResetPrompt, "reset_prompt")
+                    .AddSeparator(verticalPadding: 10)
                     .AddHeader("测试对话")
-                    .AddLabel("使用上方配置发送测试消息；不会自动附带存档数据。")
+                    .AddLabel("使用上方连接与提示词发送测试消息，可在保存前预览效果；不会自动附带存档数据。")
                     .AddInput("输入一条测试消息", "你好，请用中文简单介绍自己。", id: "test_message")
                     .AddButton("发送测试消息", TestMessage, "test")
                     .BeginScroll(145f)
@@ -74,6 +79,9 @@ namespace ProbablyAI.UI
             ConfigureInput("base_url", 2048);
             ConfigureInput("api_key", 4096, password: true);
             ConfigureInput("model", 256);
+            ConfigureInput("system_prompt", AssistantPrompt.MaxLength, multiline: true);
+            // Configure multiline before assigning text so TMP does not strip paragraph breaks.
+            window.Get("system_prompt").SetString(draft.SystemPrompt);
             ConfigureInput("test_message", 2000);
             SetPlainText("status");
             SetPlainText("reply");
@@ -81,17 +89,33 @@ namespace ProbablyAI.UI
             builder.Show();
         }
 
-        private void ConfigureInput(string id, int limit, bool password = false)
+        private void ConfigureInput(string id, int limit, bool password = false, bool multiline = false)
         {
             var element = window.Get(id);
             if (element?.input == null) return;
             element.input.contentType = password ? TMP_InputField.ContentType.Password : TMP_InputField.ContentType.Standard;
-            element.input.lineType = TMP_InputField.LineType.SingleLine;
+            element.input.lineType = multiline ? TMP_InputField.LineType.MultiLineNewline : TMP_InputField.LineType.SingleLine;
             element.input.characterLimit = limit;
             element.input.richText = false;
             if (element.input.textComponent != null) element.input.textComponent.richText = false;
+            if (multiline)
+            {
+                if (element.input.textComponent != null)
+                {
+                    element.input.textComponent.alignment = TextAlignmentOptions.TopLeft;
+                    element.input.textComponent.enableWordWrapping = true;
+                }
+                if (element.input.placeholder is TMP_Text placeholder) placeholder.alignment = TextAlignmentOptions.TopLeft;
+            }
             element.input.ForceLabelUpdate();
-            element.SetPreferredSize(-1f, 36f);
+            element.SetPreferredSize(-1f, multiline ? 240f : 36f);
+        }
+
+        private void ResetPrompt()
+        {
+            draft.SystemPrompt = AssistantPrompt.Default;
+            window.Get("system_prompt").SetString(draft.SystemPrompt);
+            Status("已填入默认女仆助手提示词。点击“保存配置”后生效，也可以先发送测试消息预览。");
         }
 
         private void SetPlainText(string id)
@@ -178,6 +202,7 @@ namespace ProbablyAI.UI
             draft.BaseUrl = window.Get("base_url").GetString();
             draft.ApiKey = window.Get("api_key").GetString();
             draft.Model = window.Get("model").GetString();
+            draft.SystemPrompt = window.Get("system_prompt").GetString();
             draft.RememberApiKey = window.Get("remember_key").GetBool();
             return draft.Copy();
         }
@@ -190,11 +215,13 @@ namespace ProbablyAI.UI
                 var saved = store.Current;
                 window.Get("base_url").SetString(saved.BaseUrl);
                 window.Get("model").SetString(saved.Model);
+                window.Get("system_prompt").SetString(saved.SystemPrompt);
                 draft.BaseUrl = saved.BaseUrl;
                 draft.Model = saved.Model;
+                draft.SystemPrompt = saved.SystemPrompt;
                 Status(saved.RememberApiKey
-                    ? "连接配置已保存，API Key 保存在本机。"
-                    : "地址和模型已保存；API Key 仅本次运行有效。");
+                    ? "配置与提示词已保存，下次发送生效；API Key 保存在本机。"
+                    : "配置与提示词已保存，下次发送生效；API Key 仅本次运行有效。");
             }
             catch (ArgumentException error) { Status(error.Message); }
             catch (InvalidOperationException error) { Status(error.Message); }
@@ -223,7 +250,7 @@ namespace ProbablyAI.UI
         private void SetBusy(bool value)
         {
             busy = value;
-            foreach (var id in new[] { "base_url", "api_key", "model", "remember_key", "fetch_models", "test_message", "test", "save" })
+            foreach (var id in new[] { "base_url", "api_key", "model", "remember_key", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
                 window.Get(id)?.SetInteractable(!value);
             window.Get("models")?.SetInteractable(!value && models.Count > 0);
             window.Get("cancel")?.SetInteractable(value);
