@@ -9,6 +9,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="HandsTests.cs" />
     <Compile Include="ChatTests.cs" />
+    <Compile Include="FreshnessTests.cs" />
     <Compile Include="CustomerTests.cs" />
     <Compile Include="PricingTests.cs" />
     <Compile Include="PricingNativeStubs.cs" />

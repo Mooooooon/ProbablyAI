@@ -29,14 +29,14 @@ The mod does not complete purchases or sales, choose dialogue options, unlock co
 
 ## Language and prompts
 
-The mod follows the language selected **inside the game**. Changing it closes the mod's open panels; reopen them in the new language. A saved, unedited built-in prompt switches between Chinese and English automatically. Custom prompts are never translated or overwritten. A changed prompt clears old model conversation context on the next message. Chat history is held in memory only.
+The mod follows the language selected **inside the game**. Changing it closes the mod's open panels; reopen them in the new language. A saved, unedited built-in prompt switches between Chinese and English automatically and upgrades to the current default. Custom prompts are never translated or overwritten. A changed prompt clears old model conversation context on the next message. Chat history is held in memory only. Old query data is omitted from model history and past operations are marked historical, while the visible transcript is preserved. Each new message refreshes the current customer and counter items, quantities and ownership; sold goods are not treated as unsold merely because an object remains on the counter. Failed or incomplete observations must not be filled in from chat history. Routine replies report prices and affordability directly, explaining sources or limitations when relevant.
 
 ## Local settings and network use
 
-Opening settings or saving them does not contact the provider. Fetching models, sending a test, chatting and running assistant commands use the configured API endpoint. Queried game context and tool results are sent as part of the conversation when the model uses tools.
+Opening settings or saving them does not contact the provider. Fetching models, sending a test, chatting and running assistant commands use the configured API endpoint. Each chat message or assistant command includes freshly read customer and counter context. Other queried game context and tool results are sent when the model uses tools. Automatic observations are ephemeral and do not add messages to the visible transcript or stored conversation.
 
 API keys are used only for your configured endpoint and are not put into chat or logs. With **Remember API key** enabled, the key is stored in plain text in the game's per-mod data folder (`ModData/probably_ai/connection.local.json`). Disable it and save for a session-only key. Do not share your local settings file.
 
 The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
 
-Version 0.6.2. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.6.3. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.

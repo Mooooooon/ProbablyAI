@@ -21,10 +21,12 @@ namespace ProbablyAI.Hands
     {
         private readonly IChatTransport transport;
         private readonly ToolRegistry registry;
+        private readonly bool refreshShopContext;
         public bool IsRunning { get; private set; }
 
         public HandsAgent(IChatTransport transport, HandsService hands) : this(transport, ToolRegistry.ForHands(hands)) { }
-        public HandsAgent(IChatTransport transport, ToolRegistry registry) { this.transport = transport; this.registry = registry; }
+        public HandsAgent(IChatTransport transport, ToolRegistry registry, bool refreshShopContext = false)
+        { this.transport = transport; this.registry = registry; this.refreshShopContext = refreshShopContext; }
 
         public async Task<HandsRunResult> RunAsync(ConnectionOptions options, string instruction, Action<string> progress, CancellationToken cancellationToken, ConversationMemory memory = null)
         {
@@ -41,7 +43,12 @@ namespace ProbablyAI.Hands
             {
                 memory?.BindConnection(connection);
                 var prefix = new JArray { new JObject { ["role"] = "system", ["content"] = connection.SystemPrompt } };
-                if (memory != null) foreach (var message in memory.Messages()) prefix.Add(message.DeepClone());
+                if (memory != null) foreach (var message in memory.MessagesForModel(registry.ChangesState)) prefix.Add(message.DeepClone());
+                if (refreshShopContext)
+                {
+                    var observation = ReadShopContext(result, cancellationToken);
+                    if (observation != null) prefix.Add(observation);
+                }
                 for (int round = 0; round < 16; round++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -92,6 +99,32 @@ namespace ProbablyAI.Hands
                 throw;
             }
             finally { IsRunning = false; }
+        }
+
+        private JObject ReadShopContext(HandsRunResult result, CancellationToken cancellationToken)
+        {
+            var observations = new JArray();
+            void Read(string name, JObject arguments)
+            {
+                if (!registry.Contains(name) || registry.ChangesState(name)) return;
+                cancellationToken.ThrowIfCancellationRequested();
+                var outcome = registry.Execute(name, arguments);
+                observations.Add(new JObject { ["tool"] = name, ["arguments"] = arguments.DeepClone(),
+                    ["result"] = JObject.Parse(HandsProtocol.Json(outcome)) });
+            }
+            // Only these built-in reads are automatic. Never run a mutation or a future tool here.
+            Read("get_current_customer", new JObject());
+            Read("list_container", new JObject { ["container_id"] = "counter", ["limit"] = 100 });
+            if (observations.Count == 0) return null;
+            result.ToolCalls += observations.Count;
+            // Ephemeral input data uses the common message format, with no invented model reasoning
+            // or tool calls. It is neither shown as user chat nor committed to conversation history.
+            return new JObject { ["role"] = "user", ["content"] = new JObject
+            {
+                ["kind"] = "shop_observation", ["observation_scope"] = "request_start",
+                ["context_note"] = T("这是本条消息开始时重新读取的实况，以成功返回的数据为准。刷新失败时当前状态未知，不能用历史记录补齐。柜台物品的 owned=false 表示已非主人所有，不要当作待售自有物品。"),
+                ["observations"] = observations
+            }.ToString(Formatting.None) };
         }
 
         private static JObject ToolReply(string id, HandsResult outcome)

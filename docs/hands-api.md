@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.6.2）
+# 深空AI：可能是DeepSeek · 工具接口（v0.6.3）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -132,7 +132,9 @@ void RegisterTools(ProbablyAI.Tools.ToolRegistry registry)
 
 ## 聊天会话
 
-点击立绘使用 `ConversationMemory` 保留有限历史，包括完整的工具调用和结果。取消途中会给尚未执行的调用补充 `not_executed` 结果，避免下次对话出现悬空的 tool call；并记录已完成动作。历史按完整轮次裁剪，最多 8 轮 / 约 10 万字符，不写存档或磁盘。更换服务地址、密钥、模型或系统提示词后，下次发送会清理旧上下文；同一助手不能并发执行两个工具循环。
+点击立绘使用 `ConversationMemory` 保留有限历史，包括完整的工具调用和结果。`Messages()` 用于原始界面记录，`MessagesForModel()` 在副本中省略历史只读查询数据，并给过去的操作结果加上 `historical=true`；保持调用配对和原有对话。取消途中会给尚未执行的调用补充 `not_executed` 结果，避免下次对话出现悬空的 tool call；并记录已完成动作。历史按完整轮次裁剪，最多 8 轮 / 约 10 万字符，不写存档或磁盘。更换服务地址、密钥、模型或系统提示词后，下次发送会清理旧上下文；同一助手不能并发执行两个工具循环。
+
+游戏中的 `HandsAgent` 启用 `refreshShopContext`：每条消息先通过现有 `get_current_customer` 和 `list_container(counter, limit=100)` 工具同步读取实况，作为临时 `shop_observation` 数据发给模型。它不修改自定义系统提示词，不伪造模型的思考或工具调用，不加入可见聊天或历史，也不会自动执行移动或未来扩展工具。刷新失败保留明确的失败结果，分页保留 `total` / `has_more`，不把未知部分解释为空或用旧记录补齐。成交可能只修改所有权；`owned=false` 的物品不属于待售自有货物。普通金额回复无需例行重复解释来源，只有影响判断或用户询问时再说明。
 
 ## 可编辑系统提示词
 

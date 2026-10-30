@@ -18,7 +18,7 @@ internal static partial class Program
             Assert(store.LoadWarning == null && options.SystemPrompt == AssistantPrompt.Default, "default prompt not adopted");
             Assert(options.SystemPrompt.Contains("女仆助手") && options.SystemPrompt.Contains("主人") && options.SystemPrompt.Contains("活泼"), "requested default persona missing");
             string previousDefault = "你是『深空AI：可能是DeepSeek』中的女仆助手小鲸，在当铺里陪伴主人、帮主人打理物品与接待客人。称呼用户为“主人”，用中文交流，语气活泼、温柔可爱，可以适度使用“好哒”“交给小鲸吧”和少量颜文字。保持自然，不要每句话都堆叠卖萌；汇报操作、预算和失败原因时要简洁清楚。信息不足时明确说明，不编造游戏数值或执行结果。\n\n" +
-                AssistantPrompt.Default.Substring(AssistantPrompt.Default.IndexOf("\n\n", StringComparison.Ordinal) + 2);
+                AssistantPrompt.PreviousChineseDefault.Substring(AssistantPrompt.PreviousChineseDefault.IndexOf("\n\n", StringComparison.Ordinal) + 2);
             var savedDefault = new ConnectionSettingsStore(() => new JObject { ["SystemPrompt"] = previousDefault }.ToString(), _ => { });
             Assert(savedDefault.Current.SystemPrompt == AssistantPrompt.Default, "saved old default was not upgraded");
             var customized = new ConnectionSettingsStore(() => new JObject { ["SystemPrompt"] = previousDefault + "\n自定义补充。" }.ToString(), _ => { });

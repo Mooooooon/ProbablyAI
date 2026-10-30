@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.6.2。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.6.3。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -29,7 +29,7 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 - 输入自然语言，按 **Enter** 或点击 **发送**。**Shift+Enter** 换行。
 - 例如：“帮我把食物放到柜台上”。助手会按游戏 `FOOD` 类型查找自有物品栏及其子容器中的食品，再逐堆调用移动工具。面包、罐头等名称不含“食物”的物品也能匹配。
 - 聊天共用 F7 中保存的服务地址、密钥和模型；需要调整时可点聊天框内的 **连接设置**。F7 配置页也提供 **打开聊天** 入口。
-- 支持多轮对话和跟进指令。上下文最多保留最近 8 轮 / 约 10 万字符，并完整保留工具调用及结果；关闭窗口后重新打开仍可继续。聊天记录仅在当前载入的内存中，重启、重新载入存档或清空聊天后移除。更换服务地址、密钥、模型或提示词后，下次发送会清空旧的模型上下文。
+- 支持多轮对话和跟进指令。记录最多保留最近 8 轮 / 约 10 万字符；关闭窗口后重新打开仍可继续。发送给模型的历史会省略旧查询数据，并把已执行操作标记为历史，保留聊天窗口里的原记录。每条消息自动重新读取当前客人与柜台内容、数量和所有权，避免把上一单的货品当作仍待售；刷新失败时不沿用旧数据。聊天记录仅在当前载入的内存中，重启、重新载入存档或清空聊天后移除。更换服务地址、密钥、模型或提示词后，下次发送会清空旧的模型上下文。
 - 工具执行结果会显示在聊天中；可以 **停止**。已完成的操作保留，未执行的后续调用不会继续。模型的内部思考内容不会显示在聊天里。
 
 聊天使用统一工具注册表。现有容器工具已经注册，未来经同一接口注册的工具会自动提供给模型和聊天窗口，无需修改聊天发送逻辑。扩展方法见 [docs/hands-api.md](docs/hands-api.md)。
@@ -66,7 +66,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 %USERPROFILE%\AppData\LocalLow\Questing Goose Studio\Probably Stolen\ModData\probably_ai\connection.local.json
 ```
 
-打开窗口、保存配置均不会发送网络请求；“获取模型列表”“发送测试消息”、聊天发送及“执行助手指令”会联网。模型调用工具后，相应物品、容器或客人信息会作为工具结果发给配置的服务。请求超时为 60 秒，支持取消；关闭窗口、离店或切换场景时也会取消。当前未实现自动买卖。
+打开窗口、保存配置均不会发送网络请求；“获取模型列表”“发送测试消息”、聊天发送及“执行助手指令”会联网。每条聊天消息及助手指令会附带新读取的当前客人与柜台实况；模型另外调用工具时，相应物品、容器或客人信息也会发给配置的服务。自动观察不写入聊天历史或可见记录。请求超时为 60 秒，支持取消；关闭窗口、离店或切换场景时也会取消。当前未实现自动买卖。
 
 ## 助手的“手”：物品与容器
 
@@ -151,11 +151,11 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-92 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、可编辑提示词，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。其中 20 项价格回归测试直接运行生产定价适配器或计算器，覆盖乘区、实时事件与零售波动、多种多样、预算临界值、防止重复加价、嵌套内容继承和只读查询。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
+102 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、可编辑提示词，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。其中 20 项价格测试覆盖乘区、实时事件与零售波动、多种多样、预算临界值、防止重复加价、嵌套内容继承和只读查询；10 项实况测试覆盖成交后空柜台、客人变化、已售物品所有权、历史查询失效、刷新失败、分页、取消和默认提示词迁移。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.6.2/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.6.3/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

@@ -54,7 +54,7 @@ namespace ProbablyAI
             customerBackend = new GameCustomerBackend(CanShow, handsBackend);
             new CustomerService(customerBackend).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);
-            agent = new HandsAgent(transport, Tools);
+            agent = new HandsAgent(transport, Tools, refreshShopContext: true);
             conversation = new ConversationMemory();
             nextBuildAttempt = 0f;
             TryBuildPortrait();

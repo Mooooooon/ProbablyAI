@@ -205,6 +205,7 @@ internal static partial class Program
         });
         await RunHandsTests();
         await RunChatTests();
+        await RunFreshnessTests();
         await RunCustomerTests();
         await RunPricingTests();
         await RunPromptTests();

@@ -35,6 +35,7 @@ namespace ProbablyAI.Tools
             return definitions;
         }
         public bool ChangesState(string name) => name != null && entries.TryGetValue(name, out var entry) && entry.ChangesState;
+        public bool Contains(string name) => name != null && entries.ContainsKey(name);
 
         public HandsResult Execute(string name, JObject arguments)
         {
