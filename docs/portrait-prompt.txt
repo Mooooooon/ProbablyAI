@@ -1,0 +1,13 @@
+Tool: built-in image_gen.imagegen
+Output: assets/deepseek-npc.png
+Transparent background: true
+Reference role: character design reference supplied by user
+
+Use case: stylized-concept
+Asset type: transparent full-body 2D NPC standing portrait for a PC pawnshop game's left-side assistant overlay.
+Input image 1 is a character design reference, not an edit target. Create a new clean illustration of the same DeepSeek-inspired anthropomorphic whale maid character.
+Subject: one friendly adult anime woman, long wavy deep blue hair with pale cyan ends, blue eyes, small whale fin-like ears, dark blue whale tail curving upward behind her, white frilled maid headdress with a tiny blue bow, modest navy Victorian long maid dress, white ruffled apron with a tiny whale motif, navy shoes.
+Pose and framing: entire body from headdress to shoe soles fully visible, vertical composition, relaxed upright stance, warm intelligent smile, one open hand gently presenting toward the viewer's right (the game UI), other arm resting naturally. Keep a compact readable silhouette suitable for the left edge of a game interface. All hair, fingers, tail and shoes within canvas, small transparent padding around them.
+Style: polished Japanese anime game NPC key art, precise clean linework, beautiful restrained cel shading, clear face and detailed fabric folds, faithful blue-and-white color palette and recognizable costume from reference.
+Background: genuine transparent alpha background. Character only, no floor, no scenery, no framed panel.
+Constraints: exactly one character, no text, no signature, no watermark, no logo or reference-image corner mark. No cropped anatomy, no extra limbs, no props.

@@ -1,0 +1,13 @@
+.cache/
+**/bin/
+**/obj/
+dist/
+*.user
+*.log
+*.local.json
+.env
+.env.*
+!.env.example
+*.dll
+*.pdb
+*.zip

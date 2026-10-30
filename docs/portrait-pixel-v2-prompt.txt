@@ -1,0 +1,14 @@
+Tool: built-in image_gen.imagegen
+Output: assets/deepseek-npc-pixel-v2.png
+Active mod asset: assets/deepseek-npc.png
+Transparent background: true
+Input: assets/deepseek-npc-anime-v1.png (edit target)
+
+Use case: style-transfer
+Asset type: edited full-body transparent NPC portrait for a pixel-art PC pawnshop game.
+Input image 1: EDIT TARGET. Preserve this character's identity, adult proportions, long blue hair with cyan tips, blue eyes, whale-fin ears, whale tail, white maid headdress, navy long dress, white ruffled apron with small whale motif, subtle gold trim and navy shoes.
+Primary edit 1 — pose: replace the wide presenting pose with a classic polite maid / attendant waiting pose. Stand upright facing the viewer with both upper arms relaxed close to her sides. Both forearms extend naturally downward and inward in front of her lower torso. Hands gently overlap, one hand resting over the back of the other, low in front of the apron below the waist; fingers point downward. Both hands remain low, no raised hand, no presenting gesture, no holding or lifting the skirt. Feet close together, calm friendly small smile. Compact balanced silhouette.
+Primary edit 2 — pixel-art treatment: redraw as polished detailed 16-bit style pixel-art character key art matching a retro pixel-art shopkeeper game. Clear square pixel clusters, stepped silhouette outlines, restrained blue/cyan/navy/white/gold palette, flat 3-to-5-tone shading per material, light selective dithering. Target a consistent virtual 256x384 pixel grid, shown as a clean integer enlargement. Keep the face attractive and readable, the long costume recognizable, the body adult and naturally proportioned. Moderate pixelation, not extremely coarse, not chibi. No smooth anime vector lines, no airbrushed gradients, no blur.
+Composition: whole character from headdress and hair loop to shoe soles, tail entirely visible, vertical 2:3 composition. Leave about 4% transparent padding around all extremities. Character only, no props.
+Background: genuine transparent alpha, preserve transparency. No colored backdrop, no ground shadow or glow, no checkerboard pattern painted into the image.
+Constraints: change the pose and rendering style only; keep the costume, colors, species cues and identity. Exactly one character, two arms, two hands; no text, no logo, no signature, no watermark.

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GameDirectory Condition="'$(GameDirectory)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Probably Stolen</GameDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="HandsTests.cs" />
+    <Compile Include="ChatTests.cs" />
+    <Compile Include="..\src\Branding.cs" Link="Branding.cs" />
+    <Compile Include="..\src\Tools\ToolRegistry.cs" Link="ToolRegistry.cs" />
+    <Compile Include="..\src\UI\AlphaHitMask.cs" Link="AlphaHitMask.cs" />
+    <Compile Include="..\src\Services\ConversationMemory.cs" Link="ConversationMemory.cs" />
+    <Compile Include="..\src\Hands\HandsContracts.cs" Link="HandsContracts.cs" />
+    <Compile Include="..\src\Hands\HandsService.cs" Link="HandsService.cs" />
+    <Compile Include="..\src\Hands\HandsProtocol.cs" Link="HandsProtocol.cs" />
+    <Compile Include="..\src\Hands\HandsAgent.cs" Link="HandsAgent.cs" />
+    <Compile Include="..\src\Services\ChatTurn.cs" Link="ChatTurn.cs" />
+    <Compile Include="..\src\Services\ConnectionOptions.cs" Link="ConnectionOptions.cs" />
+    <Compile Include="..\src\Services\ConnectionSettingsStore.cs" Link="ConnectionSettingsStore.cs" />
+    <Compile Include="..\src\Services\OpenAiApiClient.cs" Link="OpenAiApiClient.cs" />
+    <Reference Include="Newtonsoft.Json"><HintPath>$(GameDirectory)\Probably Stolen_Data\Managed\Newtonsoft.Json.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

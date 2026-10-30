@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Manifest>
+  <ID>probably_ai</ID>
+  <Name>深空AI：可能是DeepSeek</Name>
+  <Author>fourt</Author>
+  <ModVersion>0.4.0</ModVersion>
+  <Description>点击 DeepSeek 助手立绘聊天，用自然语言调用工具整理当铺。支持食物分类、嵌套容器、归档、上柜台、入库和机器投料。F6 显隐立绘，F7 配置连接与手动操作；工具可扩展。</Description>
+  <GameVersions><Version>0.46D</Version></GameVersions>
+  <Prerequisites />
+  <Assemblies><Assembly>ProbablyAI.dll</Assembly></Assemblies>
+  <Capabilities><Capability>network</Capability></Capabilities>
+</Manifest>
