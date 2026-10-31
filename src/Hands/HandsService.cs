@@ -74,6 +74,9 @@ namespace ProbablyAI.Hands
                     case "move_item":
                         ValidateKeys(arguments, "item_id", "source_container_id", "destination_container_id", "quantity");
                         return Transfer(world, arguments, tool == "can_move_item");
+                    case "move_items":
+                        ValidateKeys(arguments, "destination_container_id", "moves");
+                        return TransferMany(world, arguments);
                     case "open_container":
                     case "close_container":
                         ValidateKeys(arguments, "container_id");
@@ -95,6 +98,108 @@ namespace ProbablyAI.Hands
             var destination = Container(world, Text(arguments, "destination_container_id"));
             if (arguments["quantity"] == null) throw new HandsException("invalid_arguments", T("缺少参数：quantity（0 代表所选这一堆全部）。"));
             var quantity = Number(arguments, "quantity", 0, 0, int.MaxValue);
+            var requested = Validated(world, item, source, destination, quantity);
+            var check = backend.CheckMove(item.Id, source.Id, destination.Id, requested);
+            if (!check.Allowed) throw new HandsException(check.Code ?? "move_rejected", check.Reason);
+            if (preview) return HandsResult.Ok(new
+            {
+                item_id = item.Id,
+                source_container_id = source.Id,
+                destination_container_id = destination.Id,
+                requested,
+                first_slot_quantity = check.FirstSlotQuantity,
+                note = T("仅预检，不移动物品；执行时重新检查，空间不足时可能只移动部分。")
+            }, T("可以尝试移动。"));
+
+            var outcome = backend.Move(item.Id, source.Id, destination.Id, requested);
+            if (outcome.Moved < 0 || outcome.Moved > requested)
+                throw new HandsException("invalid_native_result", T("原生接口返回了异常数量，请刷新物品列表核实。"));
+            string message = F("{0}：{1} → {2}，已移动 {3}/{4}。", item.Name, source.Path, destination.Path, outcome.Moved, requested);
+            if (!string.IsNullOrWhiteSpace(outcome.Detail)) message += " " + outcome.Detail;
+            Record(message);
+            return new HandsResult
+            {
+                Success = outcome.Moved == requested,
+                Code = outcome.Moved == requested ? "ok" : outcome.Moved > 0 ? "partial" : "not_moved",
+                Message = message,
+                Data = new { item_id = item.Id, source_container_id = source.Id, destination_container_id = destination.Id,
+                    requested, moved = outcome.Moved, remaining = requested - outcome.Moved }
+            };
+        }
+
+        // One call places several stacks, so picking goods costs one model round trip instead of
+        // one per item. Every stack still goes through the same native checks and callbacks.
+        private HandsResult TransferMany(WorldSnapshot world, JObject arguments)
+        {
+            var entries = Batch(arguments);
+            var destination = Container(world, Text(arguments, "destination_container_id"));
+            if (destination.Kind == "group")
+                throw new HandsException("choose_compartment", T("目标含多个分区，请先 list_container，再选择具体的原料、成品或储藏分页。"));
+            if (destination.Locked || destination.InsertLocked)
+                throw new HandsException("container_locked", T("目标容器禁止放入。"));
+            var moves = new List<BatchMove>();
+            foreach (var entry in entries)
+            {
+                var move = new BatchMove { ItemId = entry.ItemId, SourceContainerId = entry.SourceContainerId, Requested = entry.Quantity };
+                moves.Add(move);
+                // A structural error aborts before this point; per-item state errors only skip
+                // that stack so the remaining goods still reach the counter.
+                try
+                {
+                    var item = Item(world, entry.ItemId);
+                    move.ItemName = item.Name;
+                    var source = Container(world, entry.SourceContainerId);
+                    move.Requested = Validated(world, item, source, destination, entry.Quantity);
+                    var check = backend.CheckMove(item.Id, source.Id, destination.Id, move.Requested);
+                    if (!check.Allowed) { move.Code = check.Code ?? "move_rejected"; move.Detail = check.Reason; continue; }
+                    var outcome = backend.Move(item.Id, source.Id, destination.Id, move.Requested);
+                    if (outcome.Moved < 0 || outcome.Moved > move.Requested)
+                    {
+                        move.Code = "invalid_native_result";
+                        move.Detail = T("原生接口返回了异常数量，请刷新物品列表核实。");
+                        continue;
+                    }
+                    move.Moved = outcome.Moved;
+                    move.Code = outcome.Moved == move.Requested ? "ok" : outcome.Moved > 0 ? "partial" : "not_moved";
+                    move.Detail = outcome.Detail;
+                }
+                catch (HandsException error)
+                {
+                    move.Code = error.Code;
+                    move.Detail = error.Message;
+                    move.Moved = 0;
+                }
+            }
+            int succeeded = moves.Count(m => m.Code == "ok");
+            int failed = moves.Count - succeeded;
+            int moved = moves.Sum(m => m.Moved);
+            int requested = moves.Sum(m => m.Requested);
+            string message = failed == 0
+                ? F("已移动 {0} 个物品堆到{1}，合计 {2} 件。", moves.Count, destination.Path, moved)
+                : F("批量移动 {0} 个物品堆到{1}：完成 {2} 个，失败 {3} 个，合计移动 {4}/{5} 件。", moves.Count, destination.Path, succeeded, failed, moved, requested);
+            var firstFailure = moves.FirstOrDefault(m => m.Code != "ok");
+            if (firstFailure != null && !string.IsNullOrWhiteSpace(firstFailure.Detail)) message += " " + firstFailure.Detail;
+            Record(message);
+            return new HandsResult
+            {
+                Success = failed == 0,
+                Code = failed == 0 ? "ok" : moved > 0 ? "partial" : "not_moved",
+                Message = message,
+                Data = new
+                {
+                    destination_container_id = destination.Id,
+                    total = moves.Count, succeeded, failed, moved, requested,
+                    results = moves.Select(m => new
+                    {
+                        item_id = m.ItemId, item_name = m.ItemName, source_container_id = m.SourceContainerId,
+                        requested = m.Requested, moved = m.Moved, code = m.Code, detail = m.Detail
+                    }).ToArray()
+                }
+            };
+        }
+
+        private static int Validated(WorldSnapshot world, ItemInfo item, ContainerInfo source, ContainerInfo destination, int quantity)
+        {
             if (item.ContainerId != source.Id)
                 throw new HandsException("source_changed", T("物品位置已经变化，请重新查询后操作。"));
             if (source.Id == destination.Id)
@@ -109,33 +214,53 @@ namespace ProbablyAI.Hands
             int requested = quantity == 0 ? item.Quantity : quantity;
             if (requested < 1 || requested > item.Quantity)
                 throw new HandsException("invalid_quantity", T("数量不足，或物品已不存在，请刷新列表。"));
-            var check = backend.CheckMove(item.Id, destination.Id, requested);
-            if (!check.Allowed) throw new HandsException("move_rejected", check.Reason);
-            if (preview) return HandsResult.Ok(new
-            {
-                item_id = item.Id,
-                source_container_id = source.Id,
-                destination_container_id = destination.Id,
-                requested,
-                first_slot_quantity = check.FirstSlotQuantity,
-                note = T("仅预检，不移动物品；执行时重新检查，空间不足时可能只移动部分。")
-            }, T("可以尝试移动。"));
+            return requested;
+        }
 
-            var outcome = backend.Move(item.Id, destination.Id, requested);
-            if (outcome.Moved < 0 || outcome.Moved > requested)
-                throw new HandsException("invalid_native_result", T("原生接口返回了异常数量，请刷新物品列表核实。"));
-            string message = F("{0}：{1} → {2}，已移动 {3}/{4}。", item.Name, source.Path, destination.Path, outcome.Moved, requested);
-            if (!string.IsNullOrWhiteSpace(outcome.Detail)) message += " " + outcome.Detail;
+        private static List<BatchEntry> Batch(JObject arguments)
+        {
+            if (!(arguments["moves"] is JArray moves))
+                throw new HandsException("invalid_arguments", T("moves 必须是 1–20 个物品移动的数组。"));
+            if (moves.Count < 1 || moves.Count > 20)
+                throw new HandsException("invalid_arguments", T("一次 move_items 可以移动 1–20 个物品堆，更多请分几次调用。"));
+            var entries = new List<BatchEntry>();
+            foreach (var token in moves)
+            {
+                if (!(token is JObject entry))
+                    throw new HandsException("invalid_arguments", T("moves 中的每一项都必须是包含 item_id 和 source_container_id 的对象。"));
+                ValidateKeys(entry, "item_id", "source_container_id", "quantity");
+                entries.Add(new BatchEntry
+                {
+                    ItemId = Text(entry, "item_id"),
+                    SourceContainerId = Text(entry, "source_container_id"),
+                    Quantity = entry["quantity"] == null ? 0 : Number(entry, "quantity", 0, 0, int.MaxValue)
+                });
+            }
+            return entries;
+        }
+
+        private void Record(string message)
+        {
             history.Enqueue(message);
             while (history.Count > 50) history.Dequeue();
-            return new HandsResult
-            {
-                Success = outcome.Moved == requested,
-                Code = outcome.Moved == requested ? "ok" : outcome.Moved > 0 ? "partial" : "not_moved",
-                Message = message,
-                Data = new { item_id = item.Id, source_container_id = source.Id, destination_container_id = destination.Id,
-                    requested, moved = outcome.Moved, remaining = requested - outcome.Moved }
-            };
+        }
+
+        private sealed class BatchEntry
+        {
+            public string ItemId;
+            public string SourceContainerId;
+            public int Quantity;
+        }
+
+        private sealed class BatchMove
+        {
+            public string ItemId;
+            public string ItemName;
+            public string SourceContainerId;
+            public int Requested;
+            public int Moved;
+            public string Code = "ok";
+            public string Detail;
         }
 
         private static object PageData<T>(List<T> values, JObject arguments)

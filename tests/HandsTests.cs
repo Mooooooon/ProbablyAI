@@ -210,13 +210,95 @@ internal static partial class Program
         await Check("all tools declare object schemas without arbitrary extra properties", () =>
         {
             var tools = HandsProtocol.Tools();
-            Assert(tools.Count == 8 && tools.Select(t => (string)t["function"]["name"]).Distinct().Count() == 8, "tool set changed unexpectedly");
+            Assert(tools.Count == 9 && tools.Select(t => (string)t["function"]["name"]).Distinct().Count() == 9, "tool set changed unexpectedly");
             foreach (var tool in tools)
             {
                 var schema = tool["function"]["parameters"];
                 Assert((string)schema["type"] == "object" && !(bool)schema["additionalProperties"], "unsafe/incompatible schema");
                 foreach (var required in (JArray)schema["required"]) Assert(schema["properties"][(string)required] != null, "required field missing");
             }
+            var batch = tools.First(t => (string)t["function"]["name"] == "move_items")["function"]["parameters"]["properties"]["moves"];
+            Assert((string)batch["type"] == "array" && (int)batch["maxItems"] == 20 && !(bool)batch["items"]["additionalProperties"] &&
+                JToken.DeepEquals(batch["items"]["required"], new JArray("item_id", "source_container_id")), "batch move schema is not bounded or strict");
+        });
+        await Check("batch move places several stacks in one call with per-item results", () =>
+        {
+            var backend = new FakeHands { Captures = 0 };
+            var hands = new HandsService(backend);
+            var result = Doc(hands.Execute("move_items", Batch("counter", ("ore", "inventory", 0), ("note-a", "mentor", 1), ("spare-battery", "inventory", 0))));
+            Assert((bool)result["success"] && (string)result["code"] == "ok", "batch not successful");
+            Assert((int)result["data"]["total"] == 3 && (int)result["data"]["succeeded"] == 3 && (int)result["data"]["moved"] == 11, "batch totals wrong");
+            var entries = (JArray)result["data"]["results"];
+            Assert(entries.Count == 3 && entries.All(e => (string)e["code"] == "ok"), "per-item results missing");
+            Assert(backend.Moves == 3, "batch did not move each stack once");
+            Assert(backend.World.Items.First(i => i.Id == "note-a").ContainerId == "counter" &&
+                backend.World.Items.First(i => i.Id == "ore").ContainerId == "counter", "goods not placed by the batch");
+            Assert(backend.Captures == 1, "batch captured the world more than once");
+            Assert(hands.History.Count == 1 && hands.History[0].Contains("3"), "batch did not record one summary");
+        });
+        await Check("batch move keeps going after a stale item and reports each stack", () =>
+        {
+            var backend = new FakeHands();
+            var hands = new HandsService(backend);
+            var result = Doc(hands.Execute("move_items", Batch("counter", ("ore", "inventory", 1), ("missing", "inventory", 1), ("note-a", "mentor", 1))));
+            var entries = (JArray)result["data"]["results"];
+            Assert(!(bool)result["success"] && (string)result["code"] == "partial", "partial batch reported success");
+            Assert((string)entries[0]["code"] == "ok" && (string)entries[1]["code"] == "item_not_found" && (string)entries[2]["code"] == "ok", "per-item codes wrong");
+            Assert((int)result["data"]["succeeded"] == 2 && (int)result["data"]["failed"] == 1 && (int)result["data"]["moved"] == 2, "batch summary wrong");
+            Assert(backend.Moves == 2 && backend.World.Items.First(i => i.Id == "note-a").ContainerId == "counter", "one stale item blocked the rest");
+            Assert(!string.IsNullOrEmpty((string)entries[1]["detail"]), "per-item failure detail missing");
+        });
+        await Check("batch move reports a native partial transfer per stack", () =>
+        {
+            var backend = new FakeHands { TransferLimit = 2 };
+            var result = Doc(new HandsService(backend).Execute("move_items", Batch("input", ("ore", "inventory", 0))));
+            var entry = ((JArray)result["data"]["results"])[0];
+            Assert((string)result["code"] == "partial" && (string)entry["code"] == "partial" && (int)entry["moved"] == 2 && (int)entry["requested"] == 8,
+                "partial native transfer hidden by the batch");
+        });
+        await Check("batch move rejects malformed lists, ambiguous targets and locked destinations before moving", () =>
+        {
+            var backend = new FakeHands();
+            var hands = new HandsService(backend);
+            var overlong = new JArray();
+            for (int i = 0; i < 21; i++) overlong.Add(new JObject { ["item_id"] = "ore", ["source_container_id"] = "inventory" });
+            foreach (var arguments in new JObject[]
+            {
+                new JObject { ["destination_container_id"] = "counter" },
+                new JObject { ["destination_container_id"] = "counter", ["moves"] = new JArray() },
+                new JObject { ["destination_container_id"] = "counter", ["moves"] = overlong },
+                new JObject { ["destination_container_id"] = "counter", ["moves"] = new JArray(new JObject { ["item_id"] = "ore" }) },
+                new JObject { ["destination_container_id"] = "counter", ["moves"] = new JArray(new JObject { ["item_id"] = "ore", ["source_container_id"] = "inventory", ["buy"] = true }) },
+                new JObject { ["destination_container_id"] = "counter", ["moves"] = new JArray(new JObject { ["item_id"] = "ore", ["source_container_id"] = "inventory", ["quantity"] = "2" }) },
+                new JObject { ["destination_container_id"] = "counter", ["moves"] = new JArray(new JObject { ["item_id"] = "ore", ["source_container_id"] = "inventory" }), ["extra"] = 1 }
+            })
+                Assert(hands.Execute("move_items", arguments).Code == "invalid_arguments", "malformed batch accepted");
+            Assert(hands.Execute("move_items", Batch("furnace", ("ore", "inventory", 1))).Code == "choose_compartment", "ambiguous machine accepted");
+            backend.World.Containers.First(c => c.Id == "counter").InsertLocked = true;
+            Assert(hands.Execute("move_items", Batch("counter", ("ore", "inventory", 1))).Code == "container_locked", "locked destination accepted");
+            Assert(backend.Moves == 0, "rejected batch still moved items");
+        });
+        await Check("batch move returns the native rule rejection for every stack", () =>
+        {
+            var backend = new FakeHands { Rejection = "目标不接受此物品" };
+            var result = Doc(new HandsService(backend).Execute("move_items", Batch("counter", ("ore", "inventory", 1), ("note-a", "mentor", 1))));
+            Assert((string)result["code"] == "not_moved" && (int)result["data"]["failed"] == 2, "native rejection not per stack");
+            Assert(((JArray)result["data"]["results"]).All(e => (string)e["code"] == "move_rejected"), "native rejection reason lost");
+            Assert(backend.Moves == 0, "rejected batch executed a native move");
+        });
+        await Check("agent places several goods with one move_items call", async () =>
+        {
+            var backend = new FakeHands(); int round = 0;
+            var transport = new FakeTransport((messages, token) =>
+            {
+                if (round++ == 0) return Call("batch", "move_items", Batch("counter", ("note-a", "mentor", 1), ("note-b", "mentor", 1)));
+                var data = JObject.Parse((string)messages.Last["content"])["data"];
+                Assert((int)data["succeeded"] == 2, "batch result missing from the tool reply");
+                return new ChatTurn { Text = "两份笔记都摆到柜台了。" };
+            });
+            var result = await new HandsAgent(transport, new HandsService(backend)).RunAsync(new ConnectionOptions(), "把两份笔记摆到柜台", null, default);
+            Assert(round == 2 && result.ToolCalls == 1 && result.Operations.Count == 1 && backend.Moves == 2, "batch placement needed extra model round trips");
+            Assert(backend.World.Items.Where(i => i.Id.StartsWith("note-")).All(i => i.ContainerId == "counter"), "not all goods were placed");
         });
         await Check("OpenAI tool-call response is parsed and reasoning message is preserved", async () =>
         {
@@ -295,6 +377,13 @@ internal static partial class Program
 
     private static JObject Move(string item, string source, string target, int quantity)
         => new JObject { ["item_id"] = item, ["source_container_id"] = source, ["destination_container_id"] = target, ["quantity"] = quantity };
+    private static JObject Batch(string destination, params (string Item, string Source, int Quantity)[] moves)
+    {
+        var array = new JArray();
+        foreach (var move in moves)
+            array.Add(new JObject { ["item_id"] = move.Item, ["source_container_id"] = move.Source, ["quantity"] = move.Quantity });
+        return new JObject { ["destination_container_id"] = destination, ["moves"] = array };
+    }
     private static JObject Doc(HandsResult value) => JObject.Parse(HandsProtocol.Json(value));
     private static ChatTurn Call(string id, string name, JObject arguments)
     {
@@ -315,6 +404,7 @@ internal static partial class Program
     {
         public WorldSnapshot World = new WorldSnapshot();
         public int Moves;
+        public int Captures;
         public int TransferLimit = int.MaxValue;
         public string Rejection;
         public bool ThrowOnMove;
@@ -342,10 +432,10 @@ internal static partial class Program
             World.Items.Add(new ItemInfo { Id = id, Name = name, Identifier = name, ContainerId = parent,
                 Path = World.Containers.First(c => c.Id == parent).Path + " → " + name, Quantity = quantity, Owned = true, Removable = true });
         }
-        public WorldSnapshot Capture() => World;
-        public MoveCheck CheckMove(string itemId, string destinationId, int quantity)
+        public WorldSnapshot Capture() { Captures++; return World; }
+        public MoveCheck CheckMove(string itemId, string sourceId, string destinationId, int quantity)
             => new MoveCheck { Allowed = Rejection == null, Reason = Rejection, FirstSlotQuantity = quantity };
-        public MoveOutcome Move(string itemId, string destinationId, int quantity)
+        public MoveOutcome Move(string itemId, string sourceId, string destinationId, int quantity)
         {
             Moves++;
             if (ThrowOnMove) throw new Exception("native error");

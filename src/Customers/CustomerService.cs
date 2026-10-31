@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using ProbablyAI.Hands;
@@ -36,12 +37,35 @@ namespace ProbablyAI.Customers
                     case "check_customer_item":
                         ValidateKeys(arguments, "customer_id", "item_id");
                         return HandsResult.Ok(backend.CheckItem(Text(arguments, "customer_id"), Text(arguments, "item_id")));
+                    case "check_customer_items":
+                        ValidateKeys(arguments, "customer_id", "item_ids");
+                        return HandsResult.Ok(backend.CheckItems(Text(arguments, "customer_id"), ItemIds(arguments)));
                     default:
                         return HandsResult.Fail("unknown_tool", T("未知的客人查询工具。"));
                 }
             }
             catch (HandsException error) { return HandsResult.Fail(error.Code, error.Message); }
             catch (Exception) { return HandsResult.Fail("customer_query_failed", T("读取客人信息失败，请在客人到达后重新查询。")); }
+        }
+
+        private static IReadOnlyList<string> ItemIds(JObject args)
+        {
+            if (!(args["item_ids"] is JArray ids))
+                throw new HandsException("invalid_arguments", T("item_ids 必须是 1–20 个物品 ID 的数组。"));
+            if (ids.Count < 1 || ids.Count > 20)
+                throw new HandsException("invalid_arguments", T("一次 check_customer_items 可以检查 1–20 件物品，更多请分几次调用。"));
+            var values = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var token in ids)
+            {
+                if (token?.Type != JTokenType.String || string.IsNullOrWhiteSpace((string)token) || ((string)token).Length > 200)
+                    throw new HandsException("invalid_arguments", T("item_ids 中的每一项都必须是先前查询返回的有效物品 ID。"));
+                var id = ((string)token).Trim();
+                // A duplicate would be priced twice and overstate the combined total.
+                if (!seen.Add(id)) throw new HandsException("invalid_arguments", T("item_ids 不能重复，否则合计金额会重复计算。"));
+                values.Add(id);
+            }
+            return values;
         }
 
         private static void ValidateKeys(JObject args, params string[] allowed)

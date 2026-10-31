@@ -108,11 +108,25 @@ namespace ProbablyAI.Services
         internal static readonly string PreviousEnglishPlasmaDefault = PreviousEnglishRibwichDefault +
             "\n\nTo appraise a Packaged Rib Sandwich (Ribwich), call appraise_ribwich and explain visual_assessment, issues, production date, packing facility number, ingredients/wrap state and base_value. When opened=true, value is the opened-item base; a counterfeit finding does not guarantee edibility or value. Report unknown as inconclusive. This tool is read-only: it does not submit estimates, confront customers, expose hidden features or complete orders.";
 
-        public static readonly string ChineseDefault = PreviousChinesePlasmaDefault +
+        // The released default before batch tool guidance, kept recognizable so unedited saves upgrade.
+        internal static readonly string PreviousChineseBatchDefault = PreviousChinesePlasmaDefault +
             "\n\n鉴定等离子燃料匣（Plasma Cartridge）调用 appraise_plasma_fuel，结合 color、裂纹/磨损/未覆盖/加固、seal、condition_assessment、issues 和 base_value 说明；该物品没有真伪判定，价格由可见状态决定。unknown 时说明无法判断。该工具只读，不提交估价、不质问客人、不揭露隐藏状态或完成委托。";
 
-        public static readonly string EnglishDefault = PreviousEnglishPlasmaDefault +
+        internal static readonly string PreviousEnglishBatchDefault = PreviousEnglishPlasmaDefault +
             "\n\nTo appraise a Plasma Cartridge, call appraise_plasma_fuel and explain color, crack/wear/uncovered/reinforced state, seal, condition_assessment, issues and base_value. This item has no authenticity verdict; its value comes from the visible state. Report unknown as inconclusive. This tool is read-only: it does not submit estimates, confront customers, expose hidden state or complete orders.";
+
+        // The released default before variety guidance, kept recognizable so unedited saves upgrade.
+        internal static readonly string PreviousChineseVarietyDefault = PreviousChineseBatchDefault +
+            "\n\n挑货或批量整理时，把多件合并成一次 move_items 调用，先用一次 check_customer_items 核对货物与合计预算，不要每件各调用一次工具；按每件结果报告实际摆放情况，已成功的操作不要逐件重试。";
+
+        internal static readonly string PreviousEnglishVarietyDefault = PreviousEnglishBatchDefault +
+            "\n\nWhen picking goods or organizing several items, combine them into one move_items call and check the candidates with one check_customer_items call instead of one tool call per item. Report per-item results and do not retry operations that already succeeded.";
+
+        public static readonly string ChineseDefault = PreviousChineseVarietyDefault +
+            "\n\n给客人挑货时留意 preferences.requires_variety（多样性要求）：为 true 时这位客人本次到访每种物品（按 identifier）只买一份，previously_bought_identifiers 里的 identifier 会被原生拒收；挑选、合计和预算结论都按每种 identifier 一份计算，不要放两个相同 identifier 的物品，check_customer_items 返回 duplicate_identifiers 时先去掉重复再报价。pricing 里的 varietyBuyerBonus 只是市场阶段的价格加成，不是这条购买规则。";
+
+        public static readonly string EnglishDefault = PreviousEnglishVarietyDefault +
+            "\n\nWhen picking goods, check preferences.requires_variety: when true, the customer takes only one item per identifier for this visit and natively refuses identifiers listed in previously_bought_identifiers. Pick, total and judge affordability at most one item per identifier, never place two items with the same identifier, and drop what check_customer_items reports in duplicate_identifiers before quoting. varietyBuyerBonus in pricing is only a market-stage price modifier, not this purchasing rule.";
 
         internal static readonly string PreviousChineseChargingDefault = PreviousChineseBatteryDefault +
             "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
@@ -165,6 +179,8 @@ namespace ProbablyAI.Services
                 value == PreviousChineseStolenDefault || value == PreviousEnglishStolenDefault ||
                 value == PreviousChineseRibwichDefault || value == PreviousEnglishRibwichDefault ||
                 value == PreviousChinesePlasmaDefault || value == PreviousEnglishPlasmaDefault ||
+                value == PreviousChineseBatchDefault || value == PreviousEnglishBatchDefault ||
+                value == PreviousChineseVarietyDefault || value == PreviousEnglishVarietyDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

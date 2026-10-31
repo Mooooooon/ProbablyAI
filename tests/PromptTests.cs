@@ -158,6 +158,31 @@ internal static partial class Program
             foreach (string previous in new[] { AssistantPrompt.PreviousChinesePlasmaDefault, AssistantPrompt.PreviousEnglishPlasmaDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "plasma default did not upgrade");
         });
+        await Check("batch tool guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("move_items") &&
+                AssistantPrompt.ChineseDefault.Contains("check_customer_items") &&
+                AssistantPrompt.ChineseDefault.Contains("不要每件各调用一次工具"), "Chinese batch guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("move_items") &&
+                AssistantPrompt.EnglishDefault.Contains("check_customer_items") &&
+                AssistantPrompt.EnglishDefault.Contains("one tool call per item"), "English batch guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseBatchDefault, AssistantPrompt.PreviousEnglishBatchDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "batch default did not upgrade");
+        });
+        await Check("variety purchase rule guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("requires_variety") &&
+                AssistantPrompt.ChineseDefault.Contains("identifier") &&
+                AssistantPrompt.ChineseDefault.Contains("duplicate_identifiers") &&
+                AssistantPrompt.ChineseDefault.Contains("varietyBuyerBonus") &&
+                AssistantPrompt.ChineseDefault.Contains("只买一份"), "Chinese variety guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("requires_variety") &&
+                AssistantPrompt.EnglishDefault.Contains("one item per identifier") &&
+                AssistantPrompt.EnglishDefault.Contains("duplicate_identifiers") &&
+                AssistantPrompt.EnglishDefault.Contains("varietyBuyerBonus"), "English variety guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseVarietyDefault, AssistantPrompt.PreviousEnglishVarietyDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "variety default did not upgrade");
+        });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
         {
             var store = new ConnectionSettingsStore(() => null, _ => { });

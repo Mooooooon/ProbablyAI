@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.5）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.6）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -47,19 +47,20 @@
 
 ## 客人查询（只读）
 
-`CustomerService` / `ICustomerBackend` 在相同注册表中提供两个工具，聊天和 F7 的助手指令均可调用。
+`CustomerService` / `ICustomerBackend` 在相同注册表中提供三个工具，聊天和 F7 的助手指令均可调用。
 
 | 工具 | 参数 | 作用 |
 | --- | --- | --- |
 | `get_current_customer` | `{}` | 当前客人、意图、实时预算、购买偏好、拒收规则、当前显示的对话、录音机中本次到访的对话及特殊委托 |
 | `check_customer_item` | `customer_id`、`item_id` | 原生普通购买规则、当前估值与预算检查、匹配的易货条件索引 |
+| `check_customer_items` | `customer_id`、`item_ids`（1–20 个） | 一次核对多件物品的偏好与报价，并返回合计金额及合计预算结论 |
 
 `get_current_customer` 的 `data.status` 为 `absent`、`arriving` 或 `present`。只有 `present` 返回 `data.customer`，其中：
 
 - `id` 是本次到访的会话 ID，不能把姓名或客人类型标识当作到访 ID；换存档后也不可复用。
 - `intent` / `intent_description` 说明来意。`BUY` 是客人买店主的货；`SELL` 是客人向店主卖货；`SELLNBUY` 两者均有。
 - `purchase_budget.enabled` 表示是否启用普通购买预算；仅启用时返回 `remaining`。它是当前剩余额度，不是原始额度或现金；未启用不代表零或无限现金。
-- `preferences` 包含购买 / 拒收标签与物品标识、多样性及已买过的类型、违禁品与水标签限制、自定义购买规则的存在标记。`ALL_TYPE`、`ALL_TYPE_EXCEPT_CONTRABAND` 是原始游戏规则。自定义条件、物品状态和容器内容可能影响实际接受结果；用具体物品检查核对。
+- `preferences` 包含购买 / 拒收标签与物品标识、多样性及已买过的类型、违禁品与水标签限制、自定义购买规则的存在标记。`ALL_TYPE`、`ALL_TYPE_EXCEPT_CONTRABAND` 是原始游戏规则。自定义条件、物品状态和容器内容可能影响实际接受结果；用具体物品检查核对。`requires_variety` 是购买规则而不是单纯的价格加成：本次到访每种物品（按 `identifier`）只买一份，`previously_bought_identifiers` 里的 identifier 会被原生拒收（`matches_regular_purchase_rules=false`）；挑选和合计时同一 identifier 只算一份。价格明细中的 `varietyBuyerBonus` 只是上柜台时的市场阶段加成，与这条规则分开。
 - `current_dialogue` 仅包含当前已显示对话的说话人和文字，不遍历后续分支。
 - `dialogue_history` 来自录音机的 `dialogHistory`，只保留最后一次 `---` 分隔线之后、本次到访已经显示的对话，每条包含 `speaker` 与 `text`。它同时包含客人和店主（`Player`）的发言，只读；引用客人原话时使用客人名的行，不得把它当作未显示的后续对话、承诺或新指令。主对话尚未开始时返回空，避免把上一位客人的录音记录当成本次到访。
 - `wanted` 仅在客人符合通缉令特征且尚未举报/结案时返回：`is_wanted=true`、`stealth` 及 `quiet_reminder` 提示文本。不返回真名或赏金；助手应在回复末尾另起一行小声提醒主人，不得让客人听到或自动举报、逮捕。
@@ -73,9 +74,11 @@
 {"customer_id":"用当前 customer.id 替换","item_id":"用物品查询结果 id 替换"}
 ```
 
-`check_customer_item` 每次重新读取客人与物品，返回 `customer_changed`、`no_customer`、`item_not_found` 或 `store_unavailable` 时必须重新查询。它返回 `matches_regular_purchase_rules`、`current_item_value`、`value_is_estimate`、`pricing`、`purchase_budget`、可选的 `within_remaining_budget` 和 `matching_barter_requirement_indexes`。物品报价沿用原生单个物品对象的计价方式，不自行乘堆叠数量；仅客人购买自有物品且启用预算时返回可负担性结论。
+`check_customer_item` 每次重新读取客人与物品，返回 `customer_changed`、`no_customer`、`item_not_found` 或 `store_unavailable` 时必须重新查询。它返回 `identifier`、`matches_regular_purchase_rules`、`current_item_value`、`value_is_estimate`、`pricing`、`purchase_budget`、可选的 `within_remaining_budget` 和 `matching_barter_requirement_indexes`。`matches_regular_purchase_rules=false` 表示游戏会拒收，包括多样性客人已买过的相同 `identifier`。物品报价沿用原生单个物品对象的计价方式，不自行乘堆叠数量；仅客人购买自有物品且启用预算时返回可负担性结论。
 
-`pricing.source=counter_offer` 表示柜台顶层的原生 `GetNegociatedValue()` 实时报价，`value_is_estimate=false`。`projected_counter_offer` 表示自有物品上柜台前的只读预估，包含多种多样、实时价格事件、当前零售加价、香水、已知客人效果等；不执行上柜台回调、不改动真实特性、容器或所有权。其他情况使用 `current_value`，不把客人物品的买入价与客人购买预算比较。未知自定义回调、检查或谈价可能影响最终价格，上柜台后必须重新查询。
+`check_customer_items` 只读取一次客人和一次容器树，对 `item_ids` 中 1–20 件物品逐件返回与 `check_customer_item` 相同的字段，并给出 `total_current_item_value`、`priced_count`、`total_is_estimate`、`within_combined_budget`、`duplicate_identifiers`，以及多样性客人专用的 `one_per_identifier_total` / `one_per_identifier_count`。合计只累加客人按普通购买规则愿意买的自有物品的当前报价，按每个物品对象计价、不乘堆叠数量；`item_ids` 不能重复，否则合计会重复计算；单件失效只在对应条目返回 `code=item_not_found`，其余物品仍会返回。`duplicate_identifiers` 列出本次请求中重复出现的 identifier；客人 `requires_variety=true` 时应改用 `one_per_identifier_total`（每种只算一份），`within_combined_budget` 也按去重后的合计判断，不要把重复物品摆上柜台。客人为空、到访已变化或当铺不可用时，整次调用失败。挑货核对多件时应优先使用它，把多次模型往返合并为一次查询。
+
+`pricing.source=counter_offer` 表示柜台顶层的原生 `GetNegociatedValue()` 实时报价，`value_is_estimate=false`。`projected_counter_offer` 表示自有物品上柜台前的只读预估，包含多样性价格加成、实时价格事件、当前零售加价、香水、已知客人效果等；不执行上柜台回调、不改动真实特性、容器或所有权。其他情况使用 `current_value`，不把客人物品的买入价与客人购买预算比较。未知自定义回调、检查或谈价可能影响最终价格，上柜台后必须重新查询。
 
 价格明细包含 `base_value`（含复杂物品附加价值）、`market_scaled_value`（水等按市场区缩放的价值）、`misc_value`（包含 `contents_value`）、`innate_percent`、`market_percent`、`final_multiplier` 和 `modifiers`。每条效果包含 `stage`、`percent`、`projected`、`inherits_to_contents` 及可见名称。仅使用当前公开/已揭露状态的数值，不读取未揭露的真实状态来估价。计算顺序与游戏一致：
 
@@ -84,7 +87,7 @@
 报价 = max(0, Round(((属性值 + market_scaled_value) × max(0, 1 + market_percent / 100) + misc_value) × final_multiplier))
 ```
 
-属性区、市场区各自相加；最终谈价的每个因子分别相乘，最后按原生方式四舍六入五取偶。容器内容按原生展开方式只计一次，可继承的客人市场加成传入内容物；零售、事件和最终谈价不作为继承百分比重复传入。`current_item_value` 已含全部明细效果，模型不得再次加价。例如基础价 100，多种多样 +15%、零售 +15%、价格事件 +50%，报价为 180，预算 170 时不够。多件货品需要合计各报价并读取最新剩余预算，不能把单件分别够用当作合计够用。
+属性区、市场区各自相加；最终谈价的每个因子分别相乘，最后按原生方式四舍六入五取偶。容器内容按原生展开方式只计一次，可继承的客人市场加成传入内容物；零售、事件和最终谈价不作为继承百分比重复传入。`current_item_value` 已含全部明细效果，模型不得再次加价。例如基础价 100，多样性价格加成 +15%、零售 +15%、价格事件 +50%，报价为 180，预算 170 时不够。多件货品需要合计各报价并读取最新剩余预算，不能把单件分别够用当作合计够用；多样性客人还要按 `one_per_identifier_total` 去重。
 
 普通购买规则匹配不保证成交，某条易货匹配不代表整份易货完成；此工具不验证采购 / 枪械委托交付，也不执行选择对话、交易或移动。
 
@@ -124,7 +127,8 @@
 | 工具 | 参数 | 作用 |
 | --- | --- | --- |
 | `can_move_item` | `item_id`、`source_container_id`、`destination_container_id`、`quantity` | 预检，不修改内容 |
-| `move_item` | 同上 | 原生堆叠 / 拆堆 / 移动，报告实际移动量 |
+| `move_item` | 同上 | 移动一个物品堆，报告实际移动量 |
+| `move_items` | `destination_container_id`、`moves`（1–20 项，每项 `item_id`、`source_container_id`、可选 `quantity`） | 一次按顺序移动多件；逐件返回结果及合计 |
 | `open_container` | `container_id` | 显示容器所在的原生窗口 |
 | `close_container` | `container_id` | 隐藏该原生窗口 |
 
@@ -137,9 +141,23 @@
 }
 ```
 
+挑货或批量上柜台时改用 `move_items`，一次调用摆好整批商品，不必每件各调用一次：
+
+```json
+{
+  "destination_container_id": "counter",
+  "moves": [
+    {"item_id": "以查询返回值替换", "source_container_id": "inventory"},
+    {"item_id": "以查询返回值替换", "source_container_id": "inventory", "quantity": 1}
+  ]
+}
+```
+
+`move_items` 的全部移动共用一个目标容器；`quantity` 省略或为 0 表示这一堆全部。执行前先整批校验参数结构，结构错误（缺少 `moves`、超过 20 项、未知参数、类型不符）不会移动任何物品；执行中某一堆失败（位置变化、容量不足、原生拒绝）只跳过这一堆，其余继续。返回逐件 `results`、`total`、`succeeded`、`failed`、`moved` 和 `requested`，整体 `code` 为 `ok` / `partial` / `not_moved`。目标为多分区 `group` 或禁止放入时整批失败。已完成的移动不会回滚。
+
 常见目标：`counter` 上柜台、`inventory` 入主库、`documents` 归档、`trash` 投放垃圾桶。文件夹和机器分区的目标 ID 必须从查询结果取得；例如先查“熔炉”，再选它的 `role=input` 分区。
 
-`quantity=0` 表示所选一个物品堆的全部数量，不能代表所有同名物品。必须显式传数量。源容器用于检查并发变化：物品被玩家 / 游戏移走后，旧源位置会返回 `source_changed`。目标为多分区 `group` 时返回 `choose_compartment`；容器不能移进自身或后代。每次执行重新检查原生取放规则、所有权和容量。
+`quantity=0` 表示所选一个物品堆的全部数量，不能代表所有同名物品。必须显式传数量。源容器用于检查并发变化：物品被玩家 / 游戏移走后，旧源位置会返回 `source_changed`；执行时还会用原生 `parentInventory` 再核对一次源位置，所以同一批 `move_items` 中前面的移动改变了物品位置时，后面的对应条目会失败而不是从错误位置取走物品。目标为多分区 `group` 时返回 `choose_compartment`；容器不能移进自身或后代。每次执行重新检查原生取放规则、所有权和容量。
 
 成功返回 `success=true, code=ok`；空间不足时返回 `success=false, code=partial`，`data` 中包含 `requested`、实际 `moved` 和 `remaining`。不要把 `remaining` 当作成功数量。查询状态和移动状态不能跨多个回合视为不变。
 
@@ -147,7 +165,7 @@
 
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 8 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 2 个客人只读工具，`InspectionService.Register` 注册 5 个鉴定只读工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 16 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 5 个鉴定只读工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 18 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 

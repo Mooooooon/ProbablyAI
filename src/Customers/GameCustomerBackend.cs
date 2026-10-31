@@ -73,7 +73,7 @@ namespace ProbablyAI.Customers
                         RefusesHazardousWaterLabel = client.refusesHazardousWaterLabel,
                         AcceptedChemicalProductGrade = client.acceptedChemicalProductGrade,
                         CustomerSellingDisabled = client.isRegularSellDisable,
-                        Note = T("原始游戏标签/标识符。ALL_TYPE 表示通用购买，ALL_TYPE_EXCEPT_CONTRABAND 排除违禁品；状态、容器内容和自定义规则仍可能拒收。用 check_customer_item 核对具体物品；普通购买偏好不代表易货或委托条件。CustomerSellingDisabled 表示客人不向店主普通出售。")
+                        Note = T("原始游戏标签/标识符。ALL_TYPE 表示通用购买，ALL_TYPE_EXCEPT_CONTRABAND 排除违禁品；状态、容器内容和自定义规则仍可能拒收。用 check_customer_item 核对具体物品；普通购买偏好不代表易货或委托条件。CustomerSellingDisabled 表示客人不向店主普通出售。RequiresVariety 是购买规则：本次到访每种物品（按 identifier）只要一份，PreviouslyBoughtIdentifiers 里的 identifier 会被原生拒收；挑选和合计时同一 identifier 只算一份，价格明细中的 varietyBuyerBonus 只是市场加成，不是这条规则。")
                     },
                     CurrentDialogue = CurrentDialogue(client), Barter = Barter(client.barterOffer),
                     DialogueHistory = dialogueHistory != null && dialogueHistory.Count > 0 ? dialogueHistory : null,
@@ -84,6 +84,16 @@ namespace ProbablyAI.Customers
 
         public CustomerItemCheck CheckItem(string expectedCustomerId, string itemId)
         {
+            var result = CheckItems(expectedCustomerId, new[] { itemId }).Results[0];
+            // The single-item tool still reports a stale ID as a failure of the whole call.
+            if (!string.IsNullOrEmpty(result.Code)) throw new HandsException(result.Code, result.Message);
+            return result;
+        }
+
+        // One customer read and one world capture for the whole batch, so picking several goods
+        // costs one model round trip instead of one per candidate.
+        public CustomerItemsCheck CheckItems(string expectedCustomerId, IReadOnlyList<string> itemIds)
+        {
             var snapshot = Capture();
             if (snapshot.Customer == null)
                 throw new HandsException("no_customer", snapshot.Status == "arriving" ? T("客人尚未到达柜台。") : T("当前没有客人。"));
@@ -91,26 +101,86 @@ namespace ProbablyAI.Customers
                 throw new HandsException("customer_changed", T("当前客人已改变，请重新查询客人及需求后再检查物品。"));
             var client = observed.GetClientBlueprint();
             var world = hands.Capture(); // Refresh the same ID map used by inventory tools, including nested containers.
-            var info = world.Items.FirstOrDefault(i => i.Id == itemId);
-            if (info == null) throw new HandsException("item_not_found", T("物品已失效或不可访问，请重新查询物品。"));
-            var item = hands.ResolveCurrentItem(itemId);
-            var pricing = GameCustomerPricing.Read(item, client);
-            var budget = Budget(client);
-            var result = new CustomerItemCheck
+            var result = new CustomerItemsCheck
             {
-                CustomerId = snapshot.Customer.Id, ItemId = info.Id, ItemName = info.Name, ContainerId = info.ContainerId,
-                BusinessComplete = client.isBusinessComplete,
-                MatchesRegularPurchaseRules = client.IsClientBuyingThisItem(item),
-                PurchaseBudget = budget, CurrentItemValue = pricing.Value, Pricing = pricing,
-                ValueIsEstimate = pricing.Source != "counter_offer",
-                WithinRemainingBudget = CustomerPriceCalculator.WithinBudget(pricing, budget, GeneralHelper.IsItemOwned(item) && client.IsClientBuying()),
-                Note = PriceNote(pricing.Source)
+                CustomerId = snapshot.Customer.Id, Count = itemIds.Count, PurchaseBudget = Budget(client),
+                Note = T("合计只统计客人按普通购买规则愿意买的自有物品，按每个物品对象当前报价相加，不乘堆叠数量；上柜台后可能变化。")
             };
-            var conditions = client.barterOffer?.conditions;
-            if (conditions != null)
-                for (int index = 0; index < conditions.Count; index++)
-                    if (conditions[index] != null && conditions[index].IsItemValid(item))
-                        result.MatchingBarterRequirementIndexes.Add(index);
+            var identifiers = new Dictionary<string, int>(StringComparer.Ordinal);
+            var unique = client.isRequireVariety ? new HashSet<string>(StringComparer.Ordinal) : null;
+            long uniqueTotal = 0;
+            int uniqueCount = 0;
+            if (unique != null)
+                result.Note += " " + T("这位客人要求多样性：每种物品（identifier）只买一份，合计请用 one_per_identifier_total；duplicate_identifiers 里的物品要先去掉重复。");
+            foreach (var itemId in itemIds)
+            {
+                var info = world.Items.FirstOrDefault(i => i.Id == itemId);
+                if (info == null)
+                {
+                    result.Results.Add(new CustomerItemCheck
+                    {
+                        ItemId = itemId, Code = "item_not_found", Message = T("物品已失效或不可访问，请重新查询物品。")
+                    });
+                    continue;
+                }
+                GameItem item;
+                try { item = hands.ResolveCurrentItem(itemId); }
+                catch (HandsException error)
+                {
+                    result.Results.Add(new CustomerItemCheck { ItemId = itemId, Code = error.Code, Message = error.Message });
+                    continue;
+                }
+                var pricing = GameCustomerPricing.Read(item, client);
+                bool owned = GeneralHelper.IsItemOwned(item);
+                bool customerBuys = owned && client.IsClientBuying();
+                var check = new CustomerItemCheck
+                {
+                    CustomerId = snapshot.Customer.Id, ItemId = info.Id, ItemName = info.Name, Identifier = info.Identifier,
+                    ContainerId = info.ContainerId,
+                    BusinessComplete = client.isBusinessComplete,
+                    MatchesRegularPurchaseRules = client.IsClientBuyingThisItem(item),
+                    PurchaseBudget = result.PurchaseBudget, CurrentItemValue = pricing.Value, Pricing = pricing,
+                    ValueIsEstimate = pricing.Source != "counter_offer",
+                    WithinRemainingBudget = CustomerPriceCalculator.WithinBudget(pricing, result.PurchaseBudget, customerBuys),
+                    Note = PriceNote(pricing.Source)
+                };
+                var conditions = client.barterOffer?.conditions;
+                if (conditions != null)
+                    for (int index = 0; index < conditions.Count; index++)
+                        if (conditions[index] != null && conditions[index].IsItemValid(item))
+                            check.MatchingBarterRequirementIndexes.Add(index);
+                result.Results.Add(check);
+                // Variety buyers take one item per identifier, so repeated identifiers are reported
+                // instead of being silently priced twice.
+                if (!string.IsNullOrEmpty(check.Identifier))
+                {
+                    identifiers.TryGetValue(check.Identifier, out int seen);
+                    identifiers[check.Identifier] = seen + 1;
+                    if (seen == 1) result.DuplicateIdentifiers.Add(check.Identifier);
+                }
+                if (check.MatchesRegularPurchaseRules && customerBuys)
+                {
+                    result.TotalCurrentItemValue += check.CurrentItemValue;
+                    result.PricedCount++;
+                    result.TotalIsEstimate |= check.ValueIsEstimate;
+                    if (unique != null && (string.IsNullOrEmpty(check.Identifier) || unique.Add(check.Identifier)))
+                    {
+                        uniqueTotal += check.CurrentItemValue;
+                        uniqueCount++;
+                    }
+                }
+            }
+            if (unique != null)
+            {
+                result.OnePerIdentifierTotal = uniqueTotal;
+                result.OnePerIdentifierCount = uniqueCount;
+            }
+            var budget = result.PurchaseBudget;
+            // Variety buyers only take one item per identifier, so affordability uses that total.
+            long combined = unique != null ? uniqueTotal : result.TotalCurrentItemValue;
+            int combinedCount = unique != null ? uniqueCount : result.PricedCount;
+            result.WithinCombinedBudget = combinedCount > 0 && budget.Enabled && budget.Remaining.HasValue
+                ? (bool?)(combined <= budget.Remaining.Value) : null;
             return result;
         }
 

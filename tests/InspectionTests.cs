@@ -31,7 +31,9 @@ internal static partial class Program
                 AssistantPrompt.PreviousChineseRecorderDefault, AssistantPrompt.PreviousEnglishRecorderDefault,
                 AssistantPrompt.PreviousChineseStolenDefault, AssistantPrompt.PreviousEnglishStolenDefault,
                 AssistantPrompt.PreviousChineseRibwichDefault, AssistantPrompt.PreviousEnglishRibwichDefault,
-                AssistantPrompt.PreviousChinesePlasmaDefault, AssistantPrompt.PreviousEnglishPlasmaDefault })
+                AssistantPrompt.PreviousChinesePlasmaDefault, AssistantPrompt.PreviousEnglishPlasmaDefault,
+                AssistantPrompt.PreviousChineseBatchDefault, AssistantPrompt.PreviousEnglishBatchDefault,
+                AssistantPrompt.PreviousChineseVarietyDefault, AssistantPrompt.PreviousEnglishVarietyDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "saved default not upgraded");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom rule") == previous + "\nCustom rule", "custom prompt replaced");
@@ -42,7 +44,7 @@ internal static partial class Program
             var registry = ToolRegistry.ForHands(new HandsService(new FakeHands()));
             new CustomerService(new FakeCustomer()).Register(registry);
             new InspectionService(new GameInspectionBackend(InspectionWorld())).Register(registry);
-            Assert(registry.Definitions().Count == 15, "inspection tools missing");
+            Assert(registry.Definitions().Count == 17, "inspection tools missing");
             foreach (JObject definition in InspectionProtocol.Tools())
             {
                 string name = (string)definition["function"]["name"];
@@ -340,7 +342,7 @@ internal static partial class Program
             int round = 0;
             var transport = new RegistryTransport((messages, tools, token) =>
             {
-                Assert(tools.Count == 15 && tools.Any(t => (string)t["function"]["name"] == "appraise_mechanical_hand") &&
+                Assert(tools.Count == 17 && tools.Any(t => (string)t["function"]["name"] == "appraise_mechanical_hand") &&
                     tools.Any(t => (string)t["function"]["name"] == "appraise_ribwich") &&
                     tools.Any(t => (string)t["function"]["name"] == "appraise_plasma_fuel") &&
                     tools.Any(t => (string)t["function"]["name"] == "inspect_cigarette") &&

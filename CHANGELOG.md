@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.7.6 — 2026-11-01
+
+### 中文
+
+- 挑货和批量上柜台更快：助手可以一次摆放多件商品，不必逐件等待；每次移动仍逐件遵守原生所有权、锁定、容量和当前位置规则，部分失败会逐件说明。
+- 新增批量核对：一次查询多件货品的报价与合计预算，合计金额和预算结论一起返回。
+- 修正多样性客人（`requires_variety`）的处理：客人本次到访每种物品只买一份，已买过的物品标识会被原生拒收；挑货、合计和预算结论都按物品标识去重，不再把多样性当成单纯的价格加成。
+
+### English
+
+- Faster picking and restocking: the assistant can place several goods with one call instead of waiting for each item. Every move still follows native ownership, lock, capacity and current-location rules, and partial results are reported per item.
+- Added batch price checks: check several candidate items and their combined budget in one query, returning the total and budget verdict together.
+- Fixed handling of variety customers (`requires_variety`): they buy one item per identifier for this visit and natively refuse identifiers already bought; picking, totals and the budget verdict are now deduplicated, and the variety bonus is no longer treated as the rule itself.
+
 ## 0.7.5 — 2026-11-01
 
 ### 中文

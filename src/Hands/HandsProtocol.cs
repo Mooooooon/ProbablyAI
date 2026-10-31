@@ -27,6 +27,27 @@ namespace ProbablyAI.Hands
                 ["destination_container_id"] = Text("目标容器 ID。机器必须指定原料、成品、电池、模块等具体分区。"),
                 ["quantity"] = new JObject { ["type"] = "integer", ["minimum"] = 0, ["description"] = "移动数量；0 代表这个物品堆的全部数量，不能代表全部同名物品。" }
             };
+            var batch = new JObject
+            {
+                ["destination_container_id"] = Text("所有移动共用的目标容器 ID。机器必须指定原料、成品、电池、模块等具体分区。"),
+                ["moves"] = new JObject
+                {
+                    ["type"] = "array", ["minItems"] = 1, ["maxItems"] = 20,
+                    ["description"] = "要按顺序移动的物品堆，每项写明物品 ID 和当前所在容器。",
+                    ["items"] = new JObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JObject
+                        {
+                            ["item_id"] = Text("先查询获得的具体物品 ID；不能使用物品名称代替。"),
+                            ["source_container_id"] = Text("查询中物品当前所在容器 ID，用于检测位置变化。"),
+                            ["quantity"] = new JObject { ["type"] = "integer", ["minimum"] = 0, ["description"] = "可选，移动数量；0 或省略代表这个物品堆的全部数量，不能代表全部同名物品。" }
+                        },
+                        ["required"] = new JArray("item_id", "source_container_id"),
+                        ["additionalProperties"] = false
+                    }
+                }
+            };
             var list = (JObject)pagination.DeepClone();
             list["query"] = Text("可选：按容器名、路径或分区角色搜索。空字符串返回所有可访问容器。");
             list["parent_id"] = Text("可选：只列出这个容器的直接子容器。");
@@ -46,7 +67,8 @@ namespace ProbablyAI.Hands
                 Tool("find_items", "按名称、嵌套路径或游戏物品类型递归查找，返回唯一 ID、数量、类型、位置、赃物标记和热度。找所有食物应设 item_type=FOOD，无需名称含食物。默认不返回设备中供电或充电的电池（in_use=true）、已固定且不是容器的物品（pinned=true）以及赃物（stolen=true）。", search),
                 Tool("inspect_item", "查看某个真实物品的描述、数量、所有权、位置、内容容器 ID、赃物标记与热度。", new JObject { ["item_id"] = Text("物品 ID。") }, "item_id"),
                 Tool("can_move_item", "预检单个物品堆是否能放入目标容器，不移动。执行时可能因容量或状态变化只移动一部分。", move, "item_id", "source_container_id", "destination_container_id", "quantity"),
-                Tool("move_item", "按游戏原生规则移动一个物品堆，支持上柜台、客人窗口到柜台、入库、归档、放入垃圾桶和机器投料。返回实际 moved 和 remaining；partial 不等于全部完成。不买卖、不改变所有权、不清空垃圾桶。", move, "item_id", "source_container_id", "destination_container_id", "quantity"),
+                Tool("move_item", "按游戏原生规则移动一个物品堆，支持上柜台、客人窗口到柜台、入库、归档、放入垃圾桶和机器投料。一次只移动一件：挑货或批量上柜台时改用 move_items，一次摆放多件。返回实际 moved 和 remaining；partial 不等于全部完成。不买卖、不改变所有权、不清空垃圾桶。", move, "item_id", "source_container_id", "destination_container_id", "quantity"),
+                Tool("move_items", "按游戏原生规则依次移动 1–20 个物品堆，一次调用完成多件摆放；挑货、整理和批量上柜台优先用它，而不是连续调用 move_item。每件独立检查原生所有权、锁定、容量和当前位置，已完成的移动不会回滚。返回每件结果及合计 moved；partial 不等于全部完成。所有移动使用同一个目标容器；不买卖、不改变所有权、不清空垃圾桶。", batch, "destination_container_id", "moves"),
                 Tool("open_container", "显示指定容器的原生窗口，不解锁容器、不启动机器。", new JObject { ["container_id"] = Text("容器 ID。") }, "container_id"),
                 Tool("close_container", "关闭指定容器的原生窗口。", new JObject { ["container_id"] = Text("容器 ID。") }, "container_id")
             };

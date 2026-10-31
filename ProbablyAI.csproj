@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>ProbablyAI</AssemblyName>
     <RootNamespace>ProbablyAI</RootNamespace>
-    <Version>0.7.5</Version>
+    <Version>0.7.6</Version>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <PathMap>$(MSBuildProjectDirectory)=/src</PathMap>

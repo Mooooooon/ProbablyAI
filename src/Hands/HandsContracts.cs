@@ -52,6 +52,8 @@ namespace ProbablyAI.Hands
     public sealed class MoveCheck
     {
         public bool Allowed { get; set; }
+        // A more precise failure code than move_rejected, e.g. source_changed.
+        public string Code { get; set; }
         public string Reason { get; set; }
         public int FirstSlotQuantity { get; set; }
     }
@@ -65,8 +67,8 @@ namespace ProbablyAI.Hands
     public interface IHandsBackend
     {
         WorldSnapshot Capture();
-        MoveCheck CheckMove(string itemId, string destinationId, int quantity);
-        MoveOutcome Move(string itemId, string destinationId, int quantity);
+        MoveCheck CheckMove(string itemId, string sourceId, string destinationId, int quantity);
+        MoveOutcome Move(string itemId, string sourceId, string destinationId, int quantity);
         void SetOpen(string containerId, bool open);
     }
 

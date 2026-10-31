@@ -215,11 +215,16 @@ namespace ProbablyAI.Hands
                 if (child != null && seen.Add(child)) CollectGraph(child, regions, name, role, seen, depth + 1);
         }
 
-        public MoveCheck CheckMove(string itemId, string destinationId, int quantity)
+        public MoveCheck CheckMove(string itemId, string sourceId, string destinationId, int quantity)
         {
             EnsureReady();
             var item = NativeItem(itemId);
+            var source = NativeContainer(sourceId);
             var target = NativeContainer(destinationId);
+            // Verify the native source, not just the snapshot: a batch may run after an earlier
+            // move in the same call changed where the item actually is.
+            if (source.Inventory == null) return Rejected("source_changed", T("物品来源不是具体容器分区，请重新查询物品位置。"));
+            if (!ReferenceEquals(item.parentInventory, source.Inventory)) return Rejected("source_changed", T("物品已不在原位置，请重新查询后再移动。"));
             if (target.Inventory == null) return Rejected(T("请选择机器的具体分区或容器分页。"));
             if (!item.MayRemove() || item.MaxNumRemove() < 1) return Rejected(T("游戏禁止取出此物品，可能被锁定、固定或处于工作中。"));
             if (target.Window != null && target.Window.isLocked || target.Inventory.IsInsertLocked()) return Rejected(T("目标容器已锁定或禁止放入。"));
@@ -232,7 +237,7 @@ namespace ProbablyAI.Hands
             return new MoveCheck { Allowed = true, FirstSlotQuantity = Math.Min(quantity, slot.numTransfer) };
         }
 
-        public MoveOutcome Move(string itemId, string destinationId, int quantity)
+        public MoveOutcome Move(string itemId, string sourceId, string destinationId, int quantity)
         {
             EnsureReady();
             var item = NativeItem(itemId);
@@ -243,7 +248,9 @@ namespace ProbablyAI.Hands
             // Never pre-expel, create, destroy, reassign ownership, or force an item into a slot.
             for (int step = 0; step < 40 && moved < quantity; step++)
             {
-                var check = CheckMove(itemId, destinationId, quantity - moved);
+                MoveCheck check;
+                try { check = CheckMove(itemId, sourceId, destinationId, quantity - moved); }
+                catch (HandsException error) when (moved > 0) { detail = error.Message; break; }
                 if (!check.Allowed) { detail = check.Reason; break; }
                 var slot = target.Inventory.TryFindOneValidInventorySlot(item);
                 if (slot == null || !ReferenceEquals(slot.inventory, target.Inventory)) break;
@@ -276,6 +283,7 @@ namespace ProbablyAI.Hands
         private Binding NativeContainer(string id)
             => containers.TryGetValue(id, out var binding) ? binding : throw new HandsException("container_not_found", T("容器已失效，请重新获取。"));
         private static MoveCheck Rejected(string reason) => new MoveCheck { Reason = reason };
+        private static MoveCheck Rejected(string code, string reason) => new MoveCheck { Code = code, Reason = reason };
         private string Stable<T>(Dictionary<T, string> registry, T value, string prefix)
         {
             if (!registry.TryGetValue(value, out var id)) registry[value] = id = prefix + "-" + session + "-" + (++sequence);

@@ -151,6 +151,7 @@ namespace ProbablyAI.Customers
         public string CustomerId { get; set; }
         public string ItemId { get; set; }
         public string ItemName { get; set; }
+        public string Identifier { get; set; }
         public string ContainerId { get; set; }
         public bool BusinessComplete { get; set; }
         public bool MatchesRegularPurchaseRules { get; set; }
@@ -160,6 +161,28 @@ namespace ProbablyAI.Customers
         public bool ValueIsEstimate { get; set; } = true;
         public CustomerPrice Pricing { get; set; }
         public List<int> MatchingBarterRequirementIndexes { get; set; } = new List<int>();
+        public string Note { get; set; }
+        // Set only when this one item could not be read inside a batch; the rest still returns.
+        public string Code { get; set; }
+        public string Message { get; set; }
+    }
+
+    public sealed class CustomerItemsCheck
+    {
+        public string CustomerId { get; set; }
+        public int Count { get; set; }
+        public CustomerBudget PurchaseBudget { get; set; }
+        // Sum of current per-item quotes for goods this customer would buy from the owner.
+        public long TotalCurrentItemValue { get; set; }
+        public int PricedCount { get; set; }
+        public bool TotalIsEstimate { get; set; }
+        public bool? WithinCombinedBudget { get; set; }
+        // Identifiers that appear more than once in this request; variety buyers only take one.
+        public List<string> DuplicateIdentifiers { get; set; } = new List<string>();
+        // Variety buyers take one item per identifier, so this total drops repeated identifiers.
+        public long? OnePerIdentifierTotal { get; set; }
+        public int? OnePerIdentifierCount { get; set; }
+        public List<CustomerItemCheck> Results { get; set; } = new List<CustomerItemCheck>();
         public string Note { get; set; }
     }
 
@@ -193,5 +216,6 @@ namespace ProbablyAI.Customers
     {
         CustomerSnapshot Capture();
         CustomerItemCheck CheckItem(string expectedCustomerId, string itemId);
+        CustomerItemsCheck CheckItems(string expectedCustomerId, IReadOnlyList<string> itemIds);
     }
 }

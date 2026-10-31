@@ -53,7 +53,7 @@ namespace ProbablyAI.Tools
             {
                 string name = (string)definition["function"]["name"];
                 registry.Register(definition, arguments => hands.Execute(name, arguments),
-                    name == "move_item" || name == "open_container" || name == "close_container");
+                    name == "move_item" || name == "move_items" || name == "open_container" || name == "close_container");
             }
             return registry;
         }

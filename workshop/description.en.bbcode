@@ -42,6 +42,13 @@ UI, system prompts, and tool descriptions automatically adapt to the game's lang
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.6[/b]
+[list]
+[*]Pick or restock the counter several goods at a time instead of waiting for each item; every move still follows native ownership, lock, capacity and location rules.
+[*]Added batch checks: query several candidate items and their combined budget at once, with the total and budget verdict together.
+[*]Fixed variety customers: one item per identifier per visit, identifiers already bought are refused, and picking, totals and the budget verdict are deduplicated instead of treating variety as only a price bonus.
+[/list]
+
 [b]v0.7.5[/b]
 [list]
 [*]Fixed other mods sometimes crashing during load, the UI switching to English, or the save list appearing empty when this mod was enabled: the game locale is now read after the game's localization initialization completes.
@@ -67,18 +74,7 @@ UI, system prompts, and tool descriptions automatically adapt to the game's lang
 [*]Charging batteries in a charger are excluded by default when picking goods for a customer.
 [/list]
 
-[b]v0.7.1[/b]
-[list]
-[*]Added wanted and augmented visitor alerts: a quiet end-of-reply reminder, no disclosure to the customer and no automatic reporting, attack or trade.
-[*]Added document reading: mentor notes, intel slips, book pages, and visible guide or wanted-poster text.
-[/list]
-
-[b]v0.7.0[/b]
-[list]
-[*]Added mechanical hand, cigarette and food stamp appraisal: visible inspection data, apparent problems, native base value or face value, nested containers and native restrictions.
-[*]Added chat quick replies: pick goods for the current customer and place them on the counter, and appraise each item the customer brought.
-[*]Added a Thinking level setting: thinking off, low, high or max, sending thinking and reasoning_effort where supported.
-[/list]
+[i]Older versions are listed in the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url].[/i]
 
 [h2]🛠️ Quick Start & Notes[/h2]
 [list]

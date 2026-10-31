@@ -1,1 +1,1 @@
-v0.7.5: fixed other mods sometimes crashing during load, the UI switching to English, or the save list appearing empty when this mod was enabled; the game locale is now read after localization initialization completes.
+v0.7.6: pick or restock the counter several goods at a time instead of waiting for each item; check multiple candidates and their combined budget in one query; fixed variety customers (one item per identifier, deduplicated totals).

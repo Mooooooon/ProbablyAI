@@ -77,7 +77,7 @@ internal static partial class Program
         {
             var registry = ToolRegistry.ForHands(new HandsService(new FakeHands()));
             new CustomerService(new FakeCustomer()).Register(registry);
-            Assert(registry.Definitions().Count == 10, "customer tools not registered alongside hands");
+            Assert(registry.Definitions().Count == 12, "customer tools not registered alongside hands");
             foreach (JObject definition in CustomerProtocol.Tools())
             {
                 string name = (string)definition["function"]["name"];
@@ -124,6 +124,99 @@ internal static partial class Program
             backend.Current.Customer.Id = "guest-one";
             Assert(registry.Execute("check_customer_item", new JObject { ["customer_id"] = "guest-one", ["item_id"] = "expired" }).Code == "item_not_found", "stale item accepted");
             Assert(registry.Execute("check_customer_item", CustomerItemArgs()).Success, "current IDs rejected");
+        });
+        await Check("batch customer check returns one combined amount and budget verdict", () =>
+        {
+            var backend = new FakeCustomer(); var service = new CustomerService(backend);
+            var result = Doc(service.Execute("check_customer_items", new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("ore", "note-a") }));
+            var data = result["data"];
+            Assert((bool)result["success"] && (int)data["count"] == 2, "batch check failed");
+            Assert((int)data["total_current_item_value"] == 40 && (int)data["priced_count"] == 2 && (bool)data["within_combined_budget"],
+                "combined amount or verdict wrong");
+            var entries = (JArray)data["results"];
+            Assert(entries.Count == 2 && entries.All(e => e["code"] == null), "per-item results missing");
+            Assert(backend.Reads == 1 && backend.Checks == 2, "batch check did not read once and price each item");
+        });
+        await Check("batch customer check keeps the other prices when one item is stale", () =>
+        {
+            var result = Doc(new CustomerService(new FakeCustomer()).Execute("check_customer_items",
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("expired", "ore") }));
+            var entries = (JArray)result["data"]["results"];
+            Assert((string)entries[0]["code"] == "item_not_found" && entries[1]["code"] == null, "stale item hid or broke the rest");
+            Assert((int)result["data"]["priced_count"] == 1 && (int)result["data"]["total_current_item_value"] == 20,
+                "stale item counted in the total");
+        });
+        await Check("batch customer check leaves the combined verdict unknown without an enabled budget", () =>
+        {
+            var backend = new FakeCustomer(); var service = new CustomerService(backend);
+            backend.Current.Customer.PurchaseBudget = new CustomerBudget { Enabled = false };
+            var unknown = Doc(service.Execute("check_customer_items", new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("ore", "note-a") }))["data"];
+            Assert(unknown["within_combined_budget"] == null, "disabled budget became a verdict");
+            backend.Current.Customer.PurchaseBudget = new CustomerBudget { Enabled = true, Remaining = 30 };
+            var over = Doc(service.Execute("check_customer_items", new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("ore", "note-a") }))["data"];
+            Assert(!(bool)over["within_combined_budget"], "combined budget check ignored the sum");
+        });
+        await Check("batch customer check validates its list before reading the game", () =>
+        {
+            var backend = new FakeCustomer(); var service = new CustomerService(backend);
+            var overlong = new JArray(); for (int i = 0; i < 21; i++) overlong.Add("ore");
+            foreach (var args in new[]
+            {
+                new JObject { ["customer_id"] = "guest-one" },
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray() },
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = overlong },
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = "ore" },
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("ore", "ore") },
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray(5) },
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("ore"), ["buy"] = true }
+            }) Assert(service.Execute("check_customer_items", args).Code == "invalid_arguments", "malformed batch accepted");
+            Assert(backend.Reads == 0 && backend.Checks == 0, "invalid batch touched the backend");
+        });
+        await Check("batch customer check reports a changed or absent customer", () =>
+        {
+            var backend = new FakeCustomer(); var service = new CustomerService(backend);
+            Assert(service.Execute("check_customer_items", new JObject { ["customer_id"] = "guest-two", ["item_ids"] = new JArray("ore") }).Code == "customer_changed",
+                "old visit accepted");
+            backend.Current = new CustomerSnapshot { Status = "absent" };
+            Assert(service.Execute("check_customer_items", new JObject { ["customer_id"] = "guest-two", ["item_ids"] = new JArray("ore") }).Code == "no_customer",
+                "absent visitor checked");
+            Assert(backend.Checks == 0, "failed batch priced items");
+        });
+        await Check("batch quote exposes identifiers and counts variety duplicates once", () =>
+        {
+            var backend = new FakeCustomer();
+            backend.Current.Customer.Preferences.RequiresVariety = true;
+            backend.Current.Customer.PurchaseBudget = new CustomerBudget { Enabled = true, Remaining = 50 };
+            var service = new CustomerService(backend);
+            var data = Doc(service.Execute("check_customer_items",
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("note-a", "note-b", "ore") }))["data"];
+            var entries = (JArray)data["results"];
+            Assert((string)entries[0]["identifier"] == "note" && (string)entries[1]["identifier"] == "note", "identifiers missing");
+            Assert(((JArray)data["duplicate_identifiers"]).Select(t => (string)t).SequenceEqual(new[] { "note" }), "duplicate identifier not reported");
+            Assert((int)data["total_current_item_value"] == 60 && (int)data["priced_count"] == 3, "plain total wrong");
+            Assert((int)data["one_per_identifier_total"] == 40 && (int)data["one_per_identifier_count"] == 2, "variety total counted duplicates");
+            Assert((bool)data["within_combined_budget"], "variety affordability used the duplicated total");
+        });
+        await Check("variety buyers refuse identifiers already bought on this visit", () =>
+        {
+            var backend = new FakeCustomer();
+            backend.Current.Customer.Preferences.RequiresVariety = true;
+            backend.Current.Customer.Preferences.PreviouslyBoughtIdentifiers.Add("note");
+            var service = new CustomerService(backend);
+            var single = Doc(service.Execute("check_customer_item", new JObject { ["customer_id"] = "guest-one", ["item_id"] = "note-a" }))["data"];
+            Assert(!(bool)single["matches_regular_purchase_rules"] && (string)single["identifier"] == "note", "bought identifier accepted");
+            var data = Doc(service.Execute("check_customer_items",
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("note-a", "ore") }))["data"];
+            var entries = (JArray)data["results"];
+            Assert(!(bool)entries[0]["matches_regular_purchase_rules"] && (bool)entries[1]["matches_regular_purchase_rules"], "batch ignored the refusal");
+            Assert((int)data["priced_count"] == 1 && (int)data["one_per_identifier_total"] == 20, "refused item counted in the variety total");
+        });
+        await Check("ordinary buyers get no variety-only totals", () =>
+        {
+            var data = Doc(new CustomerService(new FakeCustomer()).Execute("check_customer_items",
+                new JObject { ["customer_id"] = "guest-one", ["item_ids"] = new JArray("note-a", "note-b") }))["data"];
+            Assert(data["one_per_identifier_total"] == null && data["one_per_identifier_count"] == null, "variety totals emitted for an ordinary buyer");
+            Assert((int)data["total_current_item_value"] == 40, "ordinary total changed");
         });
         await Check("disabled budgets remain unknown and zero budgets remain zero", () =>
         {
@@ -235,20 +328,76 @@ internal static partial class Program
         public string CheckedItem;
         public Exception Failure;
         public CustomerSnapshot Capture() { Reads++; if (Failure != null) throw Failure; return Current; }
+        private static bool Known(string itemId) => itemId == "ore" || itemId == "note-a" || itemId == "note-b";
+        private static string IdentifierOf(string itemId) => itemId == "note-a" || itemId == "note-b" ? "note" : itemId;
+        private static bool Refused(CustomerInfo customer, string identifier)
+            => customer.Preferences.RequiresVariety && customer.Preferences.PreviouslyBoughtIdentifiers.Contains(identifier);
         public CustomerItemCheck CheckItem(string customerId, string itemId)
         {
             Checks++;
             var customer = Current.Customer;
             if (customer == null) throw new HandsException("no_customer", "当前没有已到达的客人。");
             if (customer.Id != customerId) throw new HandsException("customer_changed", "客人已改变。");
-            if (itemId != "ore" && itemId != "note-a") throw new HandsException("item_not_found", "物品已失效。");
+            if (!Known(itemId)) throw new HandsException("item_not_found", "物品已失效。");
             CheckedItem = itemId;
+            string identifier = IdentifierOf(itemId);
             return new CustomerItemCheck
             {
-                CustomerId = customerId, ItemId = itemId, CurrentItemValue = 20,
-                MatchesRegularPurchaseRules = true, PurchaseBudget = customer.PurchaseBudget,
+                CustomerId = customerId, ItemId = itemId, Identifier = identifier, CurrentItemValue = 20,
+                MatchesRegularPurchaseRules = !Refused(customer, identifier), PurchaseBudget = customer.PurchaseBudget,
                 WithinRemainingBudget = customer.PurchaseBudget.Enabled ? (bool?)(customer.PurchaseBudget.Remaining >= 20) : null
             };
+        }
+        public CustomerItemsCheck CheckItems(string customerId, IReadOnlyList<string> itemIds)
+        {
+            var snapshot = Capture();
+            var customer = snapshot.Customer;
+            if (customer == null) throw new HandsException("no_customer", "当前没有已到达的客人。");
+            if (customer.Id != customerId) throw new HandsException("customer_changed", "客人已改变。");
+            var result = new CustomerItemsCheck { CustomerId = customerId, Count = itemIds.Count, PurchaseBudget = customer.PurchaseBudget };
+            var identifiers = new Dictionary<string, int>(StringComparer.Ordinal);
+            var unique = customer.Preferences.RequiresVariety ? new HashSet<string>(StringComparer.Ordinal) : null;
+            long uniqueTotal = 0;
+            int uniqueCount = 0;
+            foreach (var itemId in itemIds)
+            {
+                // A stale ID must not hide the other prices, matching the native batch behavior.
+                if (!Known(itemId))
+                {
+                    result.Results.Add(new CustomerItemCheck { ItemId = itemId, Code = "item_not_found", Message = "物品已失效。" });
+                    continue;
+                }
+                Checks++;
+                CheckedItem = itemId;
+                string identifier = IdentifierOf(itemId);
+                var check = new CustomerItemCheck
+                {
+                    CustomerId = customerId, ItemId = itemId, Identifier = identifier, CurrentItemValue = 20,
+                    MatchesRegularPurchaseRules = !Refused(customer, identifier), PurchaseBudget = customer.PurchaseBudget
+                };
+                result.Results.Add(check);
+                identifiers.TryGetValue(identifier, out int seen);
+                identifiers[identifier] = seen + 1;
+                if (seen == 1) result.DuplicateIdentifiers.Add(identifier);
+                if (!check.MatchesRegularPurchaseRules) continue;
+                result.TotalCurrentItemValue += 20;
+                result.PricedCount++;
+                if (unique != null && unique.Add(identifier))
+                {
+                    uniqueTotal += 20;
+                    uniqueCount++;
+                }
+            }
+            if (unique != null)
+            {
+                result.OnePerIdentifierTotal = uniqueTotal;
+                result.OnePerIdentifierCount = uniqueCount;
+            }
+            long combined = unique != null ? uniqueTotal : result.TotalCurrentItemValue;
+            int combinedCount = unique != null ? uniqueCount : result.PricedCount;
+            result.WithinCombinedBudget = combinedCount > 0 && customer.PurchaseBudget.Enabled && customer.PurchaseBudget.Remaining.HasValue
+                ? (bool?)(combined <= customer.PurchaseBudget.Remaining.Value) : null;
+            return result;
         }
     }
 }
