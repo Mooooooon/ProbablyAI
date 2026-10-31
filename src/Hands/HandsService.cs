@@ -43,11 +43,12 @@ namespace ProbablyAI.Hands
                             world.Truncated
                         });
                     case "find_items":
-                        ValidateKeys(arguments, "query", "item_type", "owned_only", "container_id", "include_in_use", "offset", "limit");
+                        ValidateKeys(arguments, "query", "item_type", "owned_only", "container_id", "include_in_use", "include_pinned", "offset", "limit");
                         var search = Text(arguments, "query", false);
                         var itemType = Text(arguments, "item_type", false);
                         bool ownedOnly = Flag(arguments, "owned_only");
                         bool includeInUse = Flag(arguments, "include_in_use");
+                        bool includePinned = Flag(arguments, "include_pinned");
                         if ((string.IsNullOrWhiteSpace(itemType) || string.Equals(itemType, "FOOD", StringComparison.OrdinalIgnoreCase)) &&
                             (search == "食物" || search == "食品" || string.Equals(search, "food", StringComparison.OrdinalIgnoreCase)))
                         { itemType = "FOOD"; search = null; }
@@ -55,9 +56,11 @@ namespace ProbablyAI.Hands
                             throw new HandsException("invalid_arguments", T("请提供搜索词 query 或物品类型 item_type。"));
                         var scope = Text(arguments, "container_id", false);
                         if (!string.IsNullOrEmpty(scope)) Container(world, scope);
+                        var containerOwners = new HashSet<string>(world.Containers.Where(c => !string.IsNullOrEmpty(c.OwnerItemId)).Select(c => c.OwnerItemId));
                         var items = world.Items.Where(i =>
                             (string.IsNullOrEmpty(scope) || Inside(world, i.ContainerId, scope)) &&
                             (includeInUse || i.InUse != true) &&
+                            (includePinned || i.Pinned != true || IsContainer(i, containerOwners)) &&
                             (!ownedOnly || i.Owned) &&
                             (string.IsNullOrEmpty(itemType) || i.Types.Any(t => string.Equals(t, itemType, StringComparison.OrdinalIgnoreCase))) &&
                             (string.IsNullOrEmpty(search) || Matches(i.Name, search) || Matches(i.Identifier, search) || Matches(i.Path, search))).ToList();
@@ -162,6 +165,10 @@ namespace ProbablyAI.Hands
             }
             return false;
         }
+
+        // Pinned containers remain eligible as goods; only pinned non-containers are held back.
+        private static bool IsContainer(ItemInfo item, HashSet<string> owners)
+            => item.Container == true || !string.IsNullOrEmpty(item.ContentContainerId) || owners.Contains(item.Id);
 
         private static void ValidateKeys(JObject arguments, params string[] keys)
         {

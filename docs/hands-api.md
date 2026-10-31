@@ -87,7 +87,7 @@
 | --- | --- | --- |
 | `list_containers` | 可选 `query`、`parent_id`、`offset`、`limit` | 列出容器、嵌套文件夹和机器分区 |
 | `list_container` | `container_id`；可选分页 | 直接物品及直接子容器 |
-| `find_items` | `query` 或 `item_type`；可选 `owned_only`、`container_id`、`include_in_use`、分页 | 按名称、类型或嵌套路径递归查找物品；默认隐藏设备供电或充电中的电池 |
+| `find_items` | `query` 或 `item_type`；可选 `owned_only`、`container_id`、`include_in_use`、`include_pinned`、分页 | 按名称、类型或嵌套路径递归查找物品；默认隐藏设备供电或充电中的电池，以及已固定且不是容器的物品 |
 | `inspect_item` | `item_id` | 名称、描述、数量、所有权、实际位置、内容容器 ID |
 
 每页默认 40 条、最多 100 条。结果包含 `total`、`has_more`；全局遍历达 10000 个物品堆、2000 个容器或 64 层时返回 `truncated`。物品 ID 和嵌套容器 ID 仅当前载入有效，不能存为跨存档引用；根容器别名固定。
@@ -107,6 +107,8 @@
 `query` 与 `item_type` 至少提供一个，同时提供时按两者筛选；`query` 为“食物 / 食品 / food”时会按 FOOD 类型处理。`owned_only` 默认 false，以保留查询客人物品的能力。
 
 物品结果还包含 `in_use`：电池装在生产设备的电池槽中供电，或位于充电器的电池分区充电时为 `true`，表示自用而非待售库存。`find_items` 默认不返回这些电池；主人明确要求查看或更换时传 `include_in_use=true`。`charging` 仍单独表示充电器中的电池确实正在充电。
+
+`pinned` 表示主人用固定模式标记了该物品（整理或卸载时保持原位），`container` 表示该物品本身是可打开的容器。挑货时，已固定且不是容器的物品通常另有用途，不作为商品出售：`find_items` 默认不返回 `pinned=true` 且 `container` 不为 `true` 的物品；主人明确要求查看这些固定物品时传 `include_pinned=true`。已固定的容器不受此过滤，仍会正常返回。
 
 ## 操作
 

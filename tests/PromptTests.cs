@@ -89,8 +89,20 @@ internal static partial class Program
                 AssistantPrompt.EnglishDefault.Contains("include_in_use=true"), "English document/source guidance missing");
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseDocumentDefault, AssistantPrompt.PreviousEnglishDocumentDefault,
                 AssistantPrompt.PreviousChineseBatteryDefault, AssistantPrompt.PreviousEnglishBatteryDefault,
-                AssistantPrompt.PreviousChineseChargingDefault, AssistantPrompt.PreviousEnglishChargingDefault })
+                AssistantPrompt.PreviousChineseChargingDefault, AssistantPrompt.PreviousEnglishChargingDefault,
+                AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "document default did not upgrade");
+        });
+        await Check("pinned goods guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("不要选择主人已固定的物品") &&
+                AssistantPrompt.ChineseDefault.Contains("pinned=true") &&
+                AssistantPrompt.ChineseDefault.Contains("include_pinned=true"), "Chinese pinned guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("items Master has pinned") &&
+                AssistantPrompt.EnglishDefault.Contains("pinned=true") &&
+                AssistantPrompt.EnglishDefault.Contains("include_pinned=true"), "English pinned guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "pinned default did not upgrade");
         });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
         {

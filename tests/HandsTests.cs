@@ -44,6 +44,32 @@ internal static partial class Program
             var idle = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "ore", Name = "矿石" }));
             Assert(idle["charging"] == null && idle["in_use"] == null, "idle item marked in use");
         });
+        await Check("item JSON exposes pinned and container flags only when true", () =>
+        {
+            var pinned = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "pinned", Name = "固定矿石", Pinned = true }));
+            Assert((bool)pinned["pinned"], "pinned flag lost");
+            var container = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "bag", Name = "背包", Container = true }));
+            Assert((bool)container["container"], "container flag lost");
+            var normal = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "ore", Name = "矿石" }));
+            Assert(normal["pinned"] == null && normal["container"] == null, "unset flags serialized");
+        });
+        await Check("pinned non-container items are excluded from goods search unless explicitly requested", () =>
+        {
+            var backend = new FakeHands();
+            backend.World.Items.First(i => i.Id == "ore").Pinned = true;
+            backend.World.Items.First(i => i.Id == "bag").Pinned = true;
+            backend.World.Items.Add(new ItemInfo { Id = "crate", Name = "固定木箱", ContainerId = "inventory",
+                Path = "物品栏（主储藏区） → 固定木箱", Quantity = 1, Owned = true, Removable = true, Container = true, Pinned = true });
+            var hands = new HandsService(backend);
+            var hidden = Doc(hands.Execute("find_items", new JObject { ["query"] = "矿石" }));
+            Assert(((JArray)hidden["data"]["page"]["entries"]).Count == 0, "pinned item offered as goods");
+            var bag = Doc(hands.Execute("find_items", new JObject { ["query"] = "背包" }));
+            Assert(((JArray)bag["data"]["page"]["entries"]).Count == 1, "pinned container hidden by content container");
+            var crate = Doc(hands.Execute("find_items", new JObject { ["query"] = "木箱" }));
+            Assert(((JArray)crate["data"]["page"]["entries"]).Count == 1, "pinned container hidden by container flag");
+            var all = Doc(hands.Execute("find_items", new JObject { ["query"] = "矿石", ["include_pinned"] = true }));
+            Assert(((JArray)all["data"]["page"]["entries"]).Count == 1, "explicit pinned search hid item");
+        });
         await Check("installed power batteries are hidden from goods search unless explicitly requested", () =>
         {
             var backend = new FakeHands();

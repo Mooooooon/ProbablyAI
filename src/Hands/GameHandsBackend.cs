@@ -129,11 +129,16 @@ namespace ProbablyAI.Hands
                 // A battery in a machine's power compartment is installed for the machine's own use,
                 // not loose stock the assistant may pick for a customer.
                 bool installed = role == "power" && item.IsTag("power_source_item");
+                // Pinned items stay put during sorting/unloading, usually because the owner still needs them.
+                bool pinned = ItemPinHelper.IsPinned(item);
+                bool container = item.IsTag("CONTAINER_TAG") || item.IsTag("BACKPACK_TAG");
                 var itemInfo = new ItemInfo
                 {
                     Id = itemId, Identifier = item.identifier, Name = name, Path = path + " → " + name,
                     ContainerId = id, Quantity = item.unitCount, Owned = GeneralHelper.IsItemOwned(item),
                     Removable = item.MayRemove() && item.MaxNumRemove() > 0,
+                    Container = container ? true : (bool?)null,
+                    Pinned = pinned ? true : (bool?)null,
                     Charging = charging ? true : (bool?)null,
                     InUse = charging || installed ? true : (bool?)null,
                     Description = Plain(item.shortDescription), Types = item.itemTypes?.ToList() ?? new List<string>()
@@ -141,6 +146,7 @@ namespace ProbablyAI.Hands
                 world.Items.Add(itemInfo);
                 info.ItemCount++;
                 itemInfo.ContentContainerId = AddWindow(item.contentWindow, item, itemInfo.Path, id, null, depth + 1);
+                if (itemInfo.ContentContainerId != null) itemInfo.Container = true;
             }
         }
 
