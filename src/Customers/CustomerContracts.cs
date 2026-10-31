@@ -22,6 +22,7 @@ namespace ProbablyAI.Customers
         public CustomerBudget PurchaseBudget { get; set; }
         public CustomerPreferences Preferences { get; set; }
         public CustomerWanted Wanted { get; set; }
+        public CustomerAug Aug { get; set; }
         public DialogueInfo CurrentDialogue { get; set; }
         public BarterNeeds Barter { get; set; }
         public ProcurementNeeds Procurement { get; set; }
@@ -46,6 +47,22 @@ namespace ProbablyAI.Customers
             {
                 IsWanted = true, Stealth = stealth,
                 QuietReminder = T("（小声）主人，这个人符合通缉令上的特征呢。")
+            };
+        }
+    }
+
+    public sealed class CustomerAug
+    {
+        public bool IsAug { get; set; }
+        public string QuietReminder { get; set; }
+
+        // The native flag is enough for a quiet hint; never expose tier or hidden scan state.
+        public static CustomerAug Create(bool isAug)
+        {
+            if (!isAug) return null;
+            return new CustomerAug
+            {
+                IsAug = true, QuietReminder = T("（小声）主人，这个人好像是改造体呢。")
             };
         }
     }

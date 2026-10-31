@@ -65,10 +65,13 @@ internal static partial class Program
         {
             Assert(AssistantPrompt.ChineseDefault.Contains("wanted") &&
                 AssistantPrompt.ChineseDefault.Contains("（小声）主人，这个人符合通缉令上的特征呢。") &&
+                AssistantPrompt.ChineseDefault.Contains("改造体") &&
                 AssistantPrompt.ChineseDefault.Contains("不要自动举报"), "Chinese wanted guidance missing");
             Assert(AssistantPrompt.EnglishDefault.Contains("wanted.quiet_reminder") &&
+                AssistantPrompt.EnglishDefault.Contains("augmented human") &&
                 AssistantPrompt.EnglishDefault.Contains("do not report, arrest"), "English wanted guidance missing");
-            foreach (string previous in new[] { AssistantPrompt.PreviousChineseWantedDefault, AssistantPrompt.PreviousEnglishWantedDefault })
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseWantedDefault, AssistantPrompt.PreviousEnglishWantedDefault,
+                AssistantPrompt.PreviousChineseAugDefault, AssistantPrompt.PreviousEnglishAugDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "wanted default did not upgrade");
         });
         await Check("document reading and machine-source guidance are built into prompts", () =>

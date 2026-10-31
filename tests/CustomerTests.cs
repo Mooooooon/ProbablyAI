@@ -12,6 +12,18 @@ internal static partial class Program
 {
     private static async Task RunCustomerTests()
     {
+        await Check("augmented visitors expose only a quiet reminder", () =>
+        {
+            var aug = CustomerAug.Create(true);
+            Assert(aug != null && aug.IsAug &&
+                aug.QuietReminder == "（小声）主人，这个人好像是改造体呢。", "aug hint missing");
+            Assert(CustomerAug.Create(false) == null, "ordinary visitor marked as aug");
+            var backend = new FakeCustomer(); backend.Current.Customer.Aug = aug;
+            var customer = Doc(new CustomerService(backend).Execute("get_current_customer", new JObject()))["data"]["customer"];
+            Assert((bool)customer["aug"]["is_aug"] &&
+                (string)customer["aug"]["quiet_reminder"] == "（小声）主人，这个人好像是改造体呢。", "aug JSON lost");
+            Assert(customer["aug"]["tier"] == null && customer["aug"]["is_scanned"] == null, "hidden aug details leaked");
+        });
         await Check("wanted visitors expose only a quiet reminder and suppress reported posters", () =>
         {
             var wanted = CustomerWanted.Create(true, true, false, "wanted1", new Dictionary<string, int>());
