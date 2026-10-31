@@ -3,8 +3,8 @@
   <ID>probably_ai</ID>
   <Name>深空AI：可能是DeepSeek</Name>
   <Author>fourt</Author>
-  <ModVersion>0.6.3</ModVersion>
-  <Description>点击女仆助手立绘聊天，查询客人预算与需求，用自然语言整理当铺。F7 可编辑、保存或恢复默认提示词，并配置连接和手动操作；F6 显隐立绘。支持嵌套容器与机器投料，工具可扩展。</Description>
+  <ModVersion>0.7.0</ModVersion>
+  <Description>点击女仆助手立绘聊天，查询客人预算与需求，用自然语言整理当铺和鉴定物品。F7 可编辑提示词、配置连接、思考级别和手动操作；F6 显隐立绘。支持嵌套容器与机器投料，工具可扩展。</Description>
   <GameVersions><Version>0.46D</Version></GameVersions>
   <Prerequisites />
   <Assemblies><Assembly>ProbablyAI.dll</Assembly></Assemblies>

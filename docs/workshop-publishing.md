@@ -8,14 +8,14 @@
 
 ```powershell
 .\scripts\Prepare-Workshop.ps1
-.\scripts\Verify-WorkshopPackage.ps1 -ContentFolder '.\dist\workshop\0.6.3\content'
+.\scripts\Verify-WorkshopPackage.ps1 -ContentFolder '.\dist\workshop\0.7.0\content'
 ```
 
 只上传独立的 `content` 目录，不要选择整个项目、游戏安装目录或个人 ModData 目录。允许文件只有 `ProbablyAI.dll`、`manifest.xml`、`README.md`、`README.en.md`、`preview.png`、`Textures/deepseek-npc.png`。连接配置、API Key、存档、日志、`.git`、`.cache`、游戏 DLL、PDB 和上传辅助工具都不在其中。封面原图是 `assets/workshop-cover-v1.png`；上传预览使用约 473 KB 的 `assets/workshop-preview-v1.jpg`。
 
 中英文标题与简介在 `workshop/`。公开条目 ID 保存于 `workshop/item.json` 后，Prepare 脚本会自动写入更新用 VDF；这个文件只记录公开条目 ID / URL，不存登录信息。校验清单 `package-inventory.json` 与 `workshop.vdf` 在 content 外，均不作为 Mod 内容上传。
 
-创意工坊图库的附加截图保存在 `assets/workshop-preview-screenshot-1.png`、`assets/workshop-preview-screenshot-2.jpg`、`assets/workshop-preview-screenshot-3.jpg`。后两张展示客人预算核对与食物选品，保留 2560 × 1440 分辨率，以质量 95 的 JPG 导出，单张均小于 1 MB。通过 Steamworks UGC 的 `AddItemPreviewFile` 追加到现有条目，不放进 Mod 的 content 目录。
+创意工坊图库的附加截图保存在 `assets/workshop-preview-screenshot-1.png`、`assets/workshop-preview-screenshot-2.jpg`、`assets/workshop-preview-screenshot-3.jpg`、`assets/workshop-preview-screenshot-4.jpg`。后三张展示客人预算核对、食物选品与机械手鉴定结果，保留 2560 × 1440 分辨率，以质量 95 的 JPG 导出，单张均小于 1 MB。通过 Steamworks UGC 的 `AddItemPreviewFile` 追加到现有条目，不放进 Mod 的 content 目录。
 
 ## 用 SteamCMD 手动上传
 
@@ -24,7 +24,7 @@
 
 ```text
 login 你的Steam登录名
-workshop_build_item "E:\coding\Probably AI\dist\workshop\0.6.3\workshop.vdf"
+workshop_build_item "E:\coding\Probably AI\dist\workshop\0.7.0\workshop.vdf"
 quit
 ```
 
