@@ -1,5 +1,7 @@
 # Steam 创意工坊发布与更新
 
+面向 AI 代理的完整开发、版本和发布清单见 [AGENTS.md](../AGENTS.md)。
+
 游戏 App ID：`4348910`。游戏没有上传按钮；官方介绍使用 SteamCMD。也可以使用已登录 Steam 客户端的 Steamworks UGC 接口，不需要读取账号密码。任何账号验证、Steam Guard 或首次法律协议都由账号本人完成。
 
 本项目已发布条目：[3830081737](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)，中英文标题与简介均已上传，使用像素风鲸鱼娘封面。更新时继续使用这个 ID，避免重复创建。
