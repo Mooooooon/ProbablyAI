@@ -125,12 +125,17 @@ namespace ProbablyAI.Hands
                 items[itemId] = item;
                 var name = Plain(item.GetDisplayName(true));
                 if (string.IsNullOrWhiteSpace(name)) name = item.identifier ?? T("未命名物品");
+                bool charging = IsCharging(item);
+                // A battery in a machine's power compartment is installed for the machine's own use,
+                // not loose stock the assistant may pick for a customer.
+                bool installed = role == "power" && item.IsTag("power_source_item");
                 var itemInfo = new ItemInfo
                 {
                     Id = itemId, Identifier = item.identifier, Name = name, Path = path + " → " + name,
                     ContainerId = id, Quantity = item.unitCount, Owned = GeneralHelper.IsItemOwned(item),
                     Removable = item.MayRemove() && item.MaxNumRemove() > 0,
-                    Charging = IsCharging(item) ? true : (bool?)null,
+                    Charging = charging ? true : (bool?)null,
+                    InUse = charging || installed ? true : (bool?)null,
                     Description = Plain(item.shortDescription), Types = item.itemTypes?.ToList() ?? new List<string>()
                 };
                 world.Items.Add(itemInfo);

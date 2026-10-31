@@ -24,7 +24,8 @@ internal static partial class Program
                 AssistantPrompt.PreviousChineseWantedDefault, AssistantPrompt.PreviousEnglishWantedDefault,
                 AssistantPrompt.PreviousChineseDocumentDefault, AssistantPrompt.PreviousEnglishDocumentDefault,
                 AssistantPrompt.PreviousChineseAugDefault, AssistantPrompt.PreviousEnglishAugDefault,
-                AssistantPrompt.PreviousChineseBatteryDefault, AssistantPrompt.PreviousEnglishBatteryDefault })
+                AssistantPrompt.PreviousChineseBatteryDefault, AssistantPrompt.PreviousEnglishBatteryDefault,
+                AssistantPrompt.PreviousChineseChargingDefault, AssistantPrompt.PreviousEnglishChargingDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "saved default not upgraded");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom rule") == previous + "\nCustom rule", "custom prompt replaced");

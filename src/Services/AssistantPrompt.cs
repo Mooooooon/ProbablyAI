@@ -79,9 +79,15 @@ namespace ProbablyAI.Services
             "\n\nWhen get_current_customer returns aug, also add a quiet parenthetical reminder on a new line at the end, e.g. “(whispering) Master, this person seems to be an augmented human.” If wanted is also returned, combine both into one line instead of repeating. Do not mention aug, wanted status, bounty or real name in front of the customer, and do not report, attack or change the trade automatically. Leave the decision to Master.";
 
         public static readonly string ChineseDefault = PreviousChineseBatteryDefault +
-            "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
+            "\n\n给客人挑货时，不要选择设备中正在供电或充电的电池：find_items 默认不会列出 in_use=true 的电池（通常装在生产设备的电池槽或充电器中，属于自用而非待售库存）；即使 list_container 中看到它们，也不要搬动或放上柜台。只有主人明确要求查看或更换电池时，才可以加 include_in_use=true 查询，并先说明用途。";
 
         public static readonly string EnglishDefault = PreviousEnglishBatteryDefault +
+            "\n\nWhen picking goods for a customer, do not select batteries that are powering or charging equipment: find_items hides batteries with in_use=true by default (usually installed in a machine's battery compartment or a charger, so they are in use rather than stock). Even if list_container shows them, do not move them or place them on the counter. Only set include_in_use=true when Master explicitly asks to inspect or replace a battery, and explain why first.";
+
+        internal static readonly string PreviousChineseChargingDefault = PreviousChineseBatteryDefault +
+            "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
+
+        internal static readonly string PreviousEnglishChargingDefault = PreviousEnglishBatteryDefault +
             "\n\nWhen picking goods for a customer, do not select batteries that are currently charging: items whose find_items result has charging=true are usually in a charger's battery compartment. Do not move them or place them on the counter unless Master explicitly asks.";
 
         // Exact historical defaults remain recognizable, while edited prompts are preserved.
@@ -123,6 +129,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseDocumentDefault || value == PreviousEnglishDocumentDefault ||
                 value == PreviousChineseAugDefault || value == PreviousEnglishAugDefault ||
                 value == PreviousChineseBatteryDefault || value == PreviousEnglishBatteryDefault ||
+                value == PreviousChineseChargingDefault || value == PreviousEnglishChargingDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

@@ -18,6 +18,8 @@
     <Compile Include="InspectionTests.cs" />
     <Compile Include="InspectionNativeStubs.cs" />
     <Compile Include="DocumentTests.cs" />
+    <Compile Include="PortraitTests.cs" />
+    <Compile Include="..\src\UI\PortraitBreathing.cs" Link="PortraitBreathing.cs" />
     <Compile Include="..\src\Documents\DocumentContracts.cs" Link="Documents\DocumentContracts.cs" />
     <Compile Include="..\src\Documents\DocumentProtocol.cs" Link="Documents\DocumentProtocol.cs" />
     <Compile Include="..\src\Documents\DocumentService.cs" Link="Documents\DocumentService.cs" />

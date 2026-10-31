@@ -29,6 +29,8 @@ $publicMetadata = Join-Path $projectRoot 'workshop\item.json'
 if ($PublishedFileId -eq 0 -and (Test-Path -LiteralPath $publicMetadata)) { $PublishedFileId = (Get-Content -LiteralPath $publicMetadata -Raw | ConvertFrom-Json).publishedFileId }
 $title = Get-Content -LiteralPath (Join-Path $projectRoot 'workshop\title.en.txt') -Raw
 $description = Get-Content -LiteralPath (Join-Path $projectRoot 'workshop\description.en.bbcode') -Raw
+$changenoteFile = Join-Path $projectRoot 'workshop\changenote.en.txt'
+$changenote = if (Test-Path -LiteralPath $changenoteFile) { (Get-Content -LiteralPath $changenoteFile -Raw).Trim() } else { "v$($manifest.Manifest.ModVersion)" }
 function Escape-Vdf([string]$value) { return $value.Replace('\', '\\').Replace('"', '\"').Replace("`r", '').Replace("`n", '\n') }
 $vdf = @"
 "workshopitem"
@@ -40,7 +42,7 @@ $vdf = @"
     "visibility" "0"
     "title" "$(Escape-Vdf $title.Trim())"
     "description" "$(Escape-Vdf $description.Trim())"
-    "changenote" "v$($manifest.Manifest.ModVersion) - Chinese / English support and pixel-art cover"
+    "changenote" "$(Escape-Vdf $changenote)"
 }
 "@
 $vdf | Set-Content -LiteralPath (Join-Path $releaseRoot 'workshop.vdf') -Encoding utf8

@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.7.2。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.7.3。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -17,8 +17,9 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 - 进入当铺后显示于界面左侧；保留完整宽高比，按游戏画布缩放。
 - 鼠标悬停人物时显示手形光标和高亮，点击打开聊天框；透明背景仍可穿透点击。
 - 主菜单、离店、暂停菜单、设置和射击模式中隐藏。
+- 待机时立绘以脚底为基准轻微改变高度，模拟呼吸；脚部位置保持不变，只有身体向上轻轻舒展。默认幅度 6 像素、周期 3.6 秒（1080p 基准），可单独关闭或调整。
 - F6：本次运行中显示 / 隐藏立绘。F7：打开 / 关闭连接配置窗口（输入框聚焦时也能关闭）。
-- 主菜单 → Mods → 深空AI：可能是DeepSeek 的齿轮中，可保存高度、左右位置、底部位置、透明度及快捷键设置。
+- 主菜单 → Mods → 深空AI：可能是DeepSeek 的齿轮中，可保存高度、左右位置、底部位置、透明度、呼吸动画及快捷键设置。
 
 ## 点击立绘聊天
 
@@ -51,7 +52,7 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 
 客人符合通缉令特征时，`get_current_customer` 会返回 `wanted`：`is_wanted`、`stealth` 和可直接使用的 `quiet_reminder`。助手会在正常回复末尾另起一行小声提醒主人，例如“（小声）主人，这个人符合通缉令上的特征呢。”；只提醒一次，不向客人透露通缉、赏金或真名，也不会自动举报、报警或改变交易。已经举报或通缉令已结案的客人不会重复提醒。客人是改造体时同样返回 `aug` 与 `quiet_reminder`；两者同时存在时合并为一行提醒，不暴露改造等级或扫描状态。
 
-助手可使用 `check_customer_item` 按游戏原生购买规则核对真实物品，包括嵌套容器里的物品；旧客人 ID 会被拒绝。柜台顶层物品直接读取原生实时报价；自有物品上柜台前会预估多种多样、当前价格事件、零售加价及已知客人效果，按属性、市场、最终谈价乘区计算，并返回价格明细。预算比较使用已含加成的报价，模型不应重复叠加百分比；挑选多件时还需合计报价。未知自定义回调、检查或谈价仍可能改变价格，上柜台后须重新查询。符合购买偏好也不保证立即成交或完成整份特殊委托。以上两个接口只查询；是否搬上柜台仍取决于你的指令，目前不提供自动成交或选择对话选项。给客人挑货时默认忽略生产设备输入区（input）的原材料，产出区（output）可以卖；正在充电的电池（物品结果 `charging=true`，通常位于充电器电池分区）也不要选，除非明确要求。
+助手可使用 `check_customer_item` 按游戏原生购买规则核对真实物品，包括嵌套容器里的物品；旧客人 ID 会被拒绝。柜台顶层物品直接读取原生实时报价；自有物品上柜台前会预估多种多样、当前价格事件、零售加价及已知客人效果，按属性、市场、最终谈价乘区计算，并返回价格明细。预算比较使用已含加成的报价，模型不应重复叠加百分比；挑选多件时还需合计报价。未知自定义回调、检查或谈价仍可能改变价格，上柜台后须重新查询。符合购买偏好也不保证立即成交或完成整份特殊委托。以上两个接口只查询；是否搬上柜台仍取决于你的指令，目前不提供自动成交或选择对话选项。给客人挑货时默认忽略生产设备输入区（input）的原材料，产出区（output）可以卖；设备中正在供电或充电的电池（物品结果 `in_use=true`，通常位于机器的电池槽或充电器电池分区）属于自用，`find_items` 默认不会返回；挑选商品时不要搬动或放上柜台，除非明确要求并传 `include_in_use=true`。
 
 ## 机械手、香烟与食品券鉴定
 
@@ -139,6 +140,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 | `src/AssistantController.cs` | 游戏 Hook、场景清理、快捷键及助手面板 |
 | `src/AssistantSettings.cs` | 使用游戏原生 ModConfig 保存设置 |
 | `src/UI/PortraitView.cs` | 原生前景画布中的立绘和透明背景穿透 |
+| `src/UI/PortraitBreathing.cs` | 立绘呼吸曲线；与布局分离，便于自动测试 |
 | `src/UI/PortraitInteraction.cs` | 人物像素命中、悬停提示、手形光标及点击 |
 | `src/UI/ChatWindow.cs` | 多轮自然语言聊天、快捷发送、工具执行结果 |
 | `src/UI/ConnectionWindow.cs` | F7 配置、模型选择与测试窗口 |
@@ -179,11 +181,11 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-131 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、通缉令与改造体提醒、文档阅读、充电电池标记、可编辑提示词，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。其中 20 项价格测试覆盖乘区、实时事件与零售波动、多种多样、预算临界值、防止重复加价、嵌套内容继承和只读查询；10 项实况测试覆盖成交后空柜台、客人变化、已售物品所有权、历史查询失效、刷新失败、分页、取消和默认提示词迁移；16 项鉴定测试覆盖原生机械手价格与套装判断、香烟可见异常及未知外观、食品券面值与防伪标 / 芯片 / 文字异常、隐藏标签隔离、解锁和物品 ID 校验、实时刷新及模型调用。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
+134 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、锁定限制、食品类别、透明像素命中、立绘呼吸曲线、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、通缉令与改造体提醒、文档阅读、设备供电电池过滤与充电标记、可编辑提示词，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。其中 20 项价格测试覆盖乘区、实时事件与零售波动、多种多样、预算临界值、防止重复加价、嵌套内容继承和只读查询；10 项实况测试覆盖成交后空柜台、客人变化、已售物品所有权、历史查询失效、刷新失败、分页、取消和默认提示词迁移；16 项鉴定测试覆盖原生机械手价格与套装判断、香烟可见异常及未知外观、食品券面值与防伪标 / 芯片 / 文字异常、隐藏标签隔离、解锁和物品 ID 校验、实时刷新及模型调用。游戏状态和 HTTP 均为模拟；原生适配已对本机游戏 DLL 编译，游戏内行为与真实服务连通性由玩家实测。
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.2/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.3/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

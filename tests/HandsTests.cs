@@ -39,10 +39,22 @@ internal static partial class Program
         });
         await Check("item JSON exposes a charging battery flag only when true", () =>
         {
-            var charging = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "battery", Name = "电池", Charging = true }));
-            Assert((bool)charging["charging"], "charging flag lost");
+            var charging = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "battery", Name = "电池", Charging = true, InUse = true }));
+            Assert((bool)charging["charging"] && (bool)charging["in_use"], "battery flags lost");
             var idle = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "ore", Name = "矿石" }));
-            Assert(idle["charging"] == null, "idle item marked charging");
+            Assert(idle["charging"] == null && idle["in_use"] == null, "idle item marked in use");
+        });
+        await Check("installed power batteries are hidden from goods search unless explicitly requested", () =>
+        {
+            var backend = new FakeHands();
+            var hands = new HandsService(backend);
+            var visible = Doc(hands.Execute("find_items", new JObject { ["query"] = "电池" }));
+            var ids = ((JArray)visible["data"]["page"]["entries"]).Select(e => (string)e["id"]).ToArray();
+            Assert(ids.Length == 1 && ids[0] == "spare-battery", "in-use battery offered as goods");
+            var listed = Doc(hands.Execute("list_container", new JObject { ["container_id"] = "fridge-power" }));
+            Assert((bool)listed["data"]["items"]["entries"][0]["in_use"], "in_use flag missing from listing");
+            var all = Doc(hands.Execute("find_items", new JObject { ["query"] = "电池", ["include_in_use"] = true }));
+            Assert(((JArray)all["data"]["page"]["entries"]).Count == 2, "explicit in-use search hid batteries");
         });
         await Check("preview does not mutate game state", () =>
         {
@@ -264,8 +276,12 @@ internal static partial class Program
             AddContainer("documents", "档案架"); AddContainer("mentor", "导师笔记", "documents"); AddContainer("trash", "垃圾桶");
             AddContainer("furnace", "熔炉", "inventory", "group"); AddContainer("input", "原料", "furnace", role: "input"); AddContainer("output", "成品", "furnace", role: "output");
             AddContainer("bag-inner", "背包内容", "inventory");
+            AddContainer("fridge", "冰箱", "inventory", "group");
+            AddContainer("fridge-power", "电池", "fridge", "slot", role: "power");
             AddItem("ore", "普通矿石", "inventory", 8); AddItem("note-a", "笔记", "mentor", 1); AddItem("note-b", "笔记", "mentor", 1);
             AddItem("bag", "背包", "inventory", 1); World.Items.Last().ContentContainerId = "bag-inner";
+            AddItem("spare-battery", "电池", "inventory", 2);
+            AddItem("battery", "电池", "fridge-power", 1); World.Items.Last().InUse = true;
         }
         private void AddContainer(string id, string name, string parent = null, string kind = "grid", string role = null)
         {

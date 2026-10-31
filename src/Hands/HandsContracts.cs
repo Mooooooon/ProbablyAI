@@ -33,6 +33,7 @@ namespace ProbablyAI.Hands
         public bool Owned { get; set; }
         public bool Removable { get; set; }
         public bool? Charging { get; set; }
+        public bool? InUse { get; set; }
         public string Description { get; set; }
         public List<string> Types { get; set; } = new List<string>();
     }

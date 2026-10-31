@@ -79,14 +79,17 @@ internal static partial class Program
             Assert(AssistantPrompt.ChineseDefault.Contains("read_document") &&
                 AssistantPrompt.ChineseDefault.Contains("生产设备输入区") &&
                 AssistantPrompt.ChineseDefault.Contains("材料区除非主人明确要求") &&
-                AssistantPrompt.ChineseDefault.Contains("充电中的电池") &&
-                AssistantPrompt.ChineseDefault.Contains("charging=true"), "Chinese document/source guidance missing");
+                AssistantPrompt.ChineseDefault.Contains("设备中正在供电或充电的电池") &&
+                AssistantPrompt.ChineseDefault.Contains("in_use=true") &&
+                AssistantPrompt.ChineseDefault.Contains("include_in_use=true"), "Chinese document/source guidance missing");
             Assert(AssistantPrompt.EnglishDefault.Contains("read_document") &&
                 AssistantPrompt.EnglishDefault.Contains("machine input compartments") &&
                 AssistantPrompt.EnglishDefault.Contains("unless Master explicitly asks") &&
-                AssistantPrompt.EnglishDefault.Contains("batteries that are currently charging"), "English document/source guidance missing");
+                AssistantPrompt.EnglishDefault.Contains("batteries that are powering or charging equipment") &&
+                AssistantPrompt.EnglishDefault.Contains("include_in_use=true"), "English document/source guidance missing");
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseDocumentDefault, AssistantPrompt.PreviousEnglishDocumentDefault,
-                AssistantPrompt.PreviousChineseBatteryDefault, AssistantPrompt.PreviousEnglishBatteryDefault })
+                AssistantPrompt.PreviousChineseBatteryDefault, AssistantPrompt.PreviousEnglishBatteryDefault,
+                AssistantPrompt.PreviousChineseChargingDefault, AssistantPrompt.PreviousEnglishChargingDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "document default did not upgrade");
         });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
