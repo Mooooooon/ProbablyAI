@@ -135,7 +135,9 @@ internal static partial class Program
         });
         await Check("old unedited default prompts upgrade naturally and edited defaults stay untouched", () =>
         {
-            foreach (string previous in new[] { AssistantPrompt.PreviousChineseDefault, AssistantPrompt.PreviousEnglishDefault })
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseDefault, AssistantPrompt.PreviousEnglishDefault,
+                AssistantPrompt.PreviousChineseFreshnessDefault, AssistantPrompt.PreviousEnglishFreshnessDefault,
+                AssistantPrompt.PreviousChineseInspectionDefault, AssistantPrompt.PreviousEnglishInspectionDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "old built-in prompt did not upgrade");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom addition") == previous + "\nCustom addition", "customized built-in prompt replaced");

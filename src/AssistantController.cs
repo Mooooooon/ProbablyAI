@@ -3,6 +3,7 @@ using ProbablyAI.UI;
 using ProbablyAI.Hands;
 using ProbablyAI.Tools;
 using ProbablyAI.Customers;
+using ProbablyAI.Inspection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -53,6 +54,7 @@ namespace ProbablyAI
             Tools = ToolRegistry.ForHands(hands);
             customerBackend = new GameCustomerBackend(CanShow, handsBackend);
             new CustomerService(customerBackend).Register(Tools);
+            new InspectionService(new GameInspectionBackend(handsBackend)).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);
             agent = new HandsAgent(transport, Tools, refreshShopContext: true);
             conversation = new ConversationMemory();

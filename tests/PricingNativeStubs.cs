@@ -12,16 +12,23 @@ internal sealed class GameItem
     public List<ItemFeature> itemFeatures = new List<ItemFeature>();
     public HashSet<string> Tags = new HashSet<string>();
     public List<GameItem> Descendants = new List<GameItem>();
+    public Dictionary<string, TagState> TagStates = new Dictionary<string, TagState>();
+    public HashSet<string> ReadTags = new HashSet<string>();
+    public int NativeHandValue, HandValueReads;
     public long GetComplexeItemValue() => ComplexValue;
     public long GetNegociatedValue() { QuoteReads++; return NativeQuote; }
     public int GetItemMiscValue(bool useMarkup = false) => NativeMisc;
     public List<GameItem> FindAllChildItems() => new List<GameItem>(Descendants);
     public bool IsTag(string tag) => Tags.Contains(tag);
     public bool IsGameItemType(string type) => Tags.Contains(type);
-    public TagState GetTagReadonly(string tag) => new TagState { Value = ContrabandLevel };
+    public TagState GetTagReadonly(string tag)
+    {
+        ReadTags.Add(tag);
+        return TagStates.TryGetValue(tag, out var state) ? state : new TagState { Value = ContrabandLevel };
+    }
     public string ContrabandLevel;
 }
-internal sealed class TagState { public string Value; public string GetString() => Value; }
+internal sealed class TagState { public string Value; public int IntValue; public string GetString() => Value; public int GetInt() => IntValue; }
 internal sealed class StoreClient
 {
     public bool Buying = true, isRequireVariety;
@@ -40,6 +47,7 @@ internal sealed class PlayerStore
     public static PlayerStore Instance;
     public int retailMarkup = 15;
     public bool AcceptMarkup = true;
+    public bool isVisualInspectionIntroduced;
     public HealthData healthData = new HealthData();
     public bool IsCurrentClientAcceptMarkup() => AcceptMarkup;
 }

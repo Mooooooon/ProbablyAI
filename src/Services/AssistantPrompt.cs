@@ -8,17 +8,31 @@ namespace ProbablyAI.Services
         public const int MaxLength = 16000;
         public static string Default => IsEnglish ? EnglishDefault : ChineseDefault;
 
-        public static readonly string ChineseDefault = PreviousChineseDefault
+        internal static readonly string PreviousChineseFreshnessDefault = PreviousChineseDefault
             .Replace("当前估值可能在上柜台或谈价后变化，偏好匹配不保证成交，也不表示整份委托已完成。",
                 "直接使用 check_customer_item 已含价格效果的金额比较预算，多件需合计。偏好匹配不表示已成交或完成委托。")
             .Replace("历史中的物品位置可能已经变化，执行新一轮操作前重新查询。代词或范围不明确时先询问主人。放入垃圾桶只代表正常投放。用中文简要报告实际操作和未完成原因；没有成功的工具结果不能声称完成。",
                 "历史对话只记录过去，不代表当前物品、位置、所有权、客人或预算。声称某物仍在柜台或建议收回之前，先核对本条消息的新查询；成交后物品可能移走或已不属于主人。查询失败或列表未完整时不能用历史补齐。代词或范围不明确时先询问主人。放入垃圾桶只代表正常投放。自然简洁地报告金额、预算是否足够及实际操作；只有主人询问或不确定性影响判断时再解释价格来源和限制。没有成功的工具结果不能声称完成。");
 
-        public static readonly string EnglishDefault = PreviousEnglishDefault
+        internal static readonly string PreviousEnglishFreshnessDefault = PreviousEnglishDefault
             .Replace("Estimates may change at the counter or after negotiation. A preference match does not guarantee a trade or completion of an entire order.",
                 "Use the complete amount returned by check_customer_item for budget comparisons; sum quotes for multiple goods. A preference match does not mean a trade or order is complete.")
             .Replace("Historical item locations may be stale; query again before a new operation. Ask Master about ambiguous references or scope. Putting an item in the trash means normal placement only. Report actual actions and anything unfinished, with the reason. Never claim success without a successful tool result.",
                 "Conversation history records the past, not current items, locations, ownership, customers or budgets. Before claiming goods remain on the counter or suggesting taking them back, check this message's fresh queries; sold goods may have moved or no longer belong to Master. Failed or incomplete queries cannot be filled in from history. Ask Master about ambiguous references or scope. Putting an item in the trash means normal placement only. Naturally and concisely report amounts, affordability and actual actions. Explain pricing sources or limitations only when Master asks or uncertainty affects the decision. Never claim success without a successful tool result.");
+
+        internal static readonly string PreviousChineseInspectionDefault = PreviousChineseFreshnessDefault +
+            "\n\n鉴定机械手时先查询真实物品，再调用 appraise_mechanical_hand，使用已含套装效果的单件 base_value，不重复加成，不把它当作交易报价或鉴定报酬。鉴定香烟调用 inspect_cigarette，根据 visual_assessment 和 issues 解释可见外观；unknown 时说明无法判断，外观符合不保证隐藏真伪。两个工具均只读，不提交估价、不质问客人、不揭露特性或完成委托。玩法未解锁或物品失效时按工具结果说明。";
+
+        internal static readonly string PreviousEnglishInspectionDefault = PreviousEnglishFreshnessDefault +
+            "\n\nTo appraise a mechanical hand, first query the real item, then call appraise_mechanical_hand. Its per-unit base_value already includes set bonuses; do not add them again or treat it as a trade quote or appraisal fee. For cigarettes, call inspect_cigarette and explain visual_assessment and issues. Report unknown as inconclusive; standard appearance does not guarantee hidden authenticity. Both tools are read-only: they do not submit estimates, confront customers, expose features or complete orders. Report locked gameplay or stale items from the tool result.";
+
+        public static readonly string ChineseDefault = PreviousChineseInspectionDefault.Replace(
+            "外观符合不保证隐藏真伪。两个工具均只读",
+            "外观符合不保证隐藏真伪。鉴定食品券调用 inspect_food_stamp，结合 face_value、visual_assessment 和 issues 说明票面面值、可见异常及芯片是否影响兑换；unknown 时说明无法判断。三个工具均只读");
+
+        public static readonly string EnglishDefault = PreviousEnglishInspectionDefault.Replace(
+            "standard appearance does not guarantee hidden authenticity. Both tools are read-only",
+            "standard appearance does not guarantee hidden authenticity. For food stamps, call inspect_food_stamp and explain face_value, visual_assessment and issues, including whether the chip affects redemption. Report unknown as inconclusive. All three tools are read-only");
 
         // Exact historical defaults remain recognizable, while edited prompts are preserved.
         internal const string PreviousChineseDefault =
@@ -52,6 +66,8 @@ namespace ProbablyAI.Services
         public static string Normalize(string value)
         {
             if (string.IsNullOrWhiteSpace(value) || value == PreviousDefault || value == PreviousChineseDefault || value == PreviousEnglishDefault ||
+                value == PreviousChineseFreshnessDefault || value == PreviousEnglishFreshnessDefault ||
+                value == PreviousChineseInspectionDefault || value == PreviousEnglishInspectionDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

@@ -2,6 +2,28 @@
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
+## 机械手、香烟与食品券鉴定（只读）
+
+`InspectionService` / `IInspectionBackend` 在统一注册表中提供三个工具，聊天和 F7 助手指令均可调用。先用 `find_items` / `list_container` 获取精确物品 ID，再调用：
+
+| 工具 | 参数 | 返回内容 |
+| --- | --- | --- |
+| `appraise_mechanical_hand` | `item_id` | `item` 实时身份及位置；`material`、`control_interface`、`interface_marking`、`condition`；`armored`、`bladed`、`tactical_set`、`deluxe_set`；`base_value` 原生单件鉴定基准价 |
+| `inspect_cigarette` | `item_id` | `item` 实时身份及位置；`seal`、`logo`、`lettering`、`box` 外观编号；`visual_assessment` 与 `issues` |
+| `inspect_food_stamp` | `item_id` | `item` 实时身份及位置；`seal`、`logo`、`chip`、`lettering`、`face_value`；`visual_assessment` 与 `issues` |
+
+```json
+{"item_id":"用本轮物品查询结果的 id 替换"}
+```
+
+机械手的材质为 `ALUMINUM_ALLOY` / `CARBON_COMPOSITE` / `GOLD_PLATED`，接口为 `EMG` / `EMG_PLUS` / `NEURAL` / `UNSPECIFIED`，标记为 `FULL` / `SYMBOL`，磨损为 `NONE` / `WEAR` / `DAMAGE`。套装判断使用 `AppHandHelper.IsTacticalSet` / `IsDeluxeSet`，价格直接使用 `AppHandHelper.GetCorrectValue`，已含全部套装效果与原生最低价格限制。不自行重算、不乘堆叠数量，不能当作实时报价或鉴定服务报酬。
+
+香烟仅读取 `CigaretteUI.OnInit` 使用的四个外观标签。`0` 是标准样本；封条、标志或文字为 `-1` 表示缺失，其他有效编号表示变体，包装 `1–4` 为颜色变体。可见异常以 `seal` / `logo` / `lettering` / `color` 返回；`visual_assessment` 为 `appears_genuine`、`appears_counterfeit` 或 `unknown`。缺失标签或超出原生范围的编号返回 `unknown`。不读取隐藏的 `*_ISSUE` 或 `realCondition`；外观符合不保证隐藏真伪。
+
+食品券仅读取 `StampUI.OnInit` 使用的五个可见标签：`STAMP_SEAL`、`STAMP_LOGO`、`STAMP_CHIP`、`STAMP_LETTERING`、`STAMP_AMOUNT`。`0` 是标准样本，`-1` 通常表示缺失，其他有效编号表示变体；`face_value` 是票面印制的信用点。游戏只发行 40 / 80 / 120 / 160 / 200 / 240 信用点面值，面值达到 160 时应有防伪标（`seal=0`），低于 160 时不应有（`seal=-1`）；芯片缺失或损坏时无法在配给站兑换。可见异常以 `seal` / `logo` / `chip` / `lettering` / `amount` 返回，`amount` 表示票面面值不属于上述发行面值。缺失标签、非正面值或超出原生范围的编号返回 `unknown`。不读取隐藏的 `STAMP_*_ISSUE` 或 `realCondition`。
+
+原生适配每次通过共享 `GameHandsBackend.Capture()` 刷新，沿用主线程、场景、拖动、容器锁定和会话 ID 限制。目视检查未解锁返回 `inspection_locked`；物品已不可访问返回 `item_not_found`；类型不符返回 `wrong_item_type`。仅接受 `item_id`，拒绝多余参数。三个工具不改变特性、所有权、价格或委托状态，也不调用提交估价、质问、兑换及对话接口。
+
 ## 客人查询（只读）
 
 `CustomerService` / `ICustomerBackend` 在相同注册表中提供两个工具，聊天和 F7 的助手指令均可调用。
@@ -95,7 +117,7 @@
 
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 8 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 2 个客人只读工具，共 10 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 8 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 2 个客人只读工具，`InspectionService.Register` 注册 3 个鉴定只读工具，共 13 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 

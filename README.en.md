@@ -31,6 +31,16 @@ The mod does not complete purchases or sales, choose dialogue options, unlock co
 
 The mod follows the language selected **inside the game**. Changing it closes the mod's open panels; reopen them in the new language. A saved, unedited built-in prompt switches between Chinese and English automatically and upgrades to the current default. Custom prompts are never translated or overwritten. A changed prompt clears old model conversation context on the next message. Chat history is held in memory only. Old query data is omitted from model history and past operations are marked historical, while the visible transcript is preserved. Each new message refreshes the current customer and counter items, quantities and ownership; sold goods are not treated as unsold merely because an object remains on the counter. Failed or incomplete observations must not be filled in from chat history. Routine replies report prices and affordability directly, explaining sources or limitations when relevant.
 
+## Mechanical hand, cigarette and food stamp inspection
+
+After unlocking visual inspection in the game, ask “Appraise this mechanical hand,” “Check the cigarettes on the counter,” or “Is this food stamp genuine?” Both chat and F7 assistant commands offer these read-only tools:
+
+- `appraise_mechanical_hand` reads material, control interface, markings, wear, armor/blade addons, sets and the native per-unit appraisal base value. It already includes set bonuses and is separate from a trade quote or appraisal fee.
+- `inspect_cigarette` compares visible seal, logo, lettering and packaging with the standard sample. It reports apparent authenticity and visible defects; missing or unsupported appearance is inconclusive. It does not read hidden authenticity or issue flags.
+- `inspect_food_stamp` reads the visible security seal, logo, chip, lettering and printed `face_value`. It reports apparent authenticity and visible defects. Stamps are issued only in 40/80/120/160/200/240 credits; a seal is expected from 160 credits, and a missing or damaged chip makes the stamp unredeemable. It does not read hidden authenticity or issue flags.
+
+Each call refreshes the shared item tree, including accessible nested containers, and respects native locks and scene restrictions. These tools do not submit estimates, expose features, confront customers, redeem stamps or complete orders. Submit results manually in the game.
+
 ## Local settings and network use
 
 Opening settings or saving them does not contact the provider. Fetching models, sending a test, chatting and running assistant commands use the configured API endpoint. Each chat message or assistant command includes freshly read customer and counter context. Other queried game context and tool results are sent when the model uses tools. Automatic observations are ephemeral and do not add messages to the visible transcript or stored conversation.
