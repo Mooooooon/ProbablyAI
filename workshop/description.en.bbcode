@@ -23,9 +23,9 @@ Unsure about a customer's intentions? Ask Xiaojing directly:
 · “Who is this customer, and are they here to buy or sell?”
 · “How much budget does this customer have left, and what are their preferences?”
 · “Check if I have items they want in my inventory, but let me know first before moving anything.”
-She will query live customer preferences, refusal rules, and barter/order requirements.
-[*]🔍 [b]Mechanical Hand, Cigarette & Food Stamp Appraisal[/b]
-After unlocking visual inspection, ask “Appraise this mechanical hand,” “Check this cigarette” or “Is this food stamp genuine?” Xiaojing reads only what the inspection screen shows: material, interface, wear, sets and the native hand base value; cigarette seal, logo, lettering and packaging; food stamp security seal, logo, chip, lettering and printed face value, with visible defects. All appraisals are read-only: she will not submit an estimate, confront the customer or redeem a stamp.
+She will query live customer preferences, refusal rules, and barter/order requirements. She can also read the recorder history for the current visit and answer what the customer said earlier. Items show a stolen marker and heat; stolen goods are skipped by default when picking goods unless you explicitly ask.
+[*]🔍 [b]Mechanical Hand, Ribwich, Plasma Fuel, Cigarette & Food Stamp Appraisal[/b]
+After unlocking visual inspection, ask “Appraise this mechanical hand,” “Is this Ribwich worth anything?”, “How is this Plasma Cartridge?”, “Check this cigarette” or “Is this food stamp genuine?” Xiaojing reads only what the inspection screen shows: native base values and visible condition for hands, Ribwiches and Plasma Cartridges; cigarette seal, logo, lettering and packaging; food stamp security seal, logo, chip, lettering and printed face value, with visible defects. All appraisals are read-only: she will not submit an estimate, confront the customer or redeem a stamp.
 [*]⚡ [b]Chat Quick Replies[/b]
 Two buttons in the chat window: “Pick goods for this customer's needs” chooses suitable goods for the current customer's requirements and budget, then places them on the counter; “Appraise what the customer brought” inspects each item in the customer window.
 [*]🧠 [b]Thinking Level[/b]
@@ -42,6 +42,14 @@ UI, system prompts, and tool descriptions automatically adapt to the game's lang
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.4[/b]
+[list]
+[*]Added recorder dialogue: read what the current customer has said during this visit. Read-only; it does not advance dialogue.
+[*]Items show a stolen marker and heat; stolen goods are skipped by default when picking goods and can be inspected explicitly.
+[*]Added Ribwich and Plasma Cartridge appraisal: visible condition, defects and native appraisal base value.
+[*]Pinned non-container items are excluded by default when picking goods, so items kept for other purposes are not treated as merchandise.
+[/list]
+
 [b]v0.7.3[/b]
 [list]
 [*]Added portrait breathing: Xiaojing gently changes height from planted feet while idle; the toggle, distance and cycle are adjustable in the mod settings.

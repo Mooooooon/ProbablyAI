@@ -1,5 +1,23 @@
 # 更新日志 / Changelog
 
+## 0.7.4 — 2026-11-01
+
+### 中文
+
+- 新增录音机对话：助手可以查看当前客人本次到访已经说过的话，回答“他刚才说了什么”一类问题；只读，不推进对话或编造未显示的发言。
+- 物品查询新增赃物标记和热度（0–100 的治安检查发现概率）；给客人挑货时默认避开赃物，需要时用 `include_stolen=true` 明确查看并提醒热度风险。
+- 新增肋明治鉴定：读取生产日期、包装厂编号、配料、包装和标志，返回外观判断、可见异常及原生鉴定基准价。
+- 新增等离子燃料匣鉴定：读取外壳颜色、裂纹、磨损、未覆盖、加固和封条，返回状态判断、可见异常及原生鉴定基准价。
+- 挑货时默认排除已固定且本身不是容器的物品，避免把主人留作他用的物品当作商品。
+
+### English
+
+- Added recorder dialogue: the assistant can read what the current customer has already said during this visit and answer questions about it. Read-only; does not advance dialogue or invent unseen lines.
+- Item queries now include a stolen marker and heat (0–100 chance of being found in a security inspection). Stolen goods are excluded by default when picking goods; use `include_stolen=true` to inspect them explicitly and mention the heat risk.
+- Added Ribwich appraisal: production date, packing facility, ingredients, wrapper and logos, with a visible assessment, defects and the native appraisal base value.
+- Added Plasma Cartridge appraisal: casing color, crack, wear, uncovered, reinforced and seal state, with a condition assessment, defects and the native appraisal base value.
+- Pinned items that are not containers are excluded by default when picking goods, so items kept for other purposes are not treated as merchandise.
+
 ## 0.7.3 — 2026-10-31
 
 ### 中文

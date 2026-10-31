@@ -1,1 +1,1 @@
-v0.7.3: portrait breathing; fixed device batteries being placed on the counter when picking goods.
+v0.7.4: recorder dialogue, stolen/heat display, Ribwich and Plasma Cartridge appraisal; stolen and pinned goods are skipped by default when picking.
