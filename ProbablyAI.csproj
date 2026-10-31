@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>ProbablyAI</AssemblyName>
     <RootNamespace>ProbablyAI</RootNamespace>
-    <Version>0.7.4</Version>
+    <Version>0.7.5</Version>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <PathMap>$(MSBuildProjectDirectory)=/src</PathMap>
@@ -22,6 +22,8 @@
     <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(ManagedDirectory)\UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Unity.TextMeshPro"><HintPath>$(ManagedDirectory)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(ManagedDirectory)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.Localization"><HintPath>$(ManagedDirectory)\Unity.Localization.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.ResourceManager"><HintPath>$(ManagedDirectory)\Unity.ResourceManager.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Newtonsoft.Json"><HintPath>$(ManagedDirectory)\Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
   <Target Name="CheckGameReferences" BeforeTargets="ResolveReferences">

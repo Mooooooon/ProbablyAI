@@ -1,1 +1,1 @@
-v0.7.4: recorder dialogue, stolen/heat display, Ribwich and Plasma Cartridge appraisal; stolen and pinned goods are skipped by default when picking.
+v0.7.5: fixed other mods sometimes crashing during load, the UI switching to English, or the save list appearing empty when this mod was enabled; the game locale is now read after localization initialization completes.

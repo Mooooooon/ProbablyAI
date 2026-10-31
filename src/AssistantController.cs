@@ -1,3 +1,4 @@
+using System.Collections;
 using ProbablyAI.Services;
 using ProbablyAI.UI;
 using ProbablyAI.Hands;
@@ -6,6 +7,8 @@ using ProbablyAI.Customers;
 using ProbablyAI.Documents;
 using ProbablyAI.Inspection;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.SceneManagement;
 
 namespace ProbablyAI
@@ -28,6 +31,8 @@ namespace ProbablyAI
         private ConversationMemory conversation;
         public ToolRegistry Tools { get; private set; }
         private bool subscribed;
+        private bool languageSubscribed;
+        private Coroutine languageRoutine;
         private bool gameReady;
         private bool sessionHidden;
         private float nextBuildAttempt;
@@ -42,6 +47,45 @@ namespace ProbablyAI
             ModHook.OnGameLoadedLate += OnGameLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             subscribed = true;
+            languageRoutine = StartCoroutine(RefreshLanguageWhenReady());
+        }
+
+        private IEnumerator RefreshLanguageWhenReady()
+        {
+            // ModLoader calls Init/OnEnable during Awake. MainMenuUIController.Start
+            // starts LocalizationSettings.InitializationOperation later, so wait one
+            // frame to let every Start() run before touching the global locale state.
+            yield return null;
+
+            float deadline = Time.realtimeSinceStartup + 15f;
+            while (!LocalizationSettings.HasSettings && Time.realtimeSinceStartup < deadline)
+                yield return new WaitForSecondsRealtime(0.25f);
+
+            if (!LocalizationSettings.HasSettings)
+            {
+                log.Warning("Localization is not available; keeping Chinese UI and metadata.");
+                languageRoutine = null;
+                yield break;
+            }
+
+            var init = LocalizationSettings.InitializationOperation;
+            if (!init.IsValid())
+            {
+                log.Warning("Localization initialization handle is invalid; keeping Chinese UI.");
+                languageRoutine = null;
+                yield break;
+            }
+            if (!init.IsDone) yield return init;
+
+            ModEntry.RefreshLanguage();
+            LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+            languageSubscribed = true;
+            languageRoutine = null;
+        }
+
+        private void OnLocaleChanged(Locale locale)
+        {
+            if (ModEntry.RefreshLanguage()) ClosePanel();
         }
 
         private void OnGameLoaded()
@@ -84,7 +128,6 @@ namespace ProbablyAI
         private void Update()
         {
             if (settings == null) return;
-            if (ModEntry.RefreshLanguage()) ClosePanel();
             if (!gameReady) return;
             if (InStore())
             {
@@ -174,6 +217,16 @@ namespace ProbablyAI
 
         public void Shutdown()
         {
+            if (languageRoutine != null)
+            {
+                StopCoroutine(languageRoutine);
+                languageRoutine = null;
+            }
+            if (languageSubscribed)
+            {
+                LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+                languageSubscribed = false;
+            }
             if (subscribed)
             {
                 ModHook.OnGameLoadedLate -= OnGameLoaded;

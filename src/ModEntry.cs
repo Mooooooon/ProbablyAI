@@ -22,7 +22,11 @@ namespace ProbablyAI
         {
             activeManifest = manifest;
             originalDescription = manifest.Description;
-            RefreshLanguage();
+            // Do not read the game locale here. ModLoader calls Init during Awake, before
+            // the game starts LocalizationSettings.InitializationOperation. Touching
+            // LocalizationSettings.SelectedLocale at this point forces Addressables to
+            // initialize early and can leave shared localization handles invalid for
+            // other mods that use LocHelper in Init or a static constructor.
             log = new ModLog(manifest);
             settings = new AssistantSettings(ModHelper.GetConfig(ModId));
             activeSettings = settings;
@@ -30,7 +34,18 @@ namespace ProbablyAI
 
         internal static bool RefreshLanguage()
         {
-            bool changed = ProbablyAI.Localization.Text.UseLocale(LocHelper.GetCurrentLocaleCode());
+            string locale;
+            try
+            {
+                locale = LocHelper.GetCurrentLocaleCode();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[" + Branding.Name + "] Could not read the game locale; keeping the current language. " + e.Message);
+                return false;
+            }
+
+            bool changed = ProbablyAI.Localization.Text.UseLocale(locale);
             if (changed) activeSettings?.RefreshLanguage();
             if (activeManifest != null)
             {

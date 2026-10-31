@@ -61,6 +61,7 @@ dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 - 所有物品 / 容器 / 客人操作都在 Unity 主线程执行；`GameHandsBackend` 已有线程检查。
 - 不绕过游戏原生的所有权、锁定、容量和取放规则；不新增自动买卖、报价提交、攻击或改存档能力。
 - 新增 UI 文本必须用 `T("中文")`，并在 `src/Localization/EnglishTranslations.cs` 补英文；测试会拒绝漏翻或格式占位符不一致。
+- 不要在 `IMod.Init` 或静态构造函数中调用 `LocHelper` / `LocalizationSettings`。游戏本地化在 `MainMenuUIController.Start` 阶段才初始化；提前读取会让 Addressables 提前启动，并可能使其他 Mod 的共享异步句柄失效。需要语言时，在 `OnEnable` 后用协程等待 `InitializationOperation`，再订阅 `SelectedLocaleChanged`。
 - 新增 `ModConfig` 键要稳定、可持久化；不要重命名已有键。
 - 修改默认提示词时，必须把旧默认字符串加入 `AssistantPrompt.Normalize` 的识别列表，并更新 `PromptTests` / `FreshnessTests` / `InspectionTests`，否则玩家保存过的旧默认不会自动升级。
 - 立绘的待机呼吸以脚底为锚点改变高度，不是整体平移；改动时保持 `PortraitBreathing.Offset` 的纯函数可测性。

@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 0.7.5 — 2026-11-01
+
+### 中文
+
+- 修复开启本模组后，其他模组在加载阶段可能崩溃、界面变成英文或存档列表空白的问题：不再在 `Init` 阶段读取游戏语言，而是等游戏本地化初始化完成后再刷新。
+- 修复日志中的版本号与 manifest 版本不一致的问题。
+
+### English
+
+- Fixed other mods sometimes crashing during load, the UI switching to English, or the save list appearing empty when this mod was enabled: the game locale is no longer read during `Init`, but after the game's localization initialization completes.
+- Fixed the version reported in the log not matching the manifest version.
+
 ## 0.7.4 — 2026-11-01
 
 ### 中文
