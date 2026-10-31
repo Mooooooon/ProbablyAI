@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -11,6 +12,19 @@ internal static partial class Program
 {
     private static async Task RunCustomerTests()
     {
+        await Check("wanted visitors expose only a quiet reminder and suppress reported posters", () =>
+        {
+            var wanted = CustomerWanted.Create(true, true, false, "wanted1", new Dictionary<string, int>());
+            Assert(wanted != null && wanted.IsWanted && wanted.Stealth && wanted.QuietReminder.Contains("通缉令"), "wanted hint missing");
+            Assert(CustomerWanted.Create(false, false, false, "", null) == null, "ordinary visitor flagged");
+            Assert(CustomerWanted.Create(true, false, true, "wanted1", null) == null, "reported visitor flagged");
+            Assert(CustomerWanted.Create(true, false, false, "wanted1", new Dictionary<string, int> { ["wanted1"] = 1 }) == null, "captured poster flagged");
+            var backend = new FakeCustomer(); backend.Current.Customer.Wanted = wanted;
+            var customer = Doc(new CustomerService(backend).Execute("get_current_customer", new JObject()))["data"]["customer"];
+            Assert((bool)customer["wanted"]["is_wanted"] &&
+                (string)customer["wanted"]["quiet_reminder"] == "（小声）主人，这个人符合通缉令上的特征呢。", "wanted JSON lost");
+            Assert(customer["wanted"]["real_name"] == null && customer["wanted"]["reward"] == null, "hidden identity or bounty leaked");
+        });
         await Check("customer tools share the registry and are read-only", () =>
         {
             var registry = ToolRegistry.ForHands(new HandsService(new FakeHands()));

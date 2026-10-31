@@ -34,7 +34,7 @@ namespace ProbablyAI.Services
             "standard appearance does not guarantee hidden authenticity. Both tools are read-only",
             "standard appearance does not guarantee hidden authenticity. For food stamps, call inspect_food_stamp and explain face_value, visual_assessment and issues, including whether the chip affects redemption. Report unknown as inconclusive. All three tools are read-only");
 
-        public static readonly string ChineseDefault = PreviousChineseTaskDefault
+        internal static readonly string PreviousChineseWantedDefault = PreviousChineseTaskDefault
             .Replace("你可以正常聊天，也能按主人的指令调用当前提供的工具操作真实游戏。",
                 "你可以在主人闲聊时自然回应，也能按主人的指令调用当前提供的工具操作真实游戏；主人布置任务时以完成为先，不要主动扩展任务或反复确认。")
             .Replace("信息不足时明确说明，不编造游戏数值或执行结果。",
@@ -45,7 +45,7 @@ namespace ProbablyAI.Services
                 "代词或范围不明确且无法从上下文安全判断时才先问一次。")
             + "\n\n每次完成主人的任务后直接结束回复，不要在结尾反问、追问、请求确认或主动提议下一步；已经完成的结果不必再次征求同意。";
 
-        public static readonly string EnglishDefault = PreviousEnglishTaskDefault
+        internal static readonly string PreviousEnglishWantedDefault = PreviousEnglishTaskDefault
             .Replace("You can chat and use the currently supplied tools to operate on the real game when Master asks.",
                 "Chat naturally when Master is chatting, and use the currently supplied tools when Master gives a task; finish the task first rather than expanding it or repeatedly confirming.")
             .Replace("When information is missing, say so; never invent game values or completed actions.",
@@ -55,6 +55,12 @@ namespace ProbablyAI.Services
             .Replace("Ask Master about ambiguous references or scope.",
                 "Ask once about ambiguous references or scope only when they cannot be resolved safely from context.")
             + "\n\nAfter completing Master's task, end the reply. Do not close with a question, a request for confirmation or an unsolicited next step; do not ask permission for results that are already complete.";
+
+        public static readonly string ChineseDefault = PreviousChineseWantedDefault +
+            "\n\n当 get_current_customer 返回 wanted 时，在正常回复的最后另起一行，用括号小声提醒主人，例如“（小声）主人，这个人符合通缉令上的特征呢。”也可直接使用 wanted.quiet_reminder 的原文。只提醒一次，不要当着客人说出通缉、赏金、真名、举报或报警安排，也不要自动举报、逮捕或改变交易；是否处理由主人决定。";
+
+        public static readonly string EnglishDefault = PreviousEnglishWantedDefault +
+            "\n\nWhen get_current_customer returns wanted, add a quiet parenthetical reminder on a new line at the end of the normal reply, e.g. “(whispering) Master, this person matches the wanted poster.” You may use wanted.quiet_reminder verbatim. Remind once; do not mention wanted status, bounty, real name, reporting or alerting in front of the customer, and do not report, arrest or change the trade automatically. Leave the decision to Master.";
 
         // Exact historical defaults remain recognizable, while edited prompts are preserved.
         internal const string PreviousChineseDefault =
@@ -91,6 +97,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseFreshnessDefault || value == PreviousEnglishFreshnessDefault ||
                 value == PreviousChineseInspectionDefault || value == PreviousEnglishInspectionDefault ||
                 value == PreviousChineseTaskDefault || value == PreviousEnglishTaskDefault ||
+                value == PreviousChineseWantedDefault || value == PreviousEnglishWantedDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Customers
 {
@@ -20,11 +21,33 @@ namespace ProbablyAI.Customers
         public bool BusinessComplete { get; set; }
         public CustomerBudget PurchaseBudget { get; set; }
         public CustomerPreferences Preferences { get; set; }
+        public CustomerWanted Wanted { get; set; }
         public DialogueInfo CurrentDialogue { get; set; }
         public BarterNeeds Barter { get; set; }
         public ProcurementNeeds Procurement { get; set; }
         public GunOrderNeeds GunOrder { get; set; }
         public int ServiceCost { get; set; }
+    }
+
+    public sealed class CustomerWanted
+    {
+        public bool IsWanted { get; set; }
+        public bool Stealth { get; set; }
+        public string QuietReminder { get; set; }
+
+        // Suppress the hint after a report/capture, and never expose the real name or bounty.
+        public static CustomerWanted Create(bool isWanted, bool stealth, bool reported, string posterId,
+            IDictionary<string, int> wantedStatus)
+        {
+            if (!isWanted || reported) return null;
+            if (wantedStatus != null && !string.IsNullOrEmpty(posterId) &&
+                wantedStatus.TryGetValue(posterId, out var state) && state == 1) return null;
+            return new CustomerWanted
+            {
+                IsWanted = true, Stealth = stealth,
+                QuietReminder = T("（小声）主人，这个人符合通缉令上的特征呢。")
+            };
+        }
     }
 
     public sealed class CustomerBudget

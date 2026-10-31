@@ -55,6 +55,8 @@ namespace ProbablyAI.Customers
                     Faction = client.clientFaction, Intent = client.clientIntent.ToString(),
                     IntentDescription = DescribeIntent(client.clientIntent), BusinessComplete = client.isBusinessComplete,
                     PurchaseBudget = Budget(client),
+                    Wanted = CustomerWanted.Create(client.isWanted, client.isStealthWanted, client.reported,
+                        client.wantedPosterId, PlayerStore.Instance.wantedStatus),
                     Preferences = new CustomerPreferences
                     {
                         BuyingTags = Copy(client.clientBuyingTagList), BuyingIdentifiers = Copy(client.clientBuyingIdList),

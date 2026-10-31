@@ -54,12 +54,22 @@ internal static partial class Program
         {
             Assert(AssistantPrompt.ChineseDefault.Contains("主人的任务优先") &&
                 AssistantPrompt.ChineseDefault.Contains("不要在结尾反问") &&
-                AssistantPrompt.ChineseDefault.EndsWith("已经完成的结果不必再次征求同意。"), "Chinese task guidance missing");
+                AssistantPrompt.ChineseDefault.Contains("已经完成的结果不必再次征求同意。"), "Chinese task guidance missing");
             Assert(AssistantPrompt.EnglishDefault.Contains("Master's task comes first") &&
                 AssistantPrompt.EnglishDefault.Contains("Do not end with a question") &&
-                AssistantPrompt.EnglishDefault.EndsWith("do not ask permission for results that are already complete."), "English task guidance missing");
+                AssistantPrompt.EnglishDefault.Contains("do not ask permission for results that are already complete."), "English task guidance missing");
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseTaskDefault, AssistantPrompt.PreviousEnglishTaskDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "task-focused default did not upgrade");
+        });
+        await Check("wanted guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("wanted") &&
+                AssistantPrompt.ChineseDefault.Contains("（小声）主人，这个人符合通缉令上的特征呢。") &&
+                AssistantPrompt.ChineseDefault.Contains("不要自动举报"), "Chinese wanted guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("wanted.quiet_reminder") &&
+                AssistantPrompt.EnglishDefault.Contains("do not report, arrest"), "English wanted guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseWantedDefault, AssistantPrompt.PreviousEnglishWantedDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "wanted default did not upgrade");
         });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
         {

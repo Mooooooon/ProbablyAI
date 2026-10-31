@@ -20,7 +20,8 @@ internal static partial class Program
                     prompt.Contains("face_value") && prompt.Contains("unknown"), "inspection guidance missing");
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseFreshnessDefault, AssistantPrompt.PreviousEnglishFreshnessDefault,
                 AssistantPrompt.PreviousChineseInspectionDefault, AssistantPrompt.PreviousEnglishInspectionDefault,
-                AssistantPrompt.PreviousChineseTaskDefault, AssistantPrompt.PreviousEnglishTaskDefault })
+                AssistantPrompt.PreviousChineseTaskDefault, AssistantPrompt.PreviousEnglishTaskDefault,
+                AssistantPrompt.PreviousChineseWantedDefault, AssistantPrompt.PreviousEnglishWantedDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "saved default not upgraded");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom rule") == previous + "\nCustom rule", "custom prompt replaced");
