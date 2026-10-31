@@ -37,6 +37,13 @@ internal static partial class Program
             Assert((int)result["data"]["page"]["total"] == 2 && (bool)result["data"]["page"]["has_more"], "pagination metadata");
             Assert(((JArray)result["data"]["page"]["entries"]).Count == 1, "limit ignored");
         });
+        await Check("item JSON exposes a charging battery flag only when true", () =>
+        {
+            var charging = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "battery", Name = "电池", Charging = true }));
+            Assert((bool)charging["charging"], "charging flag lost");
+            var idle = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "ore", Name = "矿石" }));
+            Assert(idle["charging"] == null, "idle item marked charging");
+        });
         await Check("preview does not mutate game state", () =>
         {
             var backend = new FakeHands();

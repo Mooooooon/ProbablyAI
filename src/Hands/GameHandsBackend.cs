@@ -130,12 +130,23 @@ namespace ProbablyAI.Hands
                     Id = itemId, Identifier = item.identifier, Name = name, Path = path + " → " + name,
                     ContainerId = id, Quantity = item.unitCount, Owned = GeneralHelper.IsItemOwned(item),
                     Removable = item.MayRemove() && item.MaxNumRemove() > 0,
+                    Charging = IsCharging(item) ? true : (bool?)null,
                     Description = Plain(item.shortDescription), Types = item.itemTypes?.ToList() ?? new List<string>()
                 };
                 world.Items.Add(itemInfo);
                 info.ItemCount++;
                 itemInfo.ContentContainerId = AddWindow(item.contentWindow, item, itemInfo.Path, id, null, depth + 1);
             }
+        }
+
+        private static bool IsCharging(GameItem item)
+        {
+            if (item == null || !item.IsTag("power_source_item")) return false;
+            var machine = item.parentInventory?.GetParentItem();
+            if (machine == null || machine.identifier != "recharger") return false;
+            if (PlayerStore.Instance == null || !PlayerStore.Instance.isPowerOn) return false;
+            try { return !PowerHelper.IsPowerSourceFull(item); }
+            catch (Exception) { return false; }
         }
 
         private void Register(Binding binding)

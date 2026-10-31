@@ -72,11 +72,17 @@ namespace ProbablyAI.Services
                 "Asking about requirements does not authorize moving items. Current tools cannot complete trades, choose dialogue options or finish orders. When picking goods for a customer, ignore raw materials in machine input compartments by default: they are for processing before sale. Output compartments may be sold, but do not move input materials unless Master explicitly asks.")
             + "\n\nWhen Master asks about a note, book, guide or paper document, query the real item first, then call read_document. Only its title, body, signature, pages or text is the document content; inspect_item's description is only a summary and must not be treated as the full text or invented from the item name. Guide text may include UI labels or localization differences; say so when it cannot be read. The tool is read-only and does not open UI, flip pages or change items.";
 
-        public static readonly string ChineseDefault = PreviousChineseAugDefault +
+        internal static readonly string PreviousChineseBatteryDefault = PreviousChineseAugDefault +
             "\n\n当 get_current_customer 返回 aug 时，也要在回复末尾另起一行小声提醒主人，例如“（小声）主人，这个人好像是改造体呢。”如果同时有 wanted，合并成一行，不要重复刷屏。不要当着客人说出改造体、通缉、赏金或真名，也不要自动举报、攻击或改变交易；是否处理由主人决定。";
 
-        public static readonly string EnglishDefault = PreviousEnglishAugDefault +
+        internal static readonly string PreviousEnglishBatteryDefault = PreviousEnglishAugDefault +
             "\n\nWhen get_current_customer returns aug, also add a quiet parenthetical reminder on a new line at the end, e.g. “(whispering) Master, this person seems to be an augmented human.” If wanted is also returned, combine both into one line instead of repeating. Do not mention aug, wanted status, bounty or real name in front of the customer, and do not report, attack or change the trade automatically. Leave the decision to Master.";
+
+        public static readonly string ChineseDefault = PreviousChineseBatteryDefault +
+            "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
+
+        public static readonly string EnglishDefault = PreviousEnglishBatteryDefault +
+            "\n\nWhen picking goods for a customer, do not select batteries that are currently charging: items whose find_items result has charging=true are usually in a charger's battery compartment. Do not move them or place them on the counter unless Master explicitly asks.";
 
         // Exact historical defaults remain recognizable, while edited prompts are preserved.
         internal const string PreviousChineseDefault =
@@ -116,6 +122,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseWantedDefault || value == PreviousEnglishWantedDefault ||
                 value == PreviousChineseDocumentDefault || value == PreviousEnglishDocumentDefault ||
                 value == PreviousChineseAugDefault || value == PreviousEnglishAugDefault ||
+                value == PreviousChineseBatteryDefault || value == PreviousEnglishBatteryDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.
