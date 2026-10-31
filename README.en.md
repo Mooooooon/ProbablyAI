@@ -70,4 +70,4 @@ API keys are used only for your configured endpoint and are not put into chat or
 
 The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
 
-Version 0.7.1. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.7.2. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
