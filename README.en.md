@@ -9,7 +9,8 @@ GitHub: [https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/P
 1. Subscribe in Steam Workshop, enable the mod in the game's Mods menu, review its **network** capability and restart the game.
 2. Enter your pawnshop. Click Xiaojing's portrait to chat. **F6** toggles the portrait; **F7** opens assistant settings.
 3. Enter an OpenAI-compatible base URL, API key and model. Defaults: `https://api.deepseek.com`, `deepseek-flash`. You can fetch the provider's model list or enter a model ID manually.
-4. View or edit the full system prompt in F7. The default maid persona addresses you as **Master**, speaks warmly, and avoids emoji and emoticons unless requested. Save settings to apply changes to future messages, or preview the current draft with a test message.
+4. Choose a **Thinking level**: follow model default, thinking off, low, high or max. Low/High/Max send `thinking: {"type":"enabled"}` with `reasoning_effort`; thinking off sends `thinking: {"type":"disabled"}` only. Keep the default if your service rejects these fields.
+5. View or edit the full system prompt in F7. The default maid persona addresses you as **Master**, speaks warmly, and avoids emoji and emoticons unless requested. Save settings to apply changes to future messages, or preview the current draft with a test message.
 
 You need your own compatible API service and credentials. Provider charges are handled by your chosen provider. The mod contains no shared API key or included API credits.
 
@@ -27,7 +28,7 @@ The assistant queries live containers and items, including nested folders, bags,
 
 The input row also has **Quick replies**:
 
-- **Pick goods for this customer's needs** combines the current customer's requirements, budget and stock to list suggestions first; it does not move anything.
+- **Pick goods for this customer's needs** combines the current customer's requirements, budget and stock, then places suitable goods on the counter.
 - **Appraise what the customer brought** inspects each item in the customer window.
 
 Quick replies send immediately and keep any draft in the input. The default prompt prioritizes finishing Master's task and ends without a closing question, confirmation request or unsolicited next step; it asks one short question only when essential information is missing and the task cannot be done safely.

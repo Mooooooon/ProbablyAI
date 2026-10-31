@@ -56,6 +56,9 @@ namespace ProbablyAI.UI
                         .AddButton(T("获取模型列表"), FetchModels, "fetch_models")
                         .AddDropdown(new[] { T("获取后可在此选择模型") }, 0, SelectModel, "models")
                     .End()
+                    .AddLabel(T("思考级别"))
+                    .AddDropdown(ThinkingLabels(), Math.Max(0, Array.IndexOf(ThinkingLevels.All, ThinkingLevels.Normalize(draft.ThinkingLevel))), SelectThinking, "thinking")
+                    .AddLabel(T("低 / 高 / 最高会发送 thinking.enabled 和 reasoning_effort；关闭只发送 thinking.disabled。服务不支持时请选择“跟随模型默认”。"))
                     .AddSeparator(verticalPadding: 10)
                     .AddHeader(T("助手提示词"))
                     .AddLabel(T("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。"))
@@ -161,6 +164,18 @@ namespace ProbablyAI.UI
             Status(T("已选择模型，点击“保存配置”后持久保存。"));
         }
 
+        private static string[] ThinkingLabels() => new[]
+        {
+            T("跟随模型默认"), T("关闭思考"), T("低"), T("高"), T("最高")
+        };
+
+        private void SelectThinking(int index)
+        {
+            if (index < 0 || index >= ThinkingLevels.All.Length) return;
+            draft.ThinkingLevel = ThinkingLevels.All[index];
+            Status(T("已选择思考级别，点击“保存配置”后持久保存。"));
+        }
+
         private void FetchModels()
         {
             RunRequest(async cancellation =>
@@ -203,6 +218,7 @@ namespace ProbablyAI.UI
             draft.BaseUrl = window.Get("base_url").GetString();
             draft.ApiKey = window.Get("api_key").GetString();
             draft.Model = window.Get("model").GetString();
+            draft.ThinkingLevel = ThinkingLevels.All[Math.Max(0, Math.Min(ThinkingLevels.All.Length - 1, window.Get("thinking").GetIndex()))];
             draft.SystemPrompt = window.Get("system_prompt").GetString();
             draft.RememberApiKey = window.Get("remember_key").GetBool();
             return draft.Copy();
@@ -216,9 +232,11 @@ namespace ProbablyAI.UI
                 var saved = store.Current;
                 window.Get("base_url").SetString(saved.BaseUrl);
                 window.Get("model").SetString(saved.Model);
+                window.Get("thinking")?.SetIndex(Math.Max(0, Array.IndexOf(ThinkingLevels.All, saved.ThinkingLevel)));
                 window.Get("system_prompt").SetString(saved.SystemPrompt);
                 draft.BaseUrl = saved.BaseUrl;
                 draft.Model = saved.Model;
+                draft.ThinkingLevel = saved.ThinkingLevel;
                 draft.SystemPrompt = saved.SystemPrompt;
                 Status(saved.RememberApiKey
                     ? T("配置与提示词已保存，下次发送生效；API Key 保存在本机。")
@@ -251,7 +269,7 @@ namespace ProbablyAI.UI
         private void SetBusy(bool value)
         {
             busy = value;
-            foreach (var id in new[] { "base_url", "api_key", "model", "remember_key", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
+            foreach (var id in new[] { "base_url", "api_key", "model", "thinking", "remember_key", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
                 window.Get(id)?.SetInteractable(!value);
             window.Get("models")?.SetInteractable(!value && models.Count > 0);
             window.Get("cancel")?.SetInteractable(value);

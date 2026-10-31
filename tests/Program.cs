@@ -133,6 +133,40 @@ internal static partial class Program
             var reply = await client.CompleteAsync(new ConnectionOptions { BaseUrl = "https://example.test/v1", Model = "custom-flash", ApiKey = "test-only-secret" }, "你好\n\"小鲸\"", "system", default);
             Assert(reply == "连接成功", "reply parsing");
         });
+        await Check("thinking level maps to provider thinking and reasoning effort fields", async () =>
+        {
+            var samples = new (string Level, string Type, string Effort)[]
+            {
+                (ThinkingLevels.Default, null, null),
+                (ThinkingLevels.Disabled, "disabled", null),
+                (ThinkingLevels.Low, "enabled", "low"),
+                (ThinkingLevels.High, "enabled", "high"),
+                (ThinkingLevels.Max, "enabled", "max")
+            };
+            foreach (var sample in samples)
+            {
+                using var http = new HttpClient(new FakeHandler(async (request, token) =>
+                {
+                    var body = JObject.Parse(await request.Content.ReadAsStringAsync());
+                    Assert((string)body["thinking"]?["type"] == sample.Type, "thinking type mismatch: " + sample.Level);
+                    Assert((string)body["reasoning_effort"] == sample.Effort, "reasoning effort mismatch: " + sample.Level);
+                    return Json("{\"choices\":[{\"message\":{\"content\":\"ok\"}}]}");
+                }));
+                using var client = new OpenAiApiClient(http);
+                var reply = await client.CompleteAsync(new ConnectionOptions { ThinkingLevel = sample.Level }, "hello", "system", default);
+                Assert(reply == "ok", "thinking request failed: " + sample.Level);
+            }
+        });
+        await Check("thinking level survives settings normalization and reload", () =>
+        {
+            Assert(new ConnectionOptions { ThinkingLevel = " HIGH " }.Normalized().ThinkingLevel == ThinkingLevels.High, "thinking level not normalized");
+            Assert(new ConnectionOptions { ThinkingLevel = "unsupported" }.Normalized().ThinkingLevel == ThinkingLevels.Default, "invalid thinking level kept");
+            string persisted = null;
+            var store = new ConnectionSettingsStore(() => null, value => persisted = value);
+            store.Save(new ConnectionOptions { ThinkingLevel = ThinkingLevels.Max });
+            var reload = new ConnectionSettingsStore(() => persisted, _ => { });
+            Assert(reload.Current.ThinkingLevel == ThinkingLevels.Max, "thinking level not persisted");
+        });
         await Check("multipart text reply is supported", async () =>
         {
             using var http = Respond("{\"choices\":[{\"message\":{\"content\":[{\"type\":\"text\",\"text\":\"你\"},{\"type\":\"text\",\"text\":\"好\"}]}}]}");

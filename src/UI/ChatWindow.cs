@@ -55,7 +55,7 @@ namespace ProbablyAI.UI
                 .AddLabel(T("Enter 发送 · Shift+Enter 换行"))
                 .AddLabel(T("快捷发言"))
                 .BeginRow()
-                    .AddButton(T("按照客户需求挑选商品"), () => QuickSend(T("按照客户需求挑选商品，先列给我看，不要直接搬动。")), "quick-pick")
+                    .AddButton(T("按照客户需求挑选商品"), () => QuickSend(T("按照客户需求挑选商品，直接摆到柜台上。")), "quick-pick")
                     .AddButton(T("帮我鉴定对方带来的东西"), () => QuickSend(T("帮我鉴定对方带来的东西，逐件告诉我结果。")), "quick-appraise")
                 .End()
                 .BeginRow()

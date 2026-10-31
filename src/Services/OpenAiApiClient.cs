@@ -68,6 +68,7 @@ namespace ProbablyAI.Services
             var connection = options.Normalized();
             var payload = new JObject { ["model"] = connection.Model, ["messages"] = messages.DeepClone(), ["stream"] = false };
             if (tools != null) { payload["tools"] = tools.DeepClone(); payload["tool_choice"] = "auto"; }
+            ThinkingLevels.Apply(payload, connection.ThinkingLevel);
             var body = await SendAsync(connection, HttpMethod.Post, "chat/completions", payload.ToString(Formatting.None), cancellationToken).ConfigureAwait(false);
             var choices = ParseObject(body)["choices"] as JArray;
             var raw = (choices?.FirstOrDefault() as JObject)?["message"] as JObject;

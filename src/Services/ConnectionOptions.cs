@@ -1,8 +1,44 @@
 using System;
+using Newtonsoft.Json.Linq;
 using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Services
 {
+    public static class ThinkingLevels
+    {
+        public const string Default = "default";
+        public const string Disabled = "disabled";
+        public const string Low = "low";
+        public const string High = "high";
+        public const string Max = "max";
+
+        // Order matches the settings dropdown.
+        public static readonly string[] All = { Default, Disabled, Low, High, Max };
+
+        public static string Normalize(string value)
+        {
+            string level = (value ?? "").Trim().ToLowerInvariant();
+            return Array.IndexOf(All, level) >= 0 ? level : Default;
+        }
+
+        // Only send provider reasoning fields for an explicitly chosen level, so older services keep working.
+        public static void Apply(JObject payload, string level)
+        {
+            switch (Normalize(level))
+            {
+                case Disabled:
+                    payload["thinking"] = new JObject { ["type"] = "disabled" };
+                    break;
+                case Low:
+                case High:
+                case Max:
+                    payload["thinking"] = new JObject { ["type"] = "enabled" };
+                    payload["reasoning_effort"] = level;
+                    break;
+            }
+        }
+    }
+
     public sealed class ConnectionOptions
     {
         public const string DefaultBaseUrl = "https://api.deepseek.com";
@@ -11,6 +47,7 @@ namespace ProbablyAI.Services
         public string BaseUrl { get; set; } = DefaultBaseUrl;
         public string ApiKey { get; set; } = "";
         public string Model { get; set; } = DefaultModel;
+        public string ThinkingLevel { get; set; } = ThinkingLevels.Default;
         public string SystemPrompt { get; set; } = AssistantPrompt.Default;
         public bool RememberApiKey { get; set; } = true;
 
@@ -19,6 +56,7 @@ namespace ProbablyAI.Services
             BaseUrl = BaseUrl,
             ApiKey = ApiKey,
             Model = Model,
+            ThinkingLevel = ThinkingLevel,
             SystemPrompt = SystemPrompt,
             RememberApiKey = RememberApiKey
         };
@@ -29,6 +67,7 @@ namespace ProbablyAI.Services
             copy.BaseUrl = (copy.BaseUrl ?? "").Trim().TrimEnd('/');
             copy.ApiKey = (copy.ApiKey ?? "").Trim();
             copy.Model = (copy.Model ?? "").Trim();
+            copy.ThinkingLevel = ThinkingLevels.Normalize(copy.ThinkingLevel);
             copy.SystemPrompt = AssistantPrompt.Normalize(copy.SystemPrompt);
             if (!Uri.TryCreate(copy.BaseUrl, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp) ||
