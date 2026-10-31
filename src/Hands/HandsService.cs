@@ -43,12 +43,13 @@ namespace ProbablyAI.Hands
                             world.Truncated
                         });
                     case "find_items":
-                        ValidateKeys(arguments, "query", "item_type", "owned_only", "container_id", "include_in_use", "include_pinned", "offset", "limit");
+                        ValidateKeys(arguments, "query", "item_type", "owned_only", "container_id", "include_in_use", "include_pinned", "include_stolen", "offset", "limit");
                         var search = Text(arguments, "query", false);
                         var itemType = Text(arguments, "item_type", false);
                         bool ownedOnly = Flag(arguments, "owned_only");
                         bool includeInUse = Flag(arguments, "include_in_use");
                         bool includePinned = Flag(arguments, "include_pinned");
+                        bool includeStolen = Flag(arguments, "include_stolen");
                         if ((string.IsNullOrWhiteSpace(itemType) || string.Equals(itemType, "FOOD", StringComparison.OrdinalIgnoreCase)) &&
                             (search == "食物" || search == "食品" || string.Equals(search, "food", StringComparison.OrdinalIgnoreCase)))
                         { itemType = "FOOD"; search = null; }
@@ -61,6 +62,7 @@ namespace ProbablyAI.Hands
                             (string.IsNullOrEmpty(scope) || Inside(world, i.ContainerId, scope)) &&
                             (includeInUse || i.InUse != true) &&
                             (includePinned || i.Pinned != true || IsContainer(i, containerOwners)) &&
+                            (includeStolen || i.Stolen != true) &&
                             (!ownedOnly || i.Owned) &&
                             (string.IsNullOrEmpty(itemType) || i.Types.Any(t => string.Equals(t, itemType, StringComparison.OrdinalIgnoreCase))) &&
                             (string.IsNullOrEmpty(search) || Matches(i.Name, search) || Matches(i.Identifier, search) || Matches(i.Path, search))).ToList();

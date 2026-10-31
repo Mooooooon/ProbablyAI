@@ -90,7 +90,11 @@ internal static partial class Program
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseDocumentDefault, AssistantPrompt.PreviousEnglishDocumentDefault,
                 AssistantPrompt.PreviousChineseBatteryDefault, AssistantPrompt.PreviousEnglishBatteryDefault,
                 AssistantPrompt.PreviousChineseChargingDefault, AssistantPrompt.PreviousEnglishChargingDefault,
-                AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault })
+                AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault,
+                AssistantPrompt.PreviousChineseRecorderDefault, AssistantPrompt.PreviousEnglishRecorderDefault,
+                AssistantPrompt.PreviousChineseStolenDefault, AssistantPrompt.PreviousEnglishStolenDefault,
+                AssistantPrompt.PreviousChineseRibwichDefault, AssistantPrompt.PreviousEnglishRibwichDefault,
+                AssistantPrompt.PreviousChinesePlasmaDefault, AssistantPrompt.PreviousEnglishPlasmaDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "document default did not upgrade");
         });
         await Check("pinned goods guidance is built into prompts and old defaults upgrade", () =>
@@ -103,6 +107,56 @@ internal static partial class Program
                 AssistantPrompt.EnglishDefault.Contains("include_pinned=true"), "English pinned guidance missing");
             foreach (string previous in new[] { AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "pinned default did not upgrade");
+        });
+        await Check("recorder dialogue guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("dialogue_history") &&
+                AssistantPrompt.ChineseDefault.Contains("录音机") &&
+                AssistantPrompt.ChineseDefault.Contains("只使用客人的行"), "Chinese recorder guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("dialogue_history") &&
+                AssistantPrompt.EnglishDefault.Contains("recorder") &&
+                AssistantPrompt.EnglishDefault.Contains("quote only the customer's lines"), "English recorder guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseRecorderDefault, AssistantPrompt.PreviousEnglishRecorderDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "recorder default did not upgrade");
+        });
+        await Check("stolen goods guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("默认不要选择赃物") &&
+                AssistantPrompt.ChineseDefault.Contains("stolen=true") &&
+                AssistantPrompt.ChineseDefault.Contains("include_stolen=true") &&
+                AssistantPrompt.ChineseDefault.Contains("heat"), "Chinese stolen guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("do not select stolen items by default") &&
+                AssistantPrompt.EnglishDefault.Contains("stolen=true") &&
+                AssistantPrompt.EnglishDefault.Contains("include_stolen=true") &&
+                AssistantPrompt.EnglishDefault.Contains("heat"), "English stolen guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseStolenDefault, AssistantPrompt.PreviousEnglishStolenDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "stolen default did not upgrade");
+        });
+        await Check("ribwich appraisal guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("appraise_ribwich") &&
+                AssistantPrompt.ChineseDefault.Contains("肋明治") &&
+                AssistantPrompt.ChineseDefault.Contains("base_value") &&
+                AssistantPrompt.ChineseDefault.Contains("opened=true"), "Chinese ribwich guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("appraise_ribwich") &&
+                AssistantPrompt.EnglishDefault.Contains("Packaged Rib Sandwich") &&
+                AssistantPrompt.EnglishDefault.Contains("base_value") &&
+                AssistantPrompt.EnglishDefault.Contains("opened=true"), "English ribwich guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseRibwichDefault, AssistantPrompt.PreviousEnglishRibwichDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "ribwich default did not upgrade");
+        });
+        await Check("plasma fuel appraisal guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("appraise_plasma_fuel") &&
+                AssistantPrompt.ChineseDefault.Contains("等离子燃料匣") &&
+                AssistantPrompt.ChineseDefault.Contains("base_value") &&
+                AssistantPrompt.ChineseDefault.Contains("没有真伪判定"), "Chinese plasma guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("appraise_plasma_fuel") &&
+                AssistantPrompt.EnglishDefault.Contains("Plasma Cartridge") &&
+                AssistantPrompt.EnglishDefault.Contains("base_value") &&
+                AssistantPrompt.EnglishDefault.Contains("no authenticity verdict"), "English plasma guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChinesePlasmaDefault, AssistantPrompt.PreviousEnglishPlasmaDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "plasma default did not upgrade");
         });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
         {

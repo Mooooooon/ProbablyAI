@@ -24,6 +24,7 @@ namespace ProbablyAI.Customers
         public CustomerWanted Wanted { get; set; }
         public CustomerAug Aug { get; set; }
         public DialogueInfo CurrentDialogue { get; set; }
+        public List<DialogueLine> DialogueHistory { get; set; }
         public BarterNeeds Barter { get; set; }
         public ProcurementNeeds Procurement { get; set; }
         public GunOrderNeeds GunOrder { get; set; }
@@ -92,6 +93,12 @@ namespace ProbablyAI.Customers
     }
 
     public sealed class DialogueInfo
+    {
+        public string Speaker { get; set; }
+        public string Text { get; set; }
+    }
+
+    public sealed class DialogueLine
     {
         public string Speaker { get; set; }
         public string Text { get; set; }

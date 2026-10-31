@@ -15,6 +15,8 @@ internal sealed class GameItem
     public Dictionary<string, TagState> TagStates = new Dictionary<string, TagState>();
     public HashSet<string> ReadTags = new HashSet<string>();
     public int NativeHandValue, HandValueReads;
+    public int NativeRibwichValue, RibwichValueReads;
+    public int NativePlasmaValue, PlasmaValueReads;
     public long GetComplexeItemValue() => ComplexValue;
     public long GetNegociatedValue() { QuoteReads++; return NativeQuote; }
     public int GetItemMiscValue(bool useMarkup = false) => NativeMisc;

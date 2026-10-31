@@ -132,6 +132,9 @@ namespace ProbablyAI.Hands
                 // Pinned items stay put during sorting/unloading, usually because the owner still needs them.
                 bool pinned = ItemPinHelper.IsPinned(item);
                 bool container = item.IsTag("CONTAINER_TAG") || item.IsTag("BACKPACK_TAG");
+                // Stolen items carry a discovery heat percentage used by security inspections.
+                bool stolen = StolenHelper.IsStolenItem(item);
+                int heat = stolen ? item.GetTagReadonly(StolenHelper.STOLEN_VALUE_INT).GetInt() : 0;
                 var itemInfo = new ItemInfo
                 {
                     Id = itemId, Identifier = item.identifier, Name = name, Path = path + " → " + name,
@@ -139,6 +142,8 @@ namespace ProbablyAI.Hands
                     Removable = item.MayRemove() && item.MaxNumRemove() > 0,
                     Container = container ? true : (bool?)null,
                     Pinned = pinned ? true : (bool?)null,
+                    Stolen = stolen ? true : (bool?)null,
+                    Heat = stolen ? heat : (int?)null,
                     Charging = charging ? true : (bool?)null,
                     InUse = charging || installed ? true : (bool?)null,
                     Description = Plain(item.shortDescription), Types = item.itemTypes?.ToList() ?? new List<string>()

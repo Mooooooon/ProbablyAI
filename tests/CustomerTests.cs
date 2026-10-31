@@ -37,6 +37,42 @@ internal static partial class Program
                 (string)customer["wanted"]["quiet_reminder"] == "（小声）主人，这个人符合通缉令上的特征呢。", "wanted JSON lost");
             Assert(customer["wanted"]["real_name"] == null && customer["wanted"]["reward"] == null, "hidden identity or bounty leaked");
         });
+        await Check("recorder history returns only the current visit with speakers and full text", () =>
+        {
+            var history = RecorderHistory.CurrentVisit(new[]
+            {
+                "上一位: 旧对话",
+                "---",
+                "测试客人: 我想要一块矿石。",
+                "Player: 好的，10 点开门。",
+                "测试客人: 预算 250，10:30 前要。"
+            });
+            Assert(history.Count == 3, "history lines lost");
+            Assert(history[0].Speaker == "测试客人" && history[0].Text == "我想要一块矿石。", "speaker or text lost");
+            Assert(history[1].Speaker == "Player" && history[2].Text == "预算 250，10:30 前要。", "player line or embedded colon lost");
+        });
+        await Check("recorder history ignores mod-source and malformed lines", () =>
+        {
+            var history = RecorderHistory.CurrentVisit(new[]
+            {
+                "<i>这段对话来自模组</i>", "没有冒号", ": 空说话人", "测试客人:", null, "  ", "测试客人: 只在本次。"
+            });
+            Assert(history.Count == 1 && history[0].Text == "只在本次。", "noise kept or customer line lost");
+            Assert(RecorderHistory.CurrentVisit(null).Count == 0, "null history accepted");
+        });
+        await Check("current customer exposes recorder dialogue history", () =>
+        {
+            var backend = new FakeCustomer();
+            backend.Current.Customer.DialogueHistory = new List<DialogueLine>
+            {
+                new DialogueLine { Speaker = "测试客人", Text = "我要买食物。" },
+                new DialogueLine { Speaker = "Player", Text = "请稍等。" }
+            };
+            var customer = Doc(new CustomerService(backend).Execute("get_current_customer", new JObject()))["data"]["customer"];
+            Assert(((JArray)customer["dialogue_history"]).Count == 2 &&
+                (string)customer["dialogue_history"][0]["speaker"] == "测试客人" &&
+                (string)customer["dialogue_history"][1]["text"] == "请稍等。", "dialogue history lost");
+        });
         await Check("customer tools share the registry and are read-only", () =>
         {
             var registry = ToolRegistry.ForHands(new HandsService(new FakeHands()));

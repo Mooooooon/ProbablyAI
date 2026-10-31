@@ -46,6 +46,11 @@ namespace ProbablyAI.Customers
             if (!PlayerStore.Instance.isClientArrived) return new CustomerSnapshot { Status = "arriving" };
             var client = instance.GetClientBlueprint(); // A getter, not an instantiation or reroll.
             if (client == null) return new CustomerSnapshot { Status = "arriving" };
+            // The recorder separator is added when the current visit's main dialogue starts.
+            // Before that, the last segment may still belong to an earlier visitor, so do not read it.
+            var dialogueHistory = client.isMainDialogueStarted
+                ? RecorderHistory.CurrentVisit(PlayerStore.Instance.dialogHistory)
+                : null;
             return new CustomerSnapshot
             {
                 Status = "present",
@@ -71,6 +76,7 @@ namespace ProbablyAI.Customers
                         Note = T("原始游戏标签/标识符。ALL_TYPE 表示通用购买，ALL_TYPE_EXCEPT_CONTRABAND 排除违禁品；状态、容器内容和自定义规则仍可能拒收。用 check_customer_item 核对具体物品；普通购买偏好不代表易货或委托条件。CustomerSellingDisabled 表示客人不向店主普通出售。")
                     },
                     CurrentDialogue = CurrentDialogue(client), Barter = Barter(client.barterOffer),
+                    DialogueHistory = dialogueHistory != null && dialogueHistory.Count > 0 ? dialogueHistory : null,
                     Procurement = Procurement(client), GunOrder = GunOrder(client.gunOrderData), ServiceCost = client.serviceCost
                 }
             };

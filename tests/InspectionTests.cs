@@ -15,7 +15,8 @@ internal static partial class Program
         await Check("default prompts explain appraisal evidence and preserve customized prompts", () =>
         {
             foreach (string prompt in new[] { AssistantPrompt.ChineseDefault, AssistantPrompt.EnglishDefault })
-                Assert(prompt.Contains("appraise_mechanical_hand") && prompt.Contains("inspect_cigarette") &&
+                Assert(prompt.Contains("appraise_mechanical_hand") && prompt.Contains("appraise_ribwich") &&
+                    prompt.Contains("appraise_plasma_fuel") && prompt.Contains("inspect_cigarette") &&
                     prompt.Contains("inspect_food_stamp") && prompt.Contains("base_value") &&
                     prompt.Contains("face_value") && prompt.Contains("unknown"), "inspection guidance missing");
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseFreshnessDefault, AssistantPrompt.PreviousEnglishFreshnessDefault,
@@ -26,7 +27,11 @@ internal static partial class Program
                 AssistantPrompt.PreviousChineseAugDefault, AssistantPrompt.PreviousEnglishAugDefault,
                 AssistantPrompt.PreviousChineseBatteryDefault, AssistantPrompt.PreviousEnglishBatteryDefault,
                 AssistantPrompt.PreviousChineseChargingDefault, AssistantPrompt.PreviousEnglishChargingDefault,
-                AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault })
+                AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault,
+                AssistantPrompt.PreviousChineseRecorderDefault, AssistantPrompt.PreviousEnglishRecorderDefault,
+                AssistantPrompt.PreviousChineseStolenDefault, AssistantPrompt.PreviousEnglishStolenDefault,
+                AssistantPrompt.PreviousChineseRibwichDefault, AssistantPrompt.PreviousEnglishRibwichDefault,
+                AssistantPrompt.PreviousChinesePlasmaDefault, AssistantPrompt.PreviousEnglishPlasmaDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "saved default not upgraded");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom rule") == previous + "\nCustom rule", "custom prompt replaced");
@@ -37,7 +42,7 @@ internal static partial class Program
             var registry = ToolRegistry.ForHands(new HandsService(new FakeHands()));
             new CustomerService(new FakeCustomer()).Register(registry);
             new InspectionService(new GameInspectionBackend(InspectionWorld())).Register(registry);
-            Assert(registry.Definitions().Count == 13, "inspection tools missing");
+            Assert(registry.Definitions().Count == 15, "inspection tools missing");
             foreach (JObject definition in InspectionProtocol.Tools())
             {
                 string name = (string)definition["function"]["name"];
@@ -49,7 +54,7 @@ internal static partial class Program
         await Check("inspection rejects malformed IDs and extra actions before touching native state", () =>
         {
             var hands = InspectionWorld(); var service = new InspectionService(new GameInspectionBackend(hands));
-            foreach (string tool in new[] { "appraise_mechanical_hand", "inspect_cigarette", "inspect_food_stamp" })
+            foreach (string tool in new[] { "appraise_mechanical_hand", "appraise_ribwich", "appraise_plasma_fuel", "inspect_cigarette", "inspect_food_stamp" })
                 foreach (JObject args in new[] { null, new JObject(), new JObject { ["item_id"] = false },
                     new JObject { ["item_id"] = 12 }, new JObject { ["item_id"] = " " },
                     new JObject { ["item_id"] = new string('x', 201) }, new JObject { ["item_id"] = "hand", ["submit"] = true } })
@@ -70,6 +75,107 @@ internal static partial class Program
             AppHandHelper.Tactical = false; AppHandHelper.Deluxe = true;
             Assert(new GameInspectionBackend(hands).AppraiseMechanicalHand("hand").DeluxeSet, "deluxe result not read");
             AppHandHelper.Deluxe = false;
+        });
+        await Check("ribwich appraisal reports visible components and native base value", () =>
+        {
+            var hands = InspectionWorld(); var item = hands.Items["ribwich"];
+            var result = new GameInspectionBackend(hands).AppraiseRibwich("ribwich");
+            Assert(result.VisualAssessment == "appears_genuine" && result.Issues.Count == 0, "genuine ribwich rejected");
+            Assert(result.Meat == 0 && result.Bun == 0 && result.Pickles == 0 && result.Wrap == 0 && !result.Opened &&
+                !result.DoubleMeat && !result.DeluxeEdition, "packaging state lost");
+            Assert(result.ProductionMonth == 6 && result.ProductionYear == 432 && result.FacilityNumber == 1 &&
+                result.BarcodePrinted && result.FacilityPrinted, "visible production data lost");
+            Assert(result.BaseValue == 700 && item.RibwichValueReads == 1, "native value changed or multiplied");
+            var data = Doc(new InspectionService(new GameInspectionBackend(hands)).Execute("appraise_ribwich", InspectionArgs("ribwich")))["data"];
+            Assert((string)data["visual_assessment"] == "appears_genuine" && (int)data["base_value"] == 700 &&
+                (string)data["item"]["id"] == "ribwich", "protocol lost ribwich result");
+        });
+        await Check("ribwich appraisal flags visible production and packaging defects", () =>
+        {
+            foreach (var sample in new[]
+            {
+                ("RIBWICH_DAVRE_LOGO_TAG", 2, "davre_logo"),
+                ("RIBWICH_PRODUCTION_MONTH_TAG", 13, "production_date"),
+                ("RIBWICH_FACILITY_NUMBER_TAG", 40, "facility_number"),
+                ("RIBWICH_RIBWICH_LOGO_TAG", 1, "ribwich_logo"),
+                ("RIBWICH_PRODUCTION_TAG", -1, "production_print"),
+                ("RIBWICH_FACILITY_TAG", -1, "facility_print")
+            })
+            {
+                var hands = InspectionWorld();
+                hands.Items["ribwich"].TagStates[sample.Item1].IntValue = sample.Item2;
+                var result = new GameInspectionBackend(hands).AppraiseRibwich("ribwich");
+                Assert(result.VisualAssessment == "appears_counterfeit" &&
+                    result.Issues.SequenceEqual(new[] { sample.Item3 }), "visible defect lost: " + sample.Item1);
+            }
+            var periodOne = InspectionWorld();
+            periodOne.Items["ribwich"].TagStates["RIBWICH_PRODUCTION_YEAR_TAG"].IntValue = 425;
+            periodOne.Items["ribwich"].TagStates["RIBWICH_RIBWICH_LOGO_TAG"].IntValue = 0;
+            Assert(new GameInspectionBackend(periodOne).AppraiseRibwich("ribwich").Issues.SequenceEqual(new[] { "ribwich_logo" }),
+                "period-specific logo rule lost");
+            var deluxeMismatch = InspectionWorld();
+            deluxeMismatch.Items["ribwich"].TagStates["RIBWICH_BUN_TAG"].IntValue = 1;
+            deluxeMismatch.Items["ribwich"].TagStates["RIBWICH_PICKLES_TAG"].IntValue = 0;
+            Assert(new GameInspectionBackend(deluxeMismatch).AppraiseRibwich("ribwich").Issues.SequenceEqual(new[] { "deluxe" }),
+                "deluxe combination mismatch lost");
+        });
+        await Check("ribwich appraisal keeps opened and unknown states distinct", () =>
+        {
+            var opened = InspectionWorld(); opened.Items["ribwich"].TagStates["RIBWICH_WRAP_TAG"].IntValue = 1;
+            opened.Items["ribwich"].NativeRibwichValue = 40;
+            var openedResult = new GameInspectionBackend(opened).AppraiseRibwich("ribwich");
+            Assert(openedResult.Opened && openedResult.VisualAssessment == "appears_genuine" && openedResult.BaseValue == 40,
+                "opened ribwich misread");
+            var missing = InspectionWorld(); missing.Items["ribwich"].Tags.Remove("RIBWICH_MEAT_TAG");
+            var missingResult = new GameInspectionBackend(missing).AppraiseRibwich("ribwich");
+            Assert(missingResult.VisualAssessment == "unknown" && missingResult.BaseValue == 0 &&
+                missing.Items["ribwich"].RibwichValueReads == 0, "missing data became genuine or valued");
+            var unsupported = InspectionWorld(); unsupported.Items["ribwich"].TagStates["RIBWICH_MEAT_TAG"].IntValue = 2;
+            Assert(new GameInspectionBackend(unsupported).AppraiseRibwich("ribwich").VisualAssessment == "unknown",
+                "unsupported variant guessed");
+        });
+        await Check("plasma fuel appraisal reports visible state and native base value", () =>
+        {
+            var hands = InspectionWorld(); var item = hands.Items["plasma"];
+            var result = new GameInspectionBackend(hands).AppraisePlasmaFuel("plasma");
+            Assert(result.ConditionAssessment == "appears_intact" && result.Issues.Count == 0, "intact cartridge misread");
+            Assert(result.Color == "STANDARD" && result.Crack == "NONE" && result.Wear == "NONE" &&
+                result.Uncovered == "NONE" && result.Reinforced == "NONE" && result.Seal == "LL", "visible state lost");
+            Assert(result.BaseValue == 525 && item.PlasmaValueReads == 1, "native value changed or multiplied");
+            var data = Doc(new InspectionService(new GameInspectionBackend(hands)).Execute("appraise_plasma_fuel", InspectionArgs("plasma")))["data"];
+            Assert((string)data["condition_assessment"] == "appears_intact" && (int)data["base_value"] == 525 &&
+                (string)data["item"]["id"] == "plasma", "protocol lost plasma result");
+        });
+        await Check("plasma fuel appraisal flags visible casing and color defects", () =>
+        {
+            foreach (var sample in new[]
+            {
+                ("PLASMA_CASING_CONDITION_CRACK", "CRACK", "crack", "appears_damaged"),
+                ("PLASMA_CASING_CONDITION_WEAR", "WEAR", "wear", "appears_damaged"),
+                ("PLASMA_CASING_CONDITION_WEAR", "WEAR_HEAVY", "wear_heavy", "appears_damaged"),
+                ("PLASMA_CASING_CONDITION_UNCOVERED", "UNCOVERED", "uncovered", "appears_damaged"),
+                ("PLASMA_COLOR", "POOR1", "poor_color", "appears_intact"),
+                ("PLASMA_COLOR", "POOR2", "poor_color", "appears_intact")
+            })
+            {
+                var hands = InspectionWorld();
+                hands.Items["plasma"].TagStates[sample.Item1].Value = sample.Item2;
+                var result = new GameInspectionBackend(hands).AppraisePlasmaFuel("plasma");
+                Assert(result.Issues.SequenceEqual(new[] { sample.Item3 }) && result.ConditionAssessment == sample.Item4,
+                    "visible defect lost: " + sample.Item1);
+            }
+            var reinforced = InspectionWorld(); reinforced.Items["plasma"].TagStates["PLASMA_CASING_CONDITION_REINFORCED"].Value = "REINFORCED";
+            Assert(new GameInspectionBackend(reinforced).AppraisePlasmaFuel("plasma").Issues.Count == 0, "positive reinforcement flagged");
+        });
+        await Check("plasma fuel appraisal keeps unknown states distinct", () =>
+        {
+            var missing = InspectionWorld(); missing.Items["plasma"].Tags.Remove("PLASMA_SEAL");
+            var missingResult = new GameInspectionBackend(missing).AppraisePlasmaFuel("plasma");
+            Assert(missingResult.ConditionAssessment == "unknown" && missingResult.BaseValue == 0 &&
+                missing.Items["plasma"].PlasmaValueReads == 0, "missing data became known or valued");
+            var unsupported = InspectionWorld(); unsupported.Items["plasma"].TagStates["PLASMA_COLOR"].Value = "BROKEN";
+            Assert(new GameInspectionBackend(unsupported).AppraisePlasmaFuel("plasma").ConditionAssessment == "unknown",
+                "unsupported state guessed");
         });
         await Check("standard cigarette appearance does not expose hidden counterfeit flags", () =>
         {
@@ -190,6 +296,8 @@ internal static partial class Program
             var hands = InspectionWorld(); PlayerStore.Instance.isVisualInspectionIntroduced = false;
             var service = new InspectionService(new GameInspectionBackend(hands));
             Assert(service.Execute("appraise_mechanical_hand", InspectionArgs("hand")).Code == "inspection_locked", "locked hand inspected");
+            Assert(service.Execute("appraise_ribwich", InspectionArgs("ribwich")).Code == "inspection_locked", "locked ribwich inspected");
+            Assert(service.Execute("appraise_plasma_fuel", InspectionArgs("plasma")).Code == "inspection_locked", "locked plasma inspected");
             Assert(service.Execute("inspect_cigarette", InspectionArgs("cig")).Code == "inspection_locked", "locked cigarette inspected");
             Assert(service.Execute("inspect_food_stamp", InspectionArgs("stamp")).Code == "inspection_locked", "locked food stamp inspected");
         });
@@ -197,6 +305,10 @@ internal static partial class Program
         {
             var hands = InspectionWorld(); var service = new InspectionService(new GameInspectionBackend(hands));
             Assert(service.Execute("appraise_mechanical_hand", InspectionArgs("cig")).Code == "wrong_item_type", "cigarette appraised as hand");
+            Assert(service.Execute("appraise_ribwich", InspectionArgs("hand")).Code == "wrong_item_type", "hand appraised as ribwich");
+            Assert(service.Execute("appraise_ribwich", InspectionArgs("cig")).Code == "wrong_item_type", "cigarette appraised as ribwich");
+            Assert(service.Execute("appraise_plasma_fuel", InspectionArgs("hand")).Code == "wrong_item_type", "hand appraised as plasma");
+            Assert(service.Execute("appraise_plasma_fuel", InspectionArgs("ribwich")).Code == "wrong_item_type", "ribwich appraised as plasma");
             Assert(service.Execute("inspect_cigarette", InspectionArgs("hand")).Code == "wrong_item_type", "hand inspected as cigarette");
             Assert(service.Execute("inspect_food_stamp", InspectionArgs("cig")).Code == "wrong_item_type", "cigarette inspected as food stamp");
             Assert(service.Execute("appraise_mechanical_hand", InspectionArgs("stamp")).Code == "wrong_item_type", "food stamp appraised as hand");
@@ -205,7 +317,7 @@ internal static partial class Program
             Assert(service.Execute("inspect_cigarette", InspectionArgs("cig")).Code == "wrong_item_type", "noninspectable item accepted");
             hands.Refresh = () => hands.World.Items.Clear();
             Assert(service.Execute("appraise_mechanical_hand", InspectionArgs("hand")).Code == "item_not_found", "inaccessible object leaked from ID cache");
-            Assert(hands.Captures == 7 && hands.Items["hand"].HandValueReads == 0, "refresh bypassed");
+            Assert(hands.Captures == 11 && hands.Items["hand"].HandValueReads == 0, "refresh bypassed");
         });
         await Check("inspection propagates native availability and thread errors without private details", () =>
         {
@@ -228,7 +340,9 @@ internal static partial class Program
             int round = 0;
             var transport = new RegistryTransport((messages, tools, token) =>
             {
-                Assert(tools.Count == 13 && tools.Any(t => (string)t["function"]["name"] == "appraise_mechanical_hand") &&
+                Assert(tools.Count == 15 && tools.Any(t => (string)t["function"]["name"] == "appraise_mechanical_hand") &&
+                    tools.Any(t => (string)t["function"]["name"] == "appraise_ribwich") &&
+                    tools.Any(t => (string)t["function"]["name"] == "appraise_plasma_fuel") &&
                     tools.Any(t => (string)t["function"]["name"] == "inspect_cigarette") &&
                     tools.Any(t => (string)t["function"]["name"] == "inspect_food_stamp"), "model missing inspection tools");
                 switch (round++)
@@ -240,13 +354,19 @@ internal static partial class Program
                     case 2:
                         Assert((string)JObject.Parse((string)messages.Last["content"])["data"]["visual_assessment"] == "appears_genuine", "cigarette result lost");
                         return Call("stamp-read", "inspect_food_stamp", InspectionArgs("stamp"));
-                    default:
+                    case 3:
                         Assert((int)JObject.Parse((string)messages.Last["content"])["data"]["face_value"] == 160, "food stamp result lost");
-                        return new ChatTurn { Text = "机械手鉴定基准价 425，香烟外观符合标准，食品券面值 160 信用点。" };
+                        return Call("ribwich-read", "appraise_ribwich", InspectionArgs("ribwich"));
+                    case 4:
+                        Assert((int)JObject.Parse((string)messages.Last["content"])["data"]["base_value"] == 700, "ribwich result lost");
+                        return Call("plasma-read", "appraise_plasma_fuel", InspectionArgs("plasma"));
+                    default:
+                        Assert((int)JObject.Parse((string)messages.Last["content"])["data"]["base_value"] == 525, "plasma result lost");
+                        return new ChatTurn { Text = "机械手鉴定基准价 425，香烟外观符合标准，食品券面值 160 信用点，肋明治基准价 700，等离子燃料匣基准价 525。" };
                 }
             });
-            var response = await new HandsAgent(transport, registry).RunAsync(new ConnectionOptions(), "鉴定机械手、香烟和食品券", null, default);
-            Assert(response.ToolCalls == 3 && response.Operations.Count == 0 && inventory.Moves == 0 && hands.Captures == 3, "inspection mutated game or skipped refresh");
+            var response = await new HandsAgent(transport, registry).RunAsync(new ConnectionOptions(), "鉴定机械手、香烟、食品券、肋明治和等离子燃料匣", null, default);
+            Assert(response.ToolCalls == 5 && response.Operations.Count == 0 && inventory.Moves == 0 && hands.Captures == 5, "inspection mutated game or skipped refresh");
         });
         await Check("follow-up inspection reads changed native attributes instead of earlier results", async () =>
         {
@@ -290,10 +410,33 @@ internal static partial class Program
         foreach (string tag in new[] { "STAMP_SEAL", "STAMP_LOGO", "STAMP_CHIP", "STAMP_LETTERING", "STAMP_AMOUNT" })
         { stamp.Tags.Add(tag); stamp.TagStates[tag] = new TagState(); }
         stamp.TagStates["STAMP_AMOUNT"].IntValue = 160;
+        var ribwich = new GameItem { NativeRibwichValue = 700 };
+        ribwich.Tags.UnionWith(new[] { "RIBWICH_TAG", "INSPECTABLE_TAG" });
+        foreach (string tag in new[] { "RIBWICH_MEAT_TAG", "RIBWICH_BUN_TAG", "RIBWICH_PICKLES_TAG", "RIBWICH_WRAP_TAG",
+            "RIBWICH_DAVRE_LOGO_TAG", "RIBWICH_RIBWICH_LOGO_TAG", "RIBWICH_FACILITY_NUMBER_TAG",
+            "RIBWICH_PRODUCTION_MONTH_TAG", "RIBWICH_PRODUCTION_YEAR_TAG", "RIBWICH_PRODUCTION_TAG", "RIBWICH_FACILITY_TAG" })
+        { ribwich.Tags.Add(tag); ribwich.TagStates[tag] = new TagState(); }
+        ribwich.TagStates["RIBWICH_PRODUCTION_MONTH_TAG"].IntValue = 6;
+        ribwich.TagStates["RIBWICH_PRODUCTION_YEAR_TAG"].IntValue = 432;
+        ribwich.TagStates["RIBWICH_FACILITY_NUMBER_TAG"].IntValue = 1;
+        var plasma = new GameItem { NativePlasmaValue = 525 };
+        plasma.Tags.UnionWith(new[] { "PLASMA_CELL_TAG", "INSPECTABLE_TAG" });
+        foreach (string tag in new[] { "PLASMA_COLOR", "PLASMA_CASING_CONDITION_CRACK", "PLASMA_CASING_CONDITION_WEAR",
+            "PLASMA_CASING_CONDITION_UNCOVERED", "PLASMA_CASING_CONDITION_REINFORCED", "PLASMA_SEAL" })
+        { plasma.Tags.Add(tag); plasma.TagStates[tag] = new TagState(); }
+        plasma.TagStates["PLASMA_COLOR"].Value = "STANDARD";
+        plasma.TagStates["PLASMA_CASING_CONDITION_CRACK"].Value = "NONE";
+        plasma.TagStates["PLASMA_CASING_CONDITION_WEAR"].Value = "NONE";
+        plasma.TagStates["PLASMA_CASING_CONDITION_UNCOVERED"].Value = "NONE";
+        plasma.TagStates["PLASMA_CASING_CONDITION_REINFORCED"].Value = "NONE";
+        plasma.TagStates["PLASMA_SEAL"].Value = "LL";
         hands.Items["hand"] = hand; hands.Items["cig"] = cigarette; hands.Items["stamp"] = stamp;
+        hands.Items["ribwich"] = ribwich; hands.Items["plasma"] = plasma;
         hands.World.Items.Add(new ItemInfo { Id = "hand", Name = "机械手", Quantity = 3, ContainerId = "nested", Path = "物品栏 → 箱子 → 机械手" });
         hands.World.Items.Add(new ItemInfo { Id = "cig", Name = "香烟", Quantity = 1, ContainerId = "counter", Path = "柜台 → 香烟" });
         hands.World.Items.Add(new ItemInfo { Id = "stamp", Name = "食品券", Quantity = 1, ContainerId = "customer", Path = "窗口 → 食品券" });
+        hands.World.Items.Add(new ItemInfo { Id = "ribwich", Name = "肋明治", Quantity = 1, ContainerId = "customer", Path = "窗口 → 肋明治" });
+        hands.World.Items.Add(new ItemInfo { Id = "plasma", Name = "等离子燃料匣", Quantity = 1, ContainerId = "customer", Path = "窗口 → 等离子燃料匣" });
         return hands;
     }
 }

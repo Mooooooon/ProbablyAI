@@ -34,6 +34,8 @@ namespace ProbablyAI.Hands
         public bool Removable { get; set; }
         public bool? Container { get; set; }
         public bool? Pinned { get; set; }
+        public bool? Stolen { get; set; }
+        public int? Heat { get; set; }
         public bool? Charging { get; set; }
         public bool? InUse { get; set; }
         public string Description { get; set; }

@@ -53,6 +53,29 @@ internal static partial class Program
             var normal = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "ore", Name = "矿石" }));
             Assert(normal["pinned"] == null && normal["container"] == null, "unset flags serialized");
         });
+        await Check("item JSON exposes stolen and heat only for stolen items", () =>
+        {
+            var stolen = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "ring", Name = "戒指", Stolen = true, Heat = 75 }));
+            Assert((bool)stolen["stolen"] && (int)stolen["heat"] == 75, "stolen marker or heat lost");
+            var normal = JObject.Parse(HandsProtocol.Json(new ItemInfo { Id = "ore", Name = "矿石" }));
+            Assert(normal["stolen"] == null && normal["heat"] == null, "clean item marked stolen");
+        });
+        await Check("stolen items are excluded from goods search unless explicitly requested", () =>
+        {
+            var backend = new FakeHands();
+            backend.World.Items.Add(new ItemInfo { Id = "ring", Name = "赃物戒指", ContainerId = "inventory",
+                Path = "物品栏（主储藏区） → 赃物戒指", Quantity = 1, Owned = true, Removable = true, Stolen = true, Heat = 75 });
+            var hands = new HandsService(backend);
+            var hidden = Doc(hands.Execute("find_items", new JObject { ["query"] = "戒指" }));
+            Assert(((JArray)hidden["data"]["page"]["entries"]).Count == 0, "stolen item offered as goods");
+            var all = Doc(hands.Execute("find_items", new JObject { ["query"] = "戒指", ["include_stolen"] = true }));
+            Assert(((JArray)all["data"]["page"]["entries"]).Count == 1, "explicit stolen search hid item");
+            var inspected = Doc(hands.Execute("inspect_item", new JObject { ["item_id"] = "ring" }));
+            Assert((bool)inspected["data"]["stolen"] && (int)inspected["data"]["heat"] == 75, "inspect_item lost stolen heat");
+            var listed = Doc(hands.Execute("list_container", new JObject { ["container_id"] = "inventory" }));
+            var entry = ((JArray)listed["data"]["items"]["entries"]).Single(i => (string)i["id"] == "ring");
+            Assert((bool)entry["stolen"] && (int)entry["heat"] == 75, "list_container lost stolen heat");
+        });
         await Check("pinned non-container items are excluded from goods search unless explicitly requested", () =>
         {
             var backend = new FakeHands();

@@ -38,12 +38,13 @@ namespace ProbablyAI.Hands
             search["container_id"] = Text("可选：只搜索此容器及其所有子容器。");
             search["include_in_use"] = new JObject { ["type"] = "boolean", ["description"] = "默认 false，隐藏 in_use=true 的设备供电或充电电池；主人明确要求查看或更换电池时才设为 true。" };
             search["include_pinned"] = new JObject { ["type"] = "boolean", ["description"] = "默认 false，隐藏 pinned=true 且本身不是容器的已固定物品；主人明确要求查看这些固定物品时才设为 true。" };
+            search["include_stolen"] = new JObject { ["type"] = "boolean", ["description"] = "默认 false，隐藏 stolen=true 的赃物；主人明确要求查看或挑选赃物时才设为 true。" };
             return new JArray
             {
                 Tool("list_containers", "获取当前当铺的容器树，包括关闭的自有容器、嵌套文件夹和机器各分区。返回 ID、完整路径、父级、角色及锁定状态；不读取锁定容器内容。", list),
                 Tool("list_container", "列出一个容器的直接物品和直接子容器。多分区机器需继续查询具体分区。", contents, "container_id"),
-                Tool("find_items", "按名称、嵌套路径或游戏物品类型递归查找，返回唯一 ID、数量、类型和位置。找所有食物应设 item_type=FOOD，无需名称含食物。默认不返回设备中供电或充电的电池（in_use=true），也不返回已固定且不是容器的物品（pinned=true）。", search),
-                Tool("inspect_item", "查看某个真实物品的描述、数量、所有权、位置及内容容器 ID。", new JObject { ["item_id"] = Text("物品 ID。") }, "item_id"),
+                Tool("find_items", "按名称、嵌套路径或游戏物品类型递归查找，返回唯一 ID、数量、类型、位置、赃物标记和热度。找所有食物应设 item_type=FOOD，无需名称含食物。默认不返回设备中供电或充电的电池（in_use=true）、已固定且不是容器的物品（pinned=true）以及赃物（stolen=true）。", search),
+                Tool("inspect_item", "查看某个真实物品的描述、数量、所有权、位置、内容容器 ID、赃物标记与热度。", new JObject { ["item_id"] = Text("物品 ID。") }, "item_id"),
                 Tool("can_move_item", "预检单个物品堆是否能放入目标容器，不移动。执行时可能因容量或状态变化只移动一部分。", move, "item_id", "source_container_id", "destination_container_id", "quantity"),
                 Tool("move_item", "按游戏原生规则移动一个物品堆，支持上柜台、客人窗口到柜台、入库、归档、放入垃圾桶和机器投料。返回实际 moved 和 remaining；partial 不等于全部完成。不买卖、不改变所有权、不清空垃圾桶。", move, "item_id", "source_container_id", "destination_container_id", "quantity"),
                 Tool("open_container", "显示指定容器的原生窗口，不解锁容器、不启动机器。", new JObject { ["container_id"] = Text("容器 ID。") }, "container_id"),

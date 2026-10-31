@@ -48,6 +48,126 @@ namespace ProbablyAI.Inspection
             };
         }
 
+        public RibwichInspection AppraiseRibwich(string itemId)
+        {
+            var item = Resolve(itemId, "RIBWICH_TAG", out var info);
+            string[] tags =
+            {
+                RibwichHelper.RIBWICH_MEAT_TAG, RibwichHelper.RIBWICH_BUN_TAG, RibwichHelper.RIBWICH_PICKLES_TAG,
+                RibwichHelper.RIBWICH_WRAP_TAG, RibwichHelper.RIBWICH_DAVRE_LOGO_TAG, RibwichHelper.RIBWICH_RIBWICH_LOGO_TAG,
+                RibwichHelper.RIBWICH_FACILITY_NUMBER_TAG, RibwichHelper.RIBWICH_PRODUCTION_MONTH_TAG,
+                RibwichHelper.RIBWICH_PRODUCTION_YEAR_TAG, RibwichHelper.RIBWICH_PRODUCTION_TAG, RibwichHelper.RIBWICH_FACILITY_TAG
+            };
+            int productionTag = item.GetTagReadonly(RibwichHelper.RIBWICH_PRODUCTION_TAG).GetInt();
+            int facilityTag = item.GetTagReadonly(RibwichHelper.RIBWICH_FACILITY_TAG).GetInt();
+            var result = new RibwichInspection
+            {
+                Item = info,
+                Meat = item.GetTagReadonly(RibwichHelper.RIBWICH_MEAT_TAG).GetInt(),
+                Bun = item.GetTagReadonly(RibwichHelper.RIBWICH_BUN_TAG).GetInt(),
+                Pickles = item.GetTagReadonly(RibwichHelper.RIBWICH_PICKLES_TAG).GetInt(),
+                Wrap = item.GetTagReadonly(RibwichHelper.RIBWICH_WRAP_TAG).GetInt(),
+                DavreLogo = item.GetTagReadonly(RibwichHelper.RIBWICH_DAVRE_LOGO_TAG).GetInt(),
+                RibwichLogo = item.GetTagReadonly(RibwichHelper.RIBWICH_RIBWICH_LOGO_TAG).GetInt(),
+                FacilityNumber = item.GetTagReadonly(RibwichHelper.RIBWICH_FACILITY_NUMBER_TAG).GetInt(),
+                ProductionMonth = item.GetTagReadonly(RibwichHelper.RIBWICH_PRODUCTION_MONTH_TAG).GetInt(),
+                ProductionYear = item.GetTagReadonly(RibwichHelper.RIBWICH_PRODUCTION_YEAR_TAG).GetInt(),
+                BarcodePrinted = productionTag == 0,
+                FacilityPrinted = facilityTag == 0,
+                Note = T("仅根据检查界面可见的生产日期、包装厂编号、配料、包装和标志判断；opened=true 表示包装已打开，价值按已开封计算。不读取隐藏真伪、不提交估价、不质问客人、不改价。")
+            };
+            if (!tags.All(item.IsTag) || !KnownRibwichValues(result, productionTag, facilityTag))
+            {
+                result.VisualAssessment = "unknown";
+                result.Note = T("缺少可用的肋明治外观数据或编号超出可见范围，无法判断；未计算基准价。");
+                return result;
+            }
+            result.Opened = result.Wrap != RibwichHelper.RIBWICH_WRAP_CORRECT;
+            result.DoubleMeat = result.Meat == RibwichHelper.RIBWICH_MEAT_DOUBLE;
+            result.DeluxeEdition = result.Bun == RibwichHelper.RIBWICH_BUN_DELUXE && result.Pickles == RibwichHelper.RIBWICH_PICKLES_EXTRA;
+            if (!ValidRibwichDate(result.ProductionMonth, result.ProductionYear)) result.Issues.Add("production_date");
+            if (!ValidRibwichFacility(result.FacilityNumber)) result.Issues.Add("facility_number");
+            if (result.DavreLogo != 0) result.Issues.Add("davre_logo");
+            int period = RibwichProductionPeriod(result.ProductionMonth, result.ProductionYear);
+            if (period == 1 && result.RibwichLogo != -1 || period == 2 && result.RibwichLogo != 0) result.Issues.Add("ribwich_logo");
+            if (!result.BarcodePrinted) result.Issues.Add("production_print");
+            if (!result.FacilityPrinted) result.Issues.Add("facility_print");
+            if (!result.DeluxeEdition && !(result.Bun == 0 && result.Pickles == 0)) result.Issues.Add("deluxe");
+            result.VisualAssessment = result.Issues.Count == 0 ? "appears_genuine" : "appears_counterfeit";
+            result.BaseValue = RibwichHelper.GetCorrectValue(item);
+            return result;
+        }
+
+        private static bool KnownRibwichValues(RibwichInspection result, int productionTag, int facilityTag)
+            => (result.Meat == 0 || result.Meat == 1) &&
+               (result.Bun == 0 || result.Bun == 1) &&
+               (result.Pickles == 0 || result.Pickles == 1) &&
+               result.Wrap >= RibwichHelper.RIBWICH_WRAP_CORRECT && result.Wrap <= RibwichHelper.RIBWICH_WRAP_OPEN_RIGHT &&
+               result.DavreLogo >= -1 && result.DavreLogo < RibwichHelper.INCORRECT_DAVRE_LOGO_COUNT &&
+               result.RibwichLogo >= -1 && result.RibwichLogo < RibwichHelper.INCORRECT_RIBWICH_LOGO_COUNT &&
+               (productionTag == 0 || productionTag == -1) && (facilityTag == 0 || facilityTag == -1);
+
+        private static bool ValidRibwichDate(int month, int year)
+            => month >= 1 && month <= 12 &&
+               ((year >= RibwichHelper.FIRST_PRODUCTION_DATE_YEAR_MIN && year <= RibwichHelper.FIRST_PRODUCTION_DATE_YEAR_MAX) ||
+                (year >= RibwichHelper.SECOND_PRODUCTION_DATE_YEAR_MIN && year <= RibwichHelper.SECOND_PRODUCTION_DATE_YEAR_MAX));
+
+        private static int RibwichProductionPeriod(int month, int year)
+        {
+            if (month < 1 || month > 12) return 0;
+            if (year >= RibwichHelper.FIRST_PRODUCTION_DATE_YEAR_MIN && year <= RibwichHelper.FIRST_PRODUCTION_DATE_YEAR_MAX) return 1;
+            if (year >= RibwichHelper.SECOND_PRODUCTION_DATE_YEAR_MIN && year <= RibwichHelper.SECOND_PRODUCTION_DATE_YEAR_MAX) return 2;
+            return 0;
+        }
+
+        private static bool ValidRibwichFacility(int number)
+            => number >= 1 && number <= RibwichHelper.TOTAL_FACILITY_NUMBERS;
+
+        public PlasmaFuelInspection AppraisePlasmaFuel(string itemId)
+        {
+            var item = Resolve(itemId, "PLASMA_CELL_TAG", out var info);
+            string[] tags =
+            {
+                PlasmaHelper.PLASMA_COLOR, PlasmaHelper.PLASMA_CASING_CONDITION_CRACK, PlasmaHelper.PLASMA_CASING_CONDITION_WEAR,
+                PlasmaHelper.PLASMA_CASING_CONDITION_UNCOVERED, PlasmaHelper.PLASMA_CASING_CONDITION_REINFORCED, PlasmaHelper.PLASMA_SEAL
+            };
+            var result = new PlasmaFuelInspection
+            {
+                Item = info,
+                Color = item.GetTagReadonly(PlasmaHelper.PLASMA_COLOR).GetString(),
+                Crack = item.GetTagReadonly(PlasmaHelper.PLASMA_CASING_CONDITION_CRACK).GetString(),
+                Wear = item.GetTagReadonly(PlasmaHelper.PLASMA_CASING_CONDITION_WEAR).GetString(),
+                Uncovered = item.GetTagReadonly(PlasmaHelper.PLASMA_CASING_CONDITION_UNCOVERED).GetString(),
+                Reinforced = item.GetTagReadonly(PlasmaHelper.PLASMA_CASING_CONDITION_REINFORCED).GetString(),
+                Seal = item.GetTagReadonly(PlasmaHelper.PLASMA_SEAL).GetString(),
+                Note = T("仅根据检查界面可见的颜色、裂纹、磨损、未覆盖、加固和封条判断；没有真伪判定。base_value 使用游戏原生单件鉴定价，不乘堆叠数量，不是交易报价或鉴定报酬。不提交估价、不质问客人、不改价。")
+            };
+            if (!tags.All(item.IsTag) || !KnownPlasmaValues(result))
+            {
+                result.ConditionAssessment = "unknown";
+                result.Note = T("缺少可用的等离子燃料匣外观数据或状态不在可见范围内，无法判断；未计算基准价。");
+                return result;
+            }
+            if (result.Crack == PlasmaHelper.CRACK) result.Issues.Add("crack");
+            if (result.Wear == PlasmaHelper.WEAR) result.Issues.Add("wear");
+            else if (result.Wear == PlasmaHelper.WEAR_HEAVY) result.Issues.Add("wear_heavy");
+            if (result.Uncovered == PlasmaHelper.UNCOVERED) result.Issues.Add("uncovered");
+            if (result.Color == PlasmaHelper.POOR1 || result.Color == PlasmaHelper.POOR2) result.Issues.Add("poor_color");
+            result.ConditionAssessment = result.Issues.Any(issue => issue != "poor_color") ? "appears_damaged" : "appears_intact";
+            result.BaseValue = PlasmaHelper.GetCorrectValue(item);
+            return result;
+        }
+
+        private static bool KnownPlasmaValues(PlasmaFuelInspection result)
+            => (result.Color == PlasmaHelper.STANDARD || result.Color == PlasmaHelper.HIGH_QUALITY ||
+                result.Color == PlasmaHelper.POOR1 || result.Color == PlasmaHelper.POOR2) &&
+               (result.Crack == PlasmaHelper.NONE || result.Crack == PlasmaHelper.CRACK) &&
+               (result.Wear == PlasmaHelper.NONE || result.Wear == PlasmaHelper.WEAR || result.Wear == PlasmaHelper.WEAR_HEAVY) &&
+               (result.Uncovered == PlasmaHelper.NONE || result.Uncovered == PlasmaHelper.UNCOVERED) &&
+               (result.Reinforced == PlasmaHelper.NONE || result.Reinforced == PlasmaHelper.REINFORCED) &&
+               (result.Seal == PlasmaHelper.LL || result.Seal == PlasmaHelper.ZHONGHUA ||
+                result.Seal == PlasmaHelper.REPUBLIC || result.Seal == PlasmaHelper.IGNITION_LAB || result.Seal == PlasmaHelper.NONE);
+
         public CigaretteInspection InspectCigarette(string itemId)
         {
             var item = Resolve(itemId, "CIGARETTE_TAG", out var info);
