@@ -71,6 +71,17 @@ internal static partial class Program
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseWantedDefault, AssistantPrompt.PreviousEnglishWantedDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "wanted default did not upgrade");
         });
+        await Check("document reading and machine-source guidance are built into prompts", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("read_document") &&
+                AssistantPrompt.ChineseDefault.Contains("生产设备输入区") &&
+                AssistantPrompt.ChineseDefault.Contains("材料区除非主人明确要求"), "Chinese document/source guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("read_document") &&
+                AssistantPrompt.EnglishDefault.Contains("machine input compartments") &&
+                AssistantPrompt.EnglishDefault.Contains("unless Master explicitly asks"), "English document/source guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseDocumentDefault, AssistantPrompt.PreviousEnglishDocumentDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "document default did not upgrade");
+        });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
         {
             var store = new ConnectionSettingsStore(() => null, _ => { });

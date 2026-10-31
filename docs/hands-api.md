@@ -24,6 +24,21 @@
 
 原生适配每次通过共享 `GameHandsBackend.Capture()` 刷新，沿用主线程、场景、拖动、容器锁定和会话 ID 限制。目视检查未解锁返回 `inspection_locked`；物品已不可访问返回 `item_not_found`；类型不符返回 `wrong_item_type`。仅接受 `item_id`，拒绝多余参数。三个工具不改变特性、所有权、价格或委托状态，也不调用提交估价、质问、兑换及对话接口。
 
+## 阅读笔记、书籍与指南（只读）
+
+`DocumentService` / `IDocumentBackend` 注册一个只读工具 `read_document`，用于读取真实物品上的文字。先用 `find_items` / `list_container` 取得物品 ID：
+
+| 工具 | 参数 | 返回内容 |
+| --- | --- | --- |
+| `read_document` | `item_id` | `item`；`kind`（`mentor_note` / `book` / `slip` / `guide`）；`title`、`body`、`signature`；书籍的 `pages`（`number`、`subtitle`、`body`）或指南的 `text` |
+
+读取来源：
+
+- 导师笔记 / 情报单：`TUTORIAL_PAGE_TITLE`、`TUTORIAL_PAGE_BODY`、`TUTORIAL_PAGE_SIGNATURE`、`SLIP_TITLE`、`SLIP_BODY`。
+- 书籍：`BOOK_TAG` + `BOOK_ID`，通过 `StoreBookData` 返回全部页；缺少页数据时回退到对应指南面板。
+- 指南 / 纸面界面：按物品标识读取 `PaperUIManager` 或 `MultiPageUIManager` 中的 TMP 文本，包括香烟、食品券、注射器、机械手、通缉令、香烟色卡等。界面文本可能包含标题、图注和按钮标签，且依赖当前本地化状态。
+- 不读取或编造不存在的内容；文盲状态返回 `cannot_read`，无法识别的文档返回 `not_readable`。该工具不打开窗口、不翻页、不改变物品。
+
 ## 客人查询（只读）
 
 `CustomerService` / `ICustomerBackend` 在相同注册表中提供两个工具，聊天和 F7 的助手指令均可调用。
@@ -118,7 +133,7 @@
 
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 8 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 2 个客人只读工具，`InspectionService.Register` 注册 3 个鉴定只读工具，共 13 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 8 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 2 个客人只读工具，`InspectionService.Register` 注册 3 个鉴定只读工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 14 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 

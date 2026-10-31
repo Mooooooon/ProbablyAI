@@ -51,6 +51,17 @@ After unlocking visual inspection in the game, ask “Appraise this mechanical h
 
 Each call refreshes the shared item tree, including accessible nested containers, and respects native locks and scene restrictions. These tools do not submit estimates, expose features, confront customers, redeem stamps or complete orders. Submit results manually in the game.
 
+## Reading notes, books and guides
+
+When Master asks “What does the mentor's note say?”, “What is in this book?” or “Who is on the wanted poster?”, Xiaojing finds the real item and calls the read-only `read_document` tool:
+
+- Mentor notes and intel slips: title, body and signature.
+- Books with `BOOK_ID`: title plus every page's subtitle and body.
+- Cigarette / food stamp / injector / mechanical hand guides, wanted posters and the cigarette color card: visible guide or paper UI text.
+- Unreadable text, the illiterate condition or unsupported document types return a reason instead of invented content.
+
+`inspect_item`'s `description` is only a summary, not the full document; `read_document` is the source for the text. It does not open UI, flip pages or change items.
+
 ## Local settings and network use
 
 Opening settings or saving them does not contact the provider. Fetching models, sending a test, chatting and running assistant commands use the configured API endpoint. Each chat message or assistant command includes freshly read customer and counter context. Other queried game context and tool results are sent when the model uses tools. Automatic observations are ephemeral and do not add messages to the visible transcript or stored conversation.

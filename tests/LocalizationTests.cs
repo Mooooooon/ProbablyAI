@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using ProbablyAI;
 using ProbablyAI.Customers;
+using ProbablyAI.Documents;
 using ProbablyAI.Hands;
 using ProbablyAI.Inspection;
 using ProbablyAI.Localization;
@@ -60,9 +61,10 @@ internal static partial class Program
                 var registry = ToolRegistry.ForHands(new HandsService(new FakeHands()));
                 new CustomerService(new FakeCustomer()).Register(registry);
                 new InspectionService(new GameInspectionBackend(InspectionWorld())).Register(registry);
+                new DocumentService(new FakeDocument()).Register(registry);
                 var chinese = registry.Definitions();
                 Text.UseLocale("en"); var english = registry.Definitions();
-                Assert(english.Count == 13 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
+                Assert(english.Count == 14 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
                 for (int i = 0; i < english.Count; i++)
                     Assert((string)english[i]["function"]["name"] == (string)chinese[i]["function"]["name"] &&
                         JToken.DeepEquals(english[i]["function"]["parameters"]["required"], chinese[i]["function"]["parameters"]["required"]), "translation changed protocol IDs");

@@ -56,11 +56,21 @@ namespace ProbablyAI.Services
                 "Ask once about ambiguous references or scope only when they cannot be resolved safely from context.")
             + "\n\nAfter completing Master's task, end the reply. Do not close with a question, a request for confirmation or an unsolicited next step; do not ask permission for results that are already complete.";
 
-        public static readonly string ChineseDefault = PreviousChineseWantedDefault +
+        internal static readonly string PreviousChineseDocumentDefault = PreviousChineseWantedDefault +
             "\n\n当 get_current_customer 返回 wanted 时，在正常回复的最后另起一行，用括号小声提醒主人，例如“（小声）主人，这个人符合通缉令上的特征呢。”也可直接使用 wanted.quiet_reminder 的原文。只提醒一次，不要当着客人说出通缉、赏金、真名、举报或报警安排，也不要自动举报、逮捕或改变交易；是否处理由主人决定。";
 
-        public static readonly string EnglishDefault = PreviousEnglishWantedDefault +
+        internal static readonly string PreviousEnglishDocumentDefault = PreviousEnglishWantedDefault +
             "\n\nWhen get_current_customer returns wanted, add a quiet parenthetical reminder on a new line at the end of the normal reply, e.g. “(whispering) Master, this person matches the wanted poster.” You may use wanted.quiet_reminder verbatim. Remind once; do not mention wanted status, bounty, real name, reporting or alerting in front of the customer, and do not report, arrest or change the trade automatically. Leave the decision to Master.";
+
+        public static readonly string ChineseDefault = PreviousChineseDocumentDefault
+            .Replace("查询需求不代表主人要求搬动物品；当前工具不提供成交、对话选项或完成委托的操作。",
+                "查询需求不代表主人要求搬动物品；当前工具不提供成交、对话选项或完成委托的操作。给客人挑货时默认忽略生产设备输入区（input）里的原材料，这些是加工后才卖的；产出区（output）可以卖，材料区除非主人明确要求，否则不要搬动。")
+            + "\n\n主人问起笔记、书籍、指南或纸面内容时，先查询真实物品，再调用 read_document。只有它返回的 title、body、signature、pages 或 text 才是正文；inspect_item 的 description 只是物品简介，不能当作全文，也不能根据物品名称编造内容。指南文字可能带有界面标签或本地化差异；无法读取时如实说明。该工具只读，不会打开界面、翻页或改变物品。";
+
+        public static readonly string EnglishDefault = PreviousEnglishDocumentDefault
+            .Replace("Asking about requirements does not authorize moving items. Current tools cannot complete trades, choose dialogue options or finish orders.",
+                "Asking about requirements does not authorize moving items. Current tools cannot complete trades, choose dialogue options or finish orders. When picking goods for a customer, ignore raw materials in machine input compartments by default: they are for processing before sale. Output compartments may be sold, but do not move input materials unless Master explicitly asks.")
+            + "\n\nWhen Master asks about a note, book, guide or paper document, query the real item first, then call read_document. Only its title, body, signature, pages or text is the document content; inspect_item's description is only a summary and must not be treated as the full text or invented from the item name. Guide text may include UI labels or localization differences; say so when it cannot be read. The tool is read-only and does not open UI, flip pages or change items.";
 
         // Exact historical defaults remain recognizable, while edited prompts are preserved.
         internal const string PreviousChineseDefault =
@@ -98,6 +108,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseInspectionDefault || value == PreviousEnglishInspectionDefault ||
                 value == PreviousChineseTaskDefault || value == PreviousEnglishTaskDefault ||
                 value == PreviousChineseWantedDefault || value == PreviousEnglishWantedDefault ||
+                value == PreviousChineseDocumentDefault || value == PreviousEnglishDocumentDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

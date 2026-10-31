@@ -17,6 +17,10 @@
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="InspectionTests.cs" />
     <Compile Include="InspectionNativeStubs.cs" />
+    <Compile Include="DocumentTests.cs" />
+    <Compile Include="..\src\Documents\DocumentContracts.cs" Link="Documents\DocumentContracts.cs" />
+    <Compile Include="..\src\Documents\DocumentProtocol.cs" Link="Documents\DocumentProtocol.cs" />
+    <Compile Include="..\src\Documents\DocumentService.cs" Link="Documents\DocumentService.cs" />
     <Compile Include="..\src\Inspection\*.cs" Link="Inspection\%(Filename)%(Extension)" />
     <Compile Include="..\src\Localization\*.cs" Link="Localization\%(Filename)%(Extension)" />
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
