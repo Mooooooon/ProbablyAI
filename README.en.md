@@ -25,6 +25,13 @@ The chat window remembers its dragged position when closed and reopened, includi
 
 The assistant queries live containers and items, including nested folders, bags, storage pages and machine compartments. It can inspect items, move them through the game's native rules and open or close container windows. Customer queries include buying preferences, remaining purchase budgets and barter, procurement and gunsmith requirements. Top-level counter items use the native live quote. Owned items preview variety bonuses, current price events, retail markup and known customer effects before placement, using the game's innate, market and final negotiation stages. Budget checks use that complete quote and return a price breakdown; percentages must not be applied twice. Multiple items require a combined budget check. Recheck after placement, inspection or negotiation, since custom callbacks may affect the final quote.
 
+The input row also has **Quick replies**:
+
+- **Pick goods for this customer's needs** combines the current customer's requirements, budget and stock to list suggestions first; it does not move anything.
+- **Appraise what the customer brought** inspects each item in the customer window.
+
+Quick replies send immediately and keep any draft in the input. The default prompt prioritizes finishing Master's task and ends without a closing question, confirmation request or unsolicited next step; it asks one short question only when essential information is missing and the task cannot be done safely.
+
 The mod does not complete purchases or sales, choose dialogue options, unlock containers, spawn items or start machines. Native game callbacks and automatic processing still behave normally. Moves can partially succeed. Stopping a request cancels later actions; completed moves remain. The model must support Chat Completions tool calling to use game tools.
 
 ## Language and prompts

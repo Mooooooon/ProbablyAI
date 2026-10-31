@@ -26,13 +26,35 @@ namespace ProbablyAI.Services
         internal static readonly string PreviousEnglishInspectionDefault = PreviousEnglishFreshnessDefault +
             "\n\nTo appraise a mechanical hand, first query the real item, then call appraise_mechanical_hand. Its per-unit base_value already includes set bonuses; do not add them again or treat it as a trade quote or appraisal fee. For cigarettes, call inspect_cigarette and explain visual_assessment and issues. Report unknown as inconclusive; standard appearance does not guarantee hidden authenticity. Both tools are read-only: they do not submit estimates, confront customers, expose features or complete orders. Report locked gameplay or stale items from the tool result.";
 
-        public static readonly string ChineseDefault = PreviousChineseInspectionDefault.Replace(
+        internal static readonly string PreviousChineseTaskDefault = PreviousChineseInspectionDefault.Replace(
             "外观符合不保证隐藏真伪。两个工具均只读",
             "外观符合不保证隐藏真伪。鉴定食品券调用 inspect_food_stamp，结合 face_value、visual_assessment 和 issues 说明票面面值、可见异常及芯片是否影响兑换；unknown 时说明无法判断。三个工具均只读");
 
-        public static readonly string EnglishDefault = PreviousEnglishInspectionDefault.Replace(
+        internal static readonly string PreviousEnglishTaskDefault = PreviousEnglishInspectionDefault.Replace(
             "standard appearance does not guarantee hidden authenticity. Both tools are read-only",
             "standard appearance does not guarantee hidden authenticity. For food stamps, call inspect_food_stamp and explain face_value, visual_assessment and issues, including whether the chip affects redemption. Report unknown as inconclusive. All three tools are read-only");
+
+        public static readonly string ChineseDefault = PreviousChineseTaskDefault
+            .Replace("你可以正常聊天，也能按主人的指令调用当前提供的工具操作真实游戏。",
+                "你可以在主人闲聊时自然回应，也能按主人的指令调用当前提供的工具操作真实游戏；主人布置任务时以完成为先，不要主动扩展任务或反复确认。")
+            .Replace("信息不足时明确说明，不编造游戏数值或执行结果。",
+                "信息不足时明确说明，不编造游戏数值或执行结果。主人的任务优先：能执行就直接执行，完成后简要汇报结果并停止，不要在结尾反问、追问或提议下一步；只有缺少必要信息、确实无法安全执行时才先问一个简短问题。")
+            .Replace("同名物品按路径、数量和所属容器区分；不明确时先询问主人。",
+                "同名物品按路径、数量和所属容器区分；确实无法确定目标时才先问一次。")
+            .Replace("代词或范围不明确时先询问主人。",
+                "代词或范围不明确且无法从上下文安全判断时才先问一次。")
+            + "\n\n每次完成主人的任务后直接结束回复，不要在结尾反问、追问、请求确认或主动提议下一步；已经完成的结果不必再次征求同意。";
+
+        public static readonly string EnglishDefault = PreviousEnglishTaskDefault
+            .Replace("You can chat and use the currently supplied tools to operate on the real game when Master asks.",
+                "Chat naturally when Master is chatting, and use the currently supplied tools when Master gives a task; finish the task first rather than expanding it or repeatedly confirming.")
+            .Replace("When information is missing, say so; never invent game values or completed actions.",
+                "When information is missing, say so; never invent game values or completed actions. Master's task comes first: execute when possible, then report the result briefly and stop. Do not end with a question, a request for confirmation or an unsolicited next step; ask one short question only when essential information is missing and the task cannot be done safely.")
+            .Replace("Ask Master if the intended item is ambiguous.",
+                "Ask once only if the intended item truly cannot be determined.")
+            .Replace("Ask Master about ambiguous references or scope.",
+                "Ask once about ambiguous references or scope only when they cannot be resolved safely from context.")
+            + "\n\nAfter completing Master's task, end the reply. Do not close with a question, a request for confirmation or an unsolicited next step; do not ask permission for results that are already complete.";
 
         // Exact historical defaults remain recognizable, while edited prompts are preserved.
         internal const string PreviousChineseDefault =
@@ -68,6 +90,7 @@ namespace ProbablyAI.Services
             if (string.IsNullOrWhiteSpace(value) || value == PreviousDefault || value == PreviousChineseDefault || value == PreviousEnglishDefault ||
                 value == PreviousChineseFreshnessDefault || value == PreviousEnglishFreshnessDefault ||
                 value == PreviousChineseInspectionDefault || value == PreviousEnglishInspectionDefault ||
+                value == PreviousChineseTaskDefault || value == PreviousEnglishTaskDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

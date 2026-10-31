@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProbablyAI.Hands;
@@ -47,11 +48,16 @@ namespace ProbablyAI.UI
                 .SetSize(760f, 770f).SetPosition(new Vector2(170f, 0f)).SetDraggable(true).SetCloseOnEscape();
             window = b.Handle;
             window.root.SetActive(false);
-            b.OnClose(OnClosed).BeginScroll(455f);
+            b.OnClose(OnClosed).BeginScrollFlexible(300f);
             scroll = b.CurrentContainer.GetComponentInParent<ScrollRect>(true);
             b.AddLabel("", "conversation").End()
                 .AddInput(T("说点什么，比如：帮我把食物放到柜台上"), "", id: "message")
                 .AddLabel(T("Enter 发送 · Shift+Enter 换行"))
+                .AddLabel(T("快捷发言"))
+                .BeginRow()
+                    .AddButton(T("按照客户需求挑选商品"), () => QuickSend(T("按照客户需求挑选商品，先列给我看，不要直接搬动。")), "quick-pick")
+                    .AddButton(T("帮我鉴定对方带来的东西"), () => QuickSend(T("帮我鉴定对方带来的东西，逐件告诉我结果。")), "quick-appraise")
+                .End()
                 .BeginRow()
                     .AddButton(T("发送"), Send, "send")
                     .AddButton(T("停止"), Cancel, "stop")
@@ -156,12 +162,33 @@ namespace ProbablyAI.UI
 
         private async void Send()
         {
-            if (!IsOpen || busy) return;
-            if (agent.IsRunning) { Status(T("助手正在处理另一个窗口的请求，请等待完成或先停止。")); return; }
-            var message = window.Get("message").GetString().Trim();
+            if (!CanSend()) return;
+            var input = window.Get("message");
+            string message = input.GetString().Trim();
             if (message.Length == 0) return;
+            input.SetString("");
+            await Run(message);
+        }
+
+        private async void QuickSend(string message)
+        {
+            if (!CanSend()) return;
+            await Run(message);
+        }
+
+        private bool CanSend()
+        {
+            if (!IsOpen || busy) return false;
+            if (agent.IsRunning) { Status(T("助手正在处理另一个窗口的请求，请等待完成或先停止。")); return false; }
+            return true;
+        }
+
+        private async Task Run(string message)
+        {
+            if (!IsOpen || busy || agent.IsRunning) return;
+            message = message?.Trim();
+            if (string.IsNullOrEmpty(message)) return;
             currentUser = message; currentActions.Clear();
-            window.Get("message").SetString("");
             var request = new CancellationTokenSource(); pending = request;
             SetBusy(true); Render();
             try
@@ -258,6 +285,8 @@ namespace ProbablyAI.UI
             window.Get("send").SetInteractable(!value);
             window.Get("clear").SetInteractable(!value);
             window.Get("stop").SetInteractable(value);
+            window.Get("quick-pick").SetInteractable(!value);
+            window.Get("quick-appraise").SetInteractable(!value);
         }
         private void Status(string text) { if (IsOpen) window.Get("status").SetText(text); }
         private void Cancel() => pending?.Cancel();
