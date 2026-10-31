@@ -15,6 +15,8 @@
 
 中英文标题与简介在 `workshop/`。公开条目 ID 保存于 `workshop/item.json` 后，Prepare 脚本会自动写入更新用 VDF；这个文件只记录公开条目 ID / URL，不存登录信息。校验清单 `package-inventory.json` 与 `workshop.vdf` 在 content 外，均不作为 Mod 内容上传。
 
+创意工坊图库的附加截图保存在 `assets/workshop-preview-screenshot-1.png`、`assets/workshop-preview-screenshot-2.jpg`、`assets/workshop-preview-screenshot-3.jpg`。后两张展示客人预算核对与食物选品，保留 2560 × 1440 分辨率，以质量 95 的 JPG 导出，单张均小于 1 MB。通过 Steamworks UGC 的 `AddItemPreviewFile` 追加到现有条目，不放进 Mod 的 content 目录。
+
 ## 用 SteamCMD 手动上传
 
 1. 从 Valve 的 SteamCMD 页面安装工具，以拥有游戏的账号登录。不要把密码写进脚本或聊天；需要时在 SteamCMD 自己的登录提示中输入，并完成 Steam Guard。
