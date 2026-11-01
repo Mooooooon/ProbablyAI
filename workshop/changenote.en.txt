@@ -1,1 +1,1 @@
-v0.7.7: added water analysis and injector inspection; immediate arrival alerts for wanted/augmented visitors (excluding security staff); refined goods-picking rules for pinned storage/machines/reagent kits, pre-freeze vs. frozen fridge items, and wine racks/beer cases.
+v0.7.8: fixed wanted/augmented arrival notices remaining stuck at the bottom of the chat window by integrating them chronologically into the chat transcript; streamlined Workshop store page descriptions to prevent character limit errors.

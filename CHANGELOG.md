@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 0.7.8 — 2026-11-01
+
+### 中文
+
+- 修复通缉犯与改造体到店提醒一直滞留在聊天框底部、不随对话消失的问题：提醒按真实时序融入聊天记录流，后续对话正常排在提醒下方，并随多轮对话自然推移与淘汰，清空聊天时一并清理；发送给模型的消息上下文继续严格隔离该本地提醒。
+- 精简创意工坊商店页中英文简介与功能列表，精炼核心功能，避免长文本字数超限。
+
+### English
+
+- Fixed an issue where wanted and augmented arrival reminders remained pinned to the bottom of the chat window: arrival notices are now integrated chronologically into the chat transcript so new dialogue appears below them and they expire naturally with conversation turns or chat clearing, while remaining strictly excluded from model context.
+- Streamlined Steam Workshop store descriptions in both English and Chinese to prevent description character limit overflow.
+
 ## 0.7.7 — 2026-11-01
 
 ### 中文

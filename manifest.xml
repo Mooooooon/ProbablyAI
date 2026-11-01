@@ -3,7 +3,7 @@
   <ID>probably_ai</ID>
   <Name>深空AI：可能是DeepSeek</Name>
   <Author>fourt</Author>
-  <ModVersion>0.7.7</ModVersion>
+  <ModVersion>0.7.8</ModVersion>
   <Description>点击女仆助手立绘聊天，查询客人预算与需求，用自然语言整理当铺和鉴定物品。F7 可编辑提示词、配置连接、思考级别和手动操作；F6 显隐立绘。支持嵌套容器与机器投料，工具可扩展。</Description>
   <GameVersions><Version>0.46D</Version></GameVersions>
   <Prerequisites />

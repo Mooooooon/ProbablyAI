@@ -3,73 +3,43 @@ Looking for a helpful hand around your pawnshop? This mod introduces "Xiaojing",
 Chat with her naturally, and let her help you organize your pawnshop, sort your inventory, and check customer budgets and preferences!
 
 [h2]💡 A Note on Early Development[/h2]
-This mod is currently in [b]early active development, with a limited and basic set of features[/b].
-Xiaojing is still learning and growing, and more features and interactions will be added over time.
+This mod is currently in [b]early active development[/b]. Xiaojing is still learning and growing, and more features and interactions will be added over time.
 [b]If you have any suggestions, feature requests, or run into any bugs, please feel free to leave a comment below![/b]
-Every comment is warmly welcomed and directly helps guide future updates!
 
-[h2]✨ Current Features[/h2]
+[h2]✨ Key Features[/h2]
 [list]
-[*]💬 [b]Interactive Portrait & Natural Language Chat[/b]
-Xiaojing stays on the left side of your pawnshop and gently breathes while idle: her body changes height from planted feet, so she never floats. Simply click on her portrait to open the chat window and talk freely (press [b]F6[/b] anytime to show or hide the portrait; the breathing toggle, distance and cycle are adjustable in the mod's settings).
-[*]📦 [b]Hands to Organize Your Shop[/b]
-Tired of rummaging through bags and containers? Just tell her naturally:
-· “Put all the food from my inventory onto the counter.”
-· “Move the scrap metal into the furnace input.”
-· “Fetch a specific note from the mentor's notes in the archive.”
-Supports inventory, bags, nested folders, storage tabs, and machine compartments while respecting native game rules.
-[*]👥 [b]Customer & Budget Inquiries[/b]
-Unsure about a customer's intentions? Ask Xiaojing directly:
-· “Who is this customer, and are they here to buy or sell?”
-· “How much budget does this customer have left, and what are their preferences?”
-· “Check if I have items they want in my inventory, but let me know first before moving anything.”
-She will query live customer preferences, refusal rules, and barter/order requirements. She can also read the recorder history for the current visit and answer what the customer said earlier. Items show a stolen marker and heat; stolen goods are skipped by default when picking goods unless you explicitly ask.
-[*]🔍 [b]Mechanical Hand, Ribwich, Plasma Fuel, Cigarette, Food Stamp, Injector & Water Inspection[/b]
-After unlocking visual inspection, ask “Appraise this mechanical hand,” “Is this Ribwich worth anything?”, “How is this Plasma Cartridge?”, “Check this cigarette,” “Is this food stamp genuine?” or “Is this injector still usable?” Xiaojing reads only what the inspection screen shows: native base values and visible condition for hands, Ribwiches and Plasma Cartridges; cigarette seal, logo, lettering and packaging; food stamp security seal, logo, chip, lettering and printed face value; and injector body, indicator, serial, company and model, including whether it is broken, expired, recalled or a suspected counterfeit. Water containers can be analyzed for capacity, label grade, already tested/scanned purity and contents; untested labels are explicitly marked unverified. All appraisals are read-only: she will not submit an estimate, confront the customer or redeem a stamp.
-[*]⚡ [b]Chat Quick Replies[/b]
-Two buttons in the chat window: “Pick goods for this customer's needs” chooses suitable goods for the current customer's requirements and budget, then places them on the counter; “Appraise what the customer brought” inspects each item in the customer window.
-[*]🧠 [b]Thinking Level[/b]
-F7 settings now offer follow model default, thinking off, low, high or max. The request includes thinking and reasoning_effort where supported, so you can trade speed for deeper reasoning.
-[*]🕵️ [b]Wanted & Augmented Visitor Alerts[/b]
-As soon as a visitor enters the shop, Xiaojing whispers a local notice in chat or on a small card if they match a wanted poster or are an augmented human, without waiting for a chat reply. She reminds once per visit, never reveals it to the customer, and never reports, attacks or changes the trade automatically. On-duty security officers and inspectors are never misreported.
-[*]📖 [b]Read Notes, Books & Guides[/b]
-Reads mentor notes, intel slips, book pages, and the visible text of cigarette, food stamp, injector and mechanical-hand guides or wanted posters. Read-only: no windows opened, pages flipped or items changed.
-[*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]
-Press [b]F7[/b] to open the settings window. Supports any OpenAI-compatible API endpoint (such as DeepSeek, OpenAI, or local models via Ollama/vLLM).
-Comes with a lively maid persona by default, and you can freely customize the system prompt in the settings to shape her personality to your liking!
-[*]🌐 [b]Automatic Bilingual Support[/b]
-UI, system prompts, and tool descriptions automatically adapt to the game's language (Chinese / English).
+[*]💬 [b]Interactive Portrait & Natural Language Chat[/b]: Xiaojing stays on the left side of your shop (press [b]F6[/b] to toggle). Naturally breathes without floating feet. Click her portrait to chat freely.
+[*]📦 [b]Hands to Organize Your Shop[/b]: Direct her in plain language (e.g., “Put all food from my bag onto the counter”, “Move scrap metal into the furnace input”). Supports inventory, nested folders, storage tabs, and machines while respecting game rules.
+[*]👥 [b]Customer & Budget Inquiries[/b]: Ask about current visitor intent, remaining budget, refusal rules, and special barter/procurement/gunsmith orders; can also read recorder dialogue from the current visit.
+[*]🔍 [b]Item Visual Inspection[/b]: After unlocking inspection, Xiaojing assists in reading visible details on mechanical hands, Ribwiches, Plasma Cartridges, cigarettes, food stamps, injectors, and water containers to detect defects and counterfeits (read-only; does not submit quotes).
+[*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Quick buttons for “Pick goods for customer” and “Appraise customer items”; whispers local notices when wanted or augmented visitors arrive (on-duty security staff excluded).
+[*]📖 [b]Read Notes, Books & Guides[/b]: Read-only access to mentor notes, intel slips, book pages, and visible text on guide cards and wanted posters.
+[*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]: Press [b]F7[/b] for settings. Supports any OpenAI-compatible endpoint (DeepSeek, OpenAI, or local models via Ollama/vLLM); includes thinking level configuration and editable system prompts.
+[*]🌐 [b]Automatic Bilingual Support[/b]: Mod UI and prompts automatically switch with the game's Chinese/English locale.
 [/list]
 
 [h2]📝 Changelog[/h2]
-[b]v0.7.7[/b]
+[b]v0.7.8[/b]
 [list]
-[*]Added water analysis and injector inspection: check water capacity, label grade and already tested/scanned purity and contents (untested labels are explicitly marked unverified); inspect injector body, indicator, serial, company and model for broken, expired, recalled or counterfeit issues.
-[*]Wanted and augmented visitor alerts now trigger immediately on arrival (in chat or on an auto-dismissing card), explicitly excluding on-duty security officers and inspectors; configurable under Visitor notices.
-[*]Refined goods-picking rules: pinned items themselves are excluded by default; items inside pinned storage or machine output/wine racks remain sellable, while items inside pinned reagent kits or tablet boxes are excluded; pre-freeze/pre-chill items in the fridge (such as un-frozen ice cream or un-chilled drinks) are kept off the counter until frozen/chilled; unpinned wine racks and beer cases can be sold whole or by individual bottles/cans.
+[*]Fixed wanted/augmented arrival notices remaining stuck at the bottom of the chat window: reminders now integrate chronologically into the transcript and expire naturally with conversation turns.
+[*]Streamlined Steam Workshop description text to prevent character limit overflow.
 [/list]
 
-[b]v0.7.6[/b]
+[b]v0.7.7[/b]
 [list]
-[*]Pick or restock the counter several goods at a time instead of waiting for each item; every move still follows native ownership, lock, capacity and location rules.
-[*]Added batch checks: query several candidate items and their combined budget at once, with the total and budget verdict together.
-[*]Fixed variety customers: one item per identifier per visit, identifiers already bought are refused, and picking, totals and the budget verdict are deduplicated instead of treating variety as only a price bonus.
+[*]Added water analysis and injector inspection; immediate arrival alerts for wanted/augmented visitors (excluding security staff).
+[*]Refined goods-picking rules for pinned containers, machine outputs, fridge items, and wine racks.
 [/list]
 
 [i]Older versions are listed in the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url].[/i]
 
 [h2]🛠️ Quick Start & Notes[/h2]
 [list]
-[*]1. When enabling the mod in the game's Mods menu, confirm the network permission prompt, then restart the game.
-[*]2. In the pawnshop, press [b]F7[/b] to configure your API endpoint and API Key (DeepSeek's official API is recommended for quality and affordability). Use the test button to verify your connection.
-[*]3. [b]Bring Your Own API Key[/b]: The mod connects directly from your local client to your chosen provider; no built-in API quota is included. Your API key is stored locally on your PC.
-[*]4. [b]Native Game Rules[/b]: Xiaojing only moves items according to normal game rules. She will not spawn items, auto-complete deals, or alter game balance.
+[*]1. When enabling the mod in Mods menu, confirm the network permission prompt, then restart the game.
+[*]2. In the pawnshop, press [b]F7[/b] to configure your API endpoint and API Key (DeepSeek API recommended; stored locally).
+[*]3. Xiaojing strictly follows native game mechanics and will not spawn items or auto-complete transactions.
 [/list]
 
-[h2]🔗 Open Source & Repository[/h2]
+[h2]🔗 Open Source & Feedback[/h2]
 GitHub Repository: [url=https://github.com/Mooooooon/ProbablyAI]https://github.com/Mooooooon/ProbablyAI[/url]
-Feel free to star, open issues, or contribute!
-
-[h2]💬 Feedback & Suggestions[/h2]
-What tasks or features would you like Xiaojing to help with in future updates?
-Feel free to leave your thoughts, ideas, and feature requests in the comments. Thank you for your support and feedback!
+Thank you for your support and feedback!

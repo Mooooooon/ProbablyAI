@@ -65,10 +65,23 @@ internal static partial class Program
             var memory = new ConversationMemory();
             memory.PostNotice("（小声）主人，这个人符合通缉令上的特征呢。");
             memory.PostNotice("  ");
-            Assert(memory.Notices().Count == 1 && memory.Messages().Count == 0 &&
+            Assert(memory.Notices().Count == 1 && memory.Messages().Count == 1 &&
+                (string)memory.Messages()[0]["content"] == "（小声）主人，这个人符合通缉令上的特征呢。" &&
+                (bool)memory.Messages()[0]["local"] &&
                 memory.MessagesForModel(name => false).Count == 0, "notice leaked into the model transcript");
+            // Subsequent conversation turns place new messages after the notice and expire it naturally with maxTurns.
+            for (int i = 0; i < 8; i++)
+            {
+                memory.Commit(new JArray
+                {
+                    new JObject { ["role"] = "user", ["content"] = "问句 " + i },
+                    new JObject { ["role"] = "assistant", ["content"] = "回答 " + i }
+                });
+            }
+            Assert(memory.Notices().Count == 0 && !memory.Messages().ToString().Contains("通缉令"),
+                "notice did not expire with conversation turns");
             memory.Clear();
-            Assert(memory.Notices().Count == 0 && memory.TurnCount == 0, "clear kept a notice");
+            Assert(memory.Notices().Count == 0 && memory.TurnCount == 0 && memory.Messages().Count == 0, "clear kept a notice");
         });
         await Check("recorder history returns only the current visit with speakers and full text", () =>
         {

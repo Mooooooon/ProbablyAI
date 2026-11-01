@@ -142,6 +142,35 @@ internal static partial class Program
             release.SetResult(new ChatTurn { Text = "完成。" }); await first;
             Assert(!agent.IsRunning, "running state not cleared");
         });
+        await Check("arrival notices precede subsequent dialogue and expire with turns without polluting model messages", async () =>
+        {
+            var memory = new ConversationMemory(2, 10000);
+            memory.PostNotice("（小声）主人，这个人符合通缉令上的特征呢。");
+            int round = 0;
+            var transport = new FakeTransport((messages, token) =>
+            {
+                Assert(!messages.Skip(1).Any(m => (m["content"]?.ToString() ?? "").Contains("这个人符合通缉令上的特征")),
+                    "arrival notice leaked to model messages");
+                if (round++ == 0)
+                {
+                    Assert((string)messages.Last["content"] == "帮我挑选商品", "current user message missing");
+                    return new ChatTurn { Text = "好的，已经为您挑选。" };
+                }
+                Assert((string)messages.Last["content"] == "第二轮对话", "second user message missing");
+                return new ChatTurn { Text = "第二轮回复。" };
+            });
+            var agent = new HandsAgent(transport, new HandsService(new FakeHands()));
+            await agent.RunAsync(new ConnectionOptions(), "帮我挑选商品", null, default, memory);
+            var msgs = memory.Messages();
+            Assert(msgs.Count == 3, "expected notice + user + assistant in visible history");
+            Assert((string)msgs[0]["content"] == "（小声）主人，这个人符合通缉令上的特征呢。", "notice should precede user message");
+            Assert((string)msgs[1]["content"] == "帮我挑选商品", "user message should follow notice");
+            Assert((string)msgs[2]["content"] == "好的，已经为您挑选。", "assistant reply should follow user message");
+            // Next turn should trim the notice out because maxTurns is 2.
+            await agent.RunAsync(new ConnectionOptions(), "第二轮对话", null, default, memory);
+            var afterTrim = memory.Messages();
+            Assert(!afterTrim.ToString().Contains("通缉令") && memory.Notices().Count == 0, "notice should expire with turns");
+        });
     }
 
     private static FakeHands FoodWorld()
