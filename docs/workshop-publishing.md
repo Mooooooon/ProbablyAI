@@ -10,7 +10,7 @@
 
 ```powershell
 .\scripts\Prepare-Workshop.ps1
-.\scripts\Verify-WorkshopPackage.ps1 -ContentFolder '.\dist\workshop\0.7.6\content'
+.\scripts\Verify-WorkshopPackage.ps1 -ContentFolder '.\dist\workshop\0.7.7\content'
 ```
 
 只上传独立的 `content` 目录，不要选择整个项目、游戏安装目录或个人 ModData 目录。允许文件只有 `ProbablyAI.dll`、`manifest.xml`、`README.md`、`README.en.md`、`preview.png`、`Textures/deepseek-npc.png`。连接配置、API Key、存档、日志、`.git`、`.cache`、游戏 DLL、PDB 和上传辅助工具都不在其中。封面原图是 `assets/workshop-cover-v1.png`；上传预览使用约 473 KB 的 `assets/workshop-preview-v1.jpg`。
@@ -26,7 +26,7 @@
 
 ```text
 login 你的Steam登录名
-workshop_build_item "<仓库根目录>\dist\workshop\0.7.6\workshop.vdf"
+workshop_build_item "<仓库根目录>\dist\workshop\0.7.7\workshop.vdf"
 quit
 ```
 

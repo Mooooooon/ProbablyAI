@@ -10,6 +10,17 @@ namespace ProbablyAI.Customers
         public CustomerInfo Customer { get; set; }
     }
 
+    // Lightweight live state for the local arrival notice; never sent to the model as history.
+    public sealed class CustomerVisit
+    {
+        public string Status { get; set; }
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public bool Wanted { get; set; }
+        public bool Aug { get; set; }
+        public bool OnDutySecurity { get; set; }
+    }
+
     public sealed class CustomerInfo
     {
         public string Id { get; set; }

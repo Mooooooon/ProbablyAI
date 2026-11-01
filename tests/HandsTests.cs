@@ -76,22 +76,190 @@ internal static partial class Program
             var entry = ((JArray)listed["data"]["items"]["entries"]).Single(i => (string)i["id"] == "ring");
             Assert((bool)entry["stolen"] && (int)entry["heat"] == 75, "list_container lost stolen heat");
         });
-        await Check("pinned non-container items are excluded from goods search unless explicitly requested", () =>
+        await Check("pinned items and non-storage non-machine pinned container contents are excluded while pinned storage and machine output remain sellable", () =>
         {
             var backend = new FakeHands();
             backend.World.Items.First(i => i.Id == "ore").Pinned = true;
             backend.World.Items.First(i => i.Id == "bag").Pinned = true;
-            backend.World.Items.Add(new ItemInfo { Id = "crate", Name = "固定木箱", ContainerId = "inventory",
-                Path = "物品栏（主储藏区） → 固定木箱", Quantity = 1, Owned = true, Removable = true, Container = true, Pinned = true });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "reagent-kit", Name = "试剂盒", Identifier = "water_test_container", ContainerId = "inventory",
+                Path = "物品栏 → 试剂盒", Quantity = 1, Owned = true, Removable = true, Container = true,
+                Pinned = true, ContentContainerId = "reagent-kit-inner"
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "reagent-kit-inner", Name = "试剂盒内容", Path = "物品栏 → 试剂盒",
+                ParentId = "inventory", OwnerItemId = "reagent-kit", Kind = "grid"
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "test-strip", Name = "水质试纸", Identifier = "water_test_strip", ContainerId = "reagent-kit-inner",
+                Path = "物品栏 → 试剂盒 → 水质试纸", Quantity = 5, Owned = true, Removable = true
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "tablet-box", Name = "净水药片盒", Identifier = "water_tablet_container", ContainerId = "inventory",
+                Path = "物品栏 → 净水药片盒", Quantity = 1, Owned = true, Removable = true, Container = true,
+                Pinned = true, ContentContainerId = "tablet-box-inner"
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "tablet-box-inner", Name = "净水药片盒内容", Path = "物品栏 → 净水药片盒",
+                ParentId = "inventory", OwnerItemId = "tablet-box", Kind = "grid"
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "water-tablet", Name = "净水药片", Identifier = "water_tablet", ContainerId = "tablet-box-inner",
+                Path = "物品栏 → 净水药片盒 → 净水药片", Quantity = 4, Owned = true, Removable = true
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "storage-bay", Name = "储物仓", Identifier = "storage_bay", ContainerId = "inventory",
+                Path = "物品栏 → 储物仓", Quantity = 1, Owned = true, Removable = true, Container = true,
+                Pinned = true, ContentContainerId = "storage-bay-inner", Types = new List<string> { "STORAGE" }
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "storage-bay-inner", Name = "储物仓内容", Path = "物品栏 → 储物仓",
+                ParentId = "inventory", OwnerItemId = "storage-bay", Kind = "grid"
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "stored-ingot", Name = "储藏金属锭", Identifier = "metal_ingot", ContainerId = "storage-bay-inner",
+                Path = "物品栏 → 储物仓 → 储藏金属锭", Quantity = 3, Owned = true, Removable = true
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "furnace-item", Name = "熔炉设备", Identifier = "furnace", ContainerId = "inventory",
+                Path = "物品栏 → 熔炉", Quantity = 1, Owned = true, Removable = true, Container = true,
+                Pinned = true, ContentContainerId = "furnace", Types = new List<string> { "MACHINE" }
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "furnace-module", Name = "模块", Path = "物品栏 → 熔炉 → 模块",
+                ParentId = "furnace", OwnerItemId = "furnace-item", Kind = "slot", Role = "module"
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "raw-scrap", Name = "炉内废金属", Identifier = "scrap_metal", ContainerId = "input",
+                Path = "物品栏 → 熔炉 → 原料 → 炉内废金属", Quantity = 2, Owned = true, Removable = true
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "efficiency-mod", Name = "效率模块", Identifier = "module_eff", ContainerId = "furnace-module",
+                Path = "物品栏 → 熔炉 → 模块 → 效率模块", Quantity = 1, Owned = true, Removable = true
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "smelted-ingot", Name = "成品金属锭", Identifier = "metal_ingot", ContainerId = "output",
+                Path = "物品栏 → 熔炉 → 成品 → 成品金属锭", Quantity = 2, Owned = true, Removable = true
+            });
             var hands = new HandsService(backend);
-            var hidden = Doc(hands.Execute("find_items", new JObject { ["query"] = "矿石" }));
-            Assert(((JArray)hidden["data"]["page"]["entries"]).Count == 0, "pinned item offered as goods");
-            var bag = Doc(hands.Execute("find_items", new JObject { ["query"] = "背包" }));
-            Assert(((JArray)bag["data"]["page"]["entries"]).Count == 1, "pinned container hidden by content container");
-            var crate = Doc(hands.Execute("find_items", new JObject { ["query"] = "木箱" }));
-            Assert(((JArray)crate["data"]["page"]["entries"]).Count == 1, "pinned container hidden by container flag");
-            var all = Doc(hands.Execute("find_items", new JObject { ["query"] = "矿石", ["include_pinned"] = true }));
-            Assert(((JArray)all["data"]["page"]["entries"]).Count == 1, "explicit pinned search hid item");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "矿石" }))["data"]["page"]["entries"]).Count == 0, "pinned item offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "背包" }))["data"]["page"]["entries"]).Count == 0, "pinned bag offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "storage_bay" }))["data"]["page"]["entries"]).Count == 0, "pinned storage container itself offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "熔炉设备" }))["data"]["page"]["entries"]).Count == 0, "pinned machine itself offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "试剂盒" }))["data"]["page"]["entries"]).Count == 0, "pinned reagent kit offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "水质试纸" }))["data"]["page"]["entries"]).Count == 0, "strips inside pinned reagent kit offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "净水药片" }))["data"]["page"]["entries"]).Count == 0, "tablets inside pinned tablet box offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "炉内废金属" }))["data"]["page"]["entries"]).Count == 0, "input material inside pinned machine offered as goods");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "效率模块" }))["data"]["page"]["entries"]).Count == 0, "module inside pinned machine offered as goods");
+            var ingots = ((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "金属锭" }))["data"]["page"]["entries"]).Select(e => (string)e["id"]).ToArray();
+            Assert(ingots.Length == 2 && ingots.Contains("stored-ingot") && ingots.Contains("smelted-ingot"), "items in pinned STORAGE or MACHINE output should remain sellable");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "水质试纸", ["include_pinned"] = true }))["data"]["page"]["entries"]).Count == 1, "explicit pinned search hid reagent kit contents");
+            Assert(((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "矿石", ["include_pinned"] = true }))["data"]["page"]["entries"]).Count == 1, "explicit pinned search hid item");
+        });
+        await Check("fridge pre-freeze items stay in_use while frozen items and wine rack or beer case goods follow pin rules", () =>
+        {
+            Assert(!HandsService.IsFridgeItemReady("freeze", "beis_icecream", new[] { "FOOD" }, frozen: false, chilled: false, iceCold: false), "un-frozen ice cream marked ready");
+            Assert(HandsService.IsFridgeItemReady("freeze", "beis_icecream", new[] { "FOOD" }, frozen: true, chilled: false, iceCold: false), "frozen ice cream not ready in freeze");
+            Assert(HandsService.IsFridgeItemReady("chill", "beis_icecream", new[] { "FOOD" }, frozen: true, chilled: false, iceCold: false), "frozen ice cream not ready in chill");
+            Assert(!HandsService.IsFridgeItemReady("chill", "beis_icecream", new[] { "FOOD" }, frozen: false, chilled: true, iceCold: false), "un-frozen ice cream in chill marked ready");
+            Assert(!HandsService.IsFridgeItemReady("freeze", "nudka", new[] { "ALCOHOL", "BREVAGE" }, frozen: false, chilled: true, iceCold: false), "nudka in freeze without iceCold marked ready");
+            Assert(HandsService.IsFridgeItemReady("freeze", "nudka", new[] { "ALCOHOL", "BREVAGE" }, frozen: false, chilled: false, iceCold: true), "ice-cold nudka in freeze not ready");
+            Assert(HandsService.IsFridgeItemReady("chill", "nudka", new[] { "ALCOHOL", "BREVAGE" }, frozen: false, chilled: true, iceCold: false), "chilled nudka in chill not ready");
+            Assert(!HandsService.IsFridgeItemReady("chill", "red_imp_beer", new[] { "BREVAGE" }, frozen: false, chilled: false, iceCold: false), "un-chilled beer marked ready");
+            Assert(HandsService.IsFridgeItemReady("chill", "red_imp_beer", new[] { "BREVAGE" }, frozen: false, chilled: true, iceCold: false), "chilled beer not ready");
+            Assert(!HandsService.IsFridgeItemReady("chill", "chem_jar_small", new[] { "CHEMICAL" }, frozen: false, chilled: false, iceCold: false), "cooling chemical container marked ready");
+
+            var backend = new FakeHands();
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "fridge-item", Name = "冰箱设备", Identifier = "fridge", ContainerId = "inventory",
+                Path = "物品栏 → 冰箱", Quantity = 1, Owned = true, Removable = true, Container = true,
+                Pinned = true, ContentContainerId = "fridge", Types = new List<string> { "MACHINE" }
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "fridge-freeze", Name = "冷冻", Path = "物品栏 → 冰箱 → 冷冻",
+                ParentId = "fridge", OwnerItemId = "fridge-item", Kind = "grid", Role = "freeze"
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "icecream-soft", Name = "未冻冰激凌", Identifier = "beis_icecream", ContainerId = "fridge-freeze",
+                Path = "物品栏 → 冰箱 → 冷冻 → 未冻冰激凌", Quantity = 1, Owned = true, Removable = true,
+                InUse = true, Types = new List<string> { "FOOD" }
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "icecream-frozen", Name = "冻好冰激凌", Identifier = "beis_icecream", ContainerId = "fridge-freeze",
+                Path = "物品栏 → 冰箱 → 冷冻 → 冻好冰激凌", Quantity = 1, Owned = true, Removable = true,
+                Types = new List<string> { "FOOD" }
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "wine-rack", Name = "陈酿酒架", Identifier = "wine_rack", ContainerId = "inventory",
+                Path = "物品栏 → 陈酿酒架", Quantity = 1, Owned = true, Removable = true, Container = true,
+                ContentContainerId = "wine-rack-group", Types = new List<string> { "MACHINE" }
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "wine-rack-group", Name = "陈酿酒架", Path = "物品栏 → 陈酿酒架",
+                ParentId = "inventory", OwnerItemId = "wine-rack", Kind = "group"
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "wine-rack-slots", Name = "酒槽", Path = "物品栏 → 陈酿酒架 → 酒槽",
+                ParentId = "wine-rack-group", OwnerItemId = "wine-rack", Kind = "grid", Role = "wine"
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "vintage-wine", Name = "陈年红酒", Identifier = "wine_bottle", ContainerId = "wine-rack-slots",
+                Path = "物品栏 → 陈酿酒架 → 酒槽 → 陈年红酒", Quantity = 1, Owned = true, Removable = true,
+                Types = new List<string> { "ALCOHOL", "BREVAGE" }
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "beer-case", Name = "红魔鬼啤酒箱", Identifier = "beerCase", ContainerId = "inventory",
+                Path = "物品栏 → 红魔鬼啤酒箱", Quantity = 1, Owned = true, Removable = true, Container = true,
+                ContentContainerId = "beer-case-inner", Types = new List<string> { "SUBSTANCE", "ALCOHOL", "BREVAGE" }
+            });
+            backend.World.Containers.Add(new ContainerInfo
+            {
+                Id = "beer-case-inner", Name = "啤酒箱内容", Path = "物品栏 → 红魔鬼啤酒箱",
+                ParentId = "inventory", OwnerItemId = "beer-case", Kind = "grid"
+            });
+            backend.World.Items.Add(new ItemInfo
+            {
+                Id = "beer-can", Name = "红魔鬼啤酒罐", Identifier = "red_imp_beer", ContainerId = "beer-case-inner",
+                Path = "物品栏 → 红魔鬼啤酒箱 → 红魔鬼啤酒罐", Quantity = 6, Owned = true, Removable = true,
+                Types = new List<string> { "SUBSTANCE", "ALCOHOL", "BREVAGE" }
+            });
+
+            var hands = new HandsService(backend);
+            var iceCreams = ((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "冰激凌" }))["data"]["page"]["entries"]).Select(e => (string)e["id"]).ToArray();
+            Assert(iceCreams.Length == 1 && iceCreams[0] == "icecream-frozen", "only frozen ice cream should be offered from fridge");
+
+            var unpinnedWine = ((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "酒" }))["data"]["page"]["entries"]).Select(e => (string)e["id"]).ToArray();
+            Assert(unpinnedWine.Contains("wine-rack") && unpinnedWine.Contains("vintage-wine") && unpinnedWine.Contains("beer-case") && unpinnedWine.Contains("beer-can"),
+                "unpinned wine rack and beer case should allow selling the whole container or inner bottles/cans");
+
+            backend.World.Items.First(i => i.Id == "wine-rack").Pinned = true;
+            backend.World.Items.First(i => i.Id == "beer-case").Pinned = true;
+            var pinnedWine = ((JArray)Doc(hands.Execute("find_items", new JObject { ["query"] = "酒" }))["data"]["page"]["entries"]).Select(e => (string)e["id"]).ToArray();
+            Assert(!pinnedWine.Contains("wine-rack") && pinnedWine.Contains("vintage-wine") && !pinnedWine.Contains("beer-case") && !pinnedWine.Contains("beer-can"),
+                "pinned wine rack should still allow selling wine inside while pinned beer case holds its cans back");
         });
         await Check("installed power batteries are hidden from goods search unless explicitly requested", () =>
         {

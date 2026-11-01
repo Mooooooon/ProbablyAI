@@ -36,6 +36,9 @@ namespace ProbablyAI
         private bool gameReady;
         private bool sessionHidden;
         private float nextBuildAttempt;
+        private float nextVisitCheck;
+        private string notifiedVisitId;
+        private VisitNoticeView visitNotice;
 
         public void Initialize(AssistantSettings settings, ModLog log, ConnectionSettingsStore connection, IAssistantService service, IChatTransport transport)
         {
@@ -105,6 +108,8 @@ namespace ProbablyAI
             agent = new HandsAgent(transport, Tools, refreshShopContext: true);
             conversation = new ConversationMemory();
             nextBuildAttempt = 0f;
+            nextVisitCheck = 0f;
+            notifiedVisitId = null;
             TryBuildPortrait();
         }
 
@@ -147,6 +152,12 @@ namespace ProbablyAI
             bool canShow = CanShow();
             portrait?.Refresh(settings, canShow && settings.Visible.Value && !sessionHidden);
             if (!canShow && (panel != null || handsPanel != null || chatPanel != null)) ClosePanel();
+            if (!canShow) { visitNotice?.Dispose(); visitNotice = null; }
+            else
+            {
+                visitNotice?.Update();
+                CheckVisitorNotice();
+            }
             if (canShow) chatPanel?.PollInput();
         }
 
@@ -205,12 +216,42 @@ namespace ProbablyAI
             handsPanel.Show();
         }
 
+        private void CheckVisitorNotice()
+        {
+            if (settings == null || !settings.VisitorWarnings.Value || customerBackend == null) return;
+            if (Time.unscaledTime < nextVisitCheck) return;
+            nextVisitCheck = Time.unscaledTime + 0.25f;
+            var visit = customerBackend.Observe();
+            if (visit == null || visit.Status == "absent" || string.IsNullOrEmpty(visit.Id)) return;
+            if (visit.Id == notifiedVisitId) return;
+            // One check per visit, including staff visitors that are intentionally never announced.
+            notifiedVisitId = visit.Id;
+            var text = VisitorRisk.Decide(visit, null);
+            if (string.IsNullOrEmpty(text)) return;
+            if (chatPanel != null && chatPanel.IsOpen) chatPanel.PostNotice(text);
+            else
+            {
+                conversation?.PostNotice(text);
+                ShowVisitNotice(text);
+            }
+        }
+
+        private void ShowVisitNotice(string text)
+        {
+            if (CustomUIManager.Instance == null) return;
+            visitNotice?.Dispose();
+            visitNotice = new VisitNoticeView(text);
+        }
+
         private void OnSceneUnloaded(Scene scene)
         {
             gameReady = false;
             handsBackend?.Invalidate();
             customerBackend?.Invalidate();
             ClosePanel();
+            visitNotice?.Dispose();
+            visitNotice = null;
+            notifiedVisitId = null;
             portrait?.Dispose();
             portrait = null;
         }
@@ -237,6 +278,9 @@ namespace ProbablyAI
             handsBackend?.Invalidate();
             customerBackend?.Invalidate();
             ClosePanel();
+            visitNotice?.Dispose();
+            visitNotice = null;
+            notifiedVisitId = null;
             portrait?.Dispose();
             portrait = null;
         }

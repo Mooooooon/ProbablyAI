@@ -1,5 +1,21 @@
 # 更新日志 / Changelog
 
+## 0.7.7 — 2026-11-01
+
+### 中文
+
+- 新增水质分析 `analyze_water`：读取容量、液量、标签等级和危险标记；只有试纸测试、特性暴露或水质扫描仪扫描过时才返回真实纯度、可饮用判断和成分，未测试时明确标注标签未经验证，不把标签当成真实水质。
+- 新增注射器鉴定 `inspect_injector`：读取针体、指示器、序列号、公司和型号，判断是否破损、过期、召回或疑似假货，并返回 `usable`。只使用检查界面可见信息，不读取隐藏的 `ISSUE_*` 标签。
+- 通缉犯 / 改造体提醒改在客人进店时由本地代码触发：聊天窗口打开时写入聊天记录，关闭时显示会自动消失的小卡片；只提醒一次，不进入模型上下文。修复模型可能把治安官 / 检查员误认为通缉犯或改造体的问题，当值安保访客会被显式排除；可在 Mods 设置的“客人提醒”中关闭。
+- 细化挑货时的固定容器、机器、冰箱与酒架规则：被固定（pin）的物品本身默认不出售；固定储藏（`STORAGE`）内的非固定物品仍可出售；固定机器仅成品区（`output` / `output_disk` / `distillate`）、冰箱内已冰好/冻好的商品，以及酒架内的酒可出售，原料区、模组区、电池区默认不出售；被固定的非储藏非机器容器（如试剂盒、净水药片盒、营养片盒）内的试纸或药片默认不出售。冰箱中尚未冻好/冰镇到位的物品（如未冻好的冰激凌、未冰镇饮料、降温中的化学容器）视为正在冷冻/冷藏（`in_use=true`），默认不出售；未固定的酒架与啤酒箱既可整架/整箱出售，也可单卖里面的酒或啤酒。
+
+### English
+
+- Added `analyze_water`: capacity, liquid volume, label grade and hazard flag; real purity, potability and contents only when the water was strip-tested, exposed or scanned, and an explicit unverified-label result otherwise.
+- Added `inspect_injector`: visible body, indicator, serial, company and model, with broken/expired/recalled/counterfeit findings and `usable`. Uses only inspection-screen data and never reads hidden `ISSUE_*` tags.
+- Wanted/augmented reminders now fire locally on arrival: added to the chat transcript when open, otherwise shown on a small auto-dismissing card, once per visit and never sent to the model. This also fixes the model mistaking a security officer or inspector for a wanted or augmented visitor; on-duty security staff are explicitly excluded. The notice can be disabled under the mod's **Visitor notices** setting.
+- Refined goods-picking rules for pinned containers, machines, fridges and wine racks: any pinned item itself is hidden from default goods search; unpinned items inside pinned `STORAGE` remain sellable; inside a pinned `MACHINE`, only product compartments (`output` / `output_disk` / `distillate`), already chilled/frozen fridge goods, and bottles in a wine rack remain sellable while input, module and power slots are excluded; items inside pinned non-storage, non-machine containers (such as reagent kits, water tablet boxes or nutrient tablet boxes) are excluded. Pre-freeze/pre-chill fridge items (such as un-frozen ice cream, un-chilled drinks or cooling chemical containers) are marked `in_use=true` and excluded by default; unpinned wine racks and beer cases can be sold either whole or by individual bottles/cans.
+
 ## 0.7.6 — 2026-11-01
 
 ### 中文

@@ -16,6 +16,7 @@ namespace ProbablyAI
         public ConfigEntry<float> BreathPeriod { get; private set; }
         public ConfigEntry<KeyCode> ToggleKey { get; private set; }
         public ConfigEntry<KeyCode> PanelKey { get; private set; }
+        public ConfigEntry<bool> VisitorWarnings { get; private set; }
 
         public AssistantSettings(ModConfig config)
         {
@@ -37,6 +38,7 @@ namespace ProbablyAI
             BreathPeriod = config.Define("portrait_breath_period", 3.6f, T("立绘"), () => T("呼吸周期（秒）"), 1.5f, 8f);
             ToggleKey = config.DefineEnum("toggle_key", KeyCode.F6, T("快捷键"), () => T("显示 / 隐藏立绘"));
             PanelKey = config.DefineEnum("panel_key", KeyCode.F7, T("快捷键"), () => T("打开 / 关闭连接配置"));
+            VisitorWarnings = config.Define("visitor_warnings", true, T("客人提醒"), () => T("客人到店时小声提醒通缉 / 改造体"));
         }
     }
 }

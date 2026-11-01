@@ -61,17 +61,19 @@ internal static partial class Program
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseTaskDefault, AssistantPrompt.PreviousEnglishTaskDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "task-focused default did not upgrade");
         });
-        await Check("wanted guidance is built into prompts and old defaults upgrade", () =>
+        await Check("wanted guidance is local at arrival and never accuses security staff", () =>
         {
-            Assert(AssistantPrompt.ChineseDefault.Contains("wanted") &&
-                AssistantPrompt.ChineseDefault.Contains("（小声）主人，这个人符合通缉令上的特征呢。") &&
-                AssistantPrompt.ChineseDefault.Contains("改造体") &&
-                AssistantPrompt.ChineseDefault.Contains("不要自动举报"), "Chinese wanted guidance missing");
-            Assert(AssistantPrompt.EnglishDefault.Contains("wanted.quiet_reminder") &&
-                AssistantPrompt.EnglishDefault.Contains("augmented human") &&
-                AssistantPrompt.EnglishDefault.Contains("do not report, arrest"), "English wanted guidance missing");
+            Assert(AssistantPrompt.ChineseDefault.Contains("自动小声提醒通缉令或改造体") &&
+                AssistantPrompt.ChineseDefault.Contains("不要在回复中主动追加") &&
+                AssistantPrompt.ChineseDefault.Contains("治安官"), "Chinese local reminder guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("automatically whispers a local notice") &&
+                AssistantPrompt.EnglishDefault.Contains("do not add such reminders") &&
+                AssistantPrompt.EnglishDefault.Contains("security officer"), "English local reminder guidance missing");
+            Assert(!AssistantPrompt.ChineseDefault.Contains("在正常回复的最后另起一行") &&
+                !AssistantPrompt.EnglishDefault.Contains("add a quiet parenthetical reminder"), "old reply-time reminder instruction kept");
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseWantedDefault, AssistantPrompt.PreviousEnglishWantedDefault,
-                AssistantPrompt.PreviousChineseAugDefault, AssistantPrompt.PreviousEnglishAugDefault })
+                AssistantPrompt.PreviousChineseAugDefault, AssistantPrompt.PreviousEnglishAugDefault,
+                AssistantPrompt.PreviousChineseArrivalDefault, AssistantPrompt.PreviousEnglishArrivalDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "wanted default did not upgrade");
         });
         await Check("document reading and machine-source guidance are built into prompts", () =>
@@ -101,11 +103,22 @@ internal static partial class Program
         {
             Assert(AssistantPrompt.ChineseDefault.Contains("不要选择主人已固定的物品") &&
                 AssistantPrompt.ChineseDefault.Contains("pinned=true") &&
+                AssistantPrompt.ChineseDefault.Contains("STORAGE") &&
+                AssistantPrompt.ChineseDefault.Contains("MACHINE") &&
+                AssistantPrompt.ChineseDefault.Contains("试剂盒") &&
+                AssistantPrompt.ChineseDefault.Contains("尚未冻好") &&
+                AssistantPrompt.ChineseDefault.Contains("酒架") &&
                 AssistantPrompt.ChineseDefault.Contains("include_pinned=true"), "Chinese pinned guidance missing");
             Assert(AssistantPrompt.EnglishDefault.Contains("items Master has pinned") &&
                 AssistantPrompt.EnglishDefault.Contains("pinned=true") &&
+                AssistantPrompt.EnglishDefault.Contains("STORAGE") &&
+                AssistantPrompt.EnglishDefault.Contains("MACHINE") &&
+                AssistantPrompt.EnglishDefault.Contains("reagent kit") &&
+                AssistantPrompt.EnglishDefault.Contains("un-frozen ice cream") &&
+                AssistantPrompt.EnglishDefault.Contains("wine racks") &&
                 AssistantPrompt.EnglishDefault.Contains("include_pinned=true"), "English pinned guidance missing");
-            foreach (string previous in new[] { AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault })
+            foreach (string previous in new[] { AssistantPrompt.PreviousChinesePinnedDefault, AssistantPrompt.PreviousEnglishPinnedDefault,
+                AssistantPrompt.PreviousChineseWaterInjectorDefault, AssistantPrompt.PreviousEnglishWaterInjectorDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "pinned default did not upgrade");
         });
         await Check("recorder dialogue guidance is built into prompts and old defaults upgrade", () =>

@@ -57,11 +57,13 @@ namespace ProbablyAI.Hands
                             throw new HandsException("invalid_arguments", T("请提供搜索词 query 或物品类型 item_type。"));
                         var scope = Text(arguments, "container_id", false);
                         if (!string.IsNullOrEmpty(scope)) Container(world, scope);
-                        var containerOwners = new HashSet<string>(world.Containers.Where(c => !string.IsNullOrEmpty(c.OwnerItemId)).Select(c => c.OwnerItemId));
+                        var containersById = world.Containers.Where(c => !string.IsNullOrEmpty(c.Id)).ToDictionary(c => c.Id, c => c);
+                        var itemsById = world.Items.Where(i => !string.IsNullOrEmpty(i.Id)).ToDictionary(i => i.Id, i => i);
+                        var ownerByContainerId = BuildContainerOwners(world, itemsById);
                         var items = world.Items.Where(i =>
                             (string.IsNullOrEmpty(scope) || Inside(world, i.ContainerId, scope)) &&
                             (includeInUse || i.InUse != true) &&
-                            (includePinned || i.Pinned != true || IsContainer(i, containerOwners)) &&
+                            (includePinned || !IsHeldByPin(i, containersById, ownerByContainerId)) &&
                             (includeStolen || i.Stolen != true) &&
                             (!ownedOnly || i.Owned) &&
                             (string.IsNullOrEmpty(itemType) || i.Types.Any(t => string.Equals(t, itemType, StringComparison.OrdinalIgnoreCase))) &&
@@ -293,9 +295,90 @@ namespace ProbablyAI.Hands
             return false;
         }
 
-        // Pinned containers remain eligible as goods; only pinned non-containers are held back.
-        private static bool IsContainer(ItemInfo item, HashSet<string> owners)
-            => item.Container == true || !string.IsNullOrEmpty(item.ContentContainerId) || owners.Contains(item.Id);
+        // Fridge items are only ready for sale once they have reached the target cold state for their compartment;
+        // un-frozen ice cream, un-chilled drinks/spirits, or chemical containers being cooled stay in_use.
+        public static bool IsFridgeItemReady(string fridgeRole, string identifier, IEnumerable<string> types, bool frozen, bool chilled, bool iceCold)
+        {
+            if (fridgeRole != "chill" && fridgeRole != "freeze") return true;
+            if (string.Equals(identifier, "beis_icecream", StringComparison.OrdinalIgnoreCase))
+                return frozen;
+            if (string.Equals(identifier, "nudka", StringComparison.OrdinalIgnoreCase))
+                return fridgeRole == "freeze" ? iceCold : chilled || iceCold;
+            bool chillable = string.Equals(identifier, "bottled_water_premium", StringComparison.OrdinalIgnoreCase) ||
+                types != null && types.Any(t => string.Equals(t, "BREVAGE", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(t, "WATER_RATION", StringComparison.OrdinalIgnoreCase));
+            if (chillable) return fridgeRole == "chill" && chilled;
+            return false;
+        }
+
+        private static Dictionary<string, ItemInfo> BuildContainerOwners(WorldSnapshot world, Dictionary<string, ItemInfo> itemsById)
+        {
+            var owners = new Dictionary<string, ItemInfo>();
+            foreach (var container in world.Containers)
+            {
+                if (!string.IsNullOrEmpty(container.Id) && !string.IsNullOrEmpty(container.OwnerItemId) &&
+                    itemsById.TryGetValue(container.OwnerItemId, out var owner))
+                    owners[container.Id] = owner;
+            }
+            foreach (var item in world.Items)
+            {
+                if (!string.IsNullOrEmpty(item.ContentContainerId))
+                    owners[item.ContentContainerId] = item;
+            }
+            return owners;
+        }
+
+        // A pinned item itself is never for sale. Inside a pinned ancestor, only warehouse storage (STORAGE)
+        // and sellable machine compartments (output, wine rack slots, or ready fridge items) remain eligible;
+        // pinned non-storage, non-machine containers (such as reagent kits or tablet boxes) hold their contents back.
+        private static bool IsHeldByPin(ItemInfo item, Dictionary<string, ContainerInfo> containersById, Dictionary<string, ItemInfo> ownerByContainerId)
+        {
+            if (item.Pinned == true) return true;
+            var path = new List<ContainerInfo>();
+            var visited = new HashSet<string>();
+            var current = item.ContainerId;
+            while (!string.IsNullOrEmpty(current) && visited.Add(current) && containersById.TryGetValue(current, out var container))
+            {
+                path.Add(container);
+                current = container.ParentId;
+            }
+            for (int i = 0; i < path.Count; i++)
+            {
+                if (!ownerByContainerId.TryGetValue(path[i].Id, out var owner) || owner.Pinned != true) continue;
+                var role = CompartmentRole(path, i, ownerByContainerId, owner);
+                if (IsStorage(owner, role)) continue;
+                if (IsMachine(owner, role) && IsSellableMachineCompartment(role, item)) continue;
+                return true;
+            }
+            return false;
+        }
+
+        private static string CompartmentRole(List<ContainerInfo> path, int ownerIndex, Dictionary<string, ItemInfo> ownerByContainerId, ItemInfo owner)
+        {
+            for (int i = ownerIndex; i >= 0; i--)
+            {
+                if (ownerByContainerId.TryGetValue(path[i].Id, out var stepOwner) && !ReferenceEquals(stepOwner, owner))
+                    break;
+                if (!string.IsNullOrEmpty(path[i].Role)) return path[i].Role;
+            }
+            return null;
+        }
+
+        private static bool IsStorage(ItemInfo owner, string role)
+            => owner.Types != null && owner.Types.Any(t => string.Equals(t, "STORAGE", StringComparison.OrdinalIgnoreCase)) ||
+                role != null && role.StartsWith("storage:", StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsMachine(ItemInfo owner, string role)
+            => owner.Types != null && owner.Types.Any(t => string.Equals(t, "MACHINE", StringComparison.OrdinalIgnoreCase)) ||
+                !string.IsNullOrEmpty(role);
+
+        private static bool IsSellableMachineCompartment(string role, ItemInfo item)
+            => string.Equals(role, "output", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(role, "output_disk", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(role, "distillate", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(role, "wine", StringComparison.OrdinalIgnoreCase) ||
+                (string.Equals(role, "chill", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(role, "freeze", StringComparison.OrdinalIgnoreCase)) && item.InUse != true;
 
         private static void ValidateKeys(JObject arguments, params string[] keys)
         {

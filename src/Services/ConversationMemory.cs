@@ -13,6 +13,8 @@ namespace ProbablyAI.Services
     public sealed class ConversationMemory
     {
         private readonly Queue<JArray> turns = new Queue<JArray>();
+        // Local arrival notices stay out of the model transcript so the model cannot echo or invent them.
+        private readonly Queue<string> notices = new Queue<string>();
         private readonly int maxTurns;
         private readonly int maxCharacters;
         private string connectionHash;
@@ -70,6 +72,14 @@ namespace ProbablyAI.Services
             while (turns.Count > maxTurns || turns.Sum(t => t.ToString(Formatting.None).Length) > maxCharacters)
                 turns.Dequeue();
         }
-        public void Clear() => turns.Clear();
+        // The local watcher posts these; they are shown in the chat window but never sent to the model.
+        public IReadOnlyList<string> Notices() => notices.ToList();
+        public void PostNotice(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            notices.Enqueue(text.Trim());
+            while (notices.Count > 6) notices.Dequeue();
+        }
+        public void Clear() { turns.Clear(); notices.Clear(); }
     }
 }

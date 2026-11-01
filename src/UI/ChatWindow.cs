@@ -266,6 +266,7 @@ namespace ProbablyAI.UI
                 text.AppendLine(T("你：") + currentUser).AppendLine();
                 foreach (var action in currentActions) text.AppendLine(T("操作：") + action);
             }
+            foreach (var notice in memory.Notices()) text.AppendLine(T("深空AI：") + notice).AppendLine();
             if (text.Length == 0) text.Append(T("深空AI：你好！可以和我聊天，也可以让我帮你整理当铺。\n\n例如：帮我把食物放到柜台上。"));
             if (text.Length > 24000) text.Remove(0, text.Length - 24000).Insert(0, T("（仅显示最近的聊天内容）\n"));
             window.Get("conversation").SetText(text.ToString());
@@ -278,6 +279,13 @@ namespace ProbablyAI.UI
         {
             if (busy || agent.IsRunning) { Status(T("请先停止当前请求，再清空聊天。")); return; }
             memory.Clear(); currentActions.Clear(); currentUser = null; Render(); Status(T("聊天已清空。"));
+        }
+
+        // A local arrival notice is visible here but never sent to the model.
+        public void PostNotice(string text)
+        {
+            memory.PostNotice(text);
+            Render();
         }
         private void SetBusy(bool value)
         {

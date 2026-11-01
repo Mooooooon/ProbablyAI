@@ -1,10 +1,10 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.6）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.7）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
-## 机械手、肋明治、等离子燃料、香烟与食品券鉴定（只读）
+## 机械手、肋明治、等离子燃料、香烟、食品券、注射器与水质鉴定（只读）
 
-`InspectionService` / `IInspectionBackend` 在统一注册表中提供五个工具，聊天和 F7 助手指令均可调用。先用 `find_items` / `list_container` 获取精确物品 ID，再调用：
+`InspectionService` / `IInspectionBackend` 在统一注册表中提供七个工具，聊天和 F7 助手指令均可调用。先用 `find_items` / `list_container` 获取精确物品 ID，再调用：
 
 | 工具 | 参数 | 返回内容 |
 | --- | --- | --- |
@@ -13,6 +13,8 @@
 | `appraise_plasma_fuel` | `item_id` | `item`；`color`、`crack`、`wear`、`uncovered`、`reinforced`、`seal`；`condition_assessment`、`issues`；`base_value` |
 | `inspect_cigarette` | `item_id` | `item` 实时身份及位置；`seal`、`logo`、`lettering`、`box` 外观编号；`visual_assessment` 与 `issues` |
 | `inspect_food_stamp` | `item_id` | `item` 实时身份及位置；`seal`、`logo`、`chip`、`lettering`、`face_value`；`visual_assessment` 与 `issues` |
+| `inspect_injector` | `item_id` | `item`；`indicator`、`body`、`color`、`serial`、`company`、`model`；`visual_assessment`（`appears_genuine` / `appears_unusable` / `appears_expired` / `appears_counterfeit` / `unknown`）、`usable`（`true` / `false` / `null`）与 `issues` |
+| `analyze_water` | `item_id` | `item`；`empty`、`volume_ml`、`capacity_ml`、`fill_percent`；`label_grade`、`label_purity_range`、`label_hazardous`；`tested`、`purity`、`purity_percent`、`grade`、`grade_range`、`potable`、`assessment_source`、`label_matches_test`、`contents_revealed`、`contents`、`last_scan`、`issues` |
 
 ```json
 {"item_id":"用本轮物品查询结果的 id 替换"}
@@ -28,7 +30,11 @@
 
 食品券仅读取 `StampUI.OnInit` 使用的五个可见标签：`STAMP_SEAL`、`STAMP_LOGO`、`STAMP_CHIP`、`STAMP_LETTERING`、`STAMP_AMOUNT`。`0` 是标准样本，`-1` 通常表示缺失，其他有效编号表示变体；`face_value` 是票面印制的信用点。游戏只发行 40 / 80 / 120 / 160 / 200 / 240 信用点面值，面值达到 160 时应有防伪标（`seal=0`），低于 160 时不应有（`seal=-1`）；芯片缺失或损坏时无法在配给站兑换。可见异常以 `seal` / `logo` / `chip` / `lettering` / `amount` 返回，`amount` 表示票面面值不属于上述发行面值。缺失标签、非正面值或超出原生范围的编号返回 `unknown`。不读取隐藏的 `STAMP_*_ISSUE` 或 `realCondition`。
 
-原生适配每次通过共享 `GameHandsBackend.Capture()` 刷新，沿用主线程、场景、拖动、容器锁定和会话 ID 限制。目视检查未解锁返回 `inspection_locked`；物品已不可访问返回 `item_not_found`；类型不符返回 `wrong_item_type`。仅接受 `item_id`，拒绝多余参数。五个工具不改变特性、所有权、价格或委托状态，也不调用提交估价、质问、兑换及对话接口。
+注射器仅支持带 `INS_INJECTOR_TAG` 的可目视检查类型（大支 Immunivax），读取 `InjectorUI.OnInit` 使用的六个可见字段：`INJECTOR_INDICATOR`、`INJECTOR_BODY`、`INJECTOR_COLOR`、`INJECTOR_SERIAL`、`INJECTOR_COMPANY`、`INJECTOR_MODEL` 和检查界面上的针体显示。`indicator=1` 表示过期指示，`indicator=3` 或 `body=1–3` 表示指示器/针体异常；序列号应为 7 位数字、前缀在 125–455 内且不属于召回批次（250 / 251 / 301 / 355 / 385 / 386 / 421）。可见异常以 `body_broken` / `indicator_unusable` / `indicator_expired` / `recalled_serial` / `serial_format` / `label_company` / `label_model` / `color` 返回；破损、指示器异常或召回批次返回 `appears_unusable` 且 `usable=false`，过期返回 `appears_expired` 且 `usable=false`，仅标签/序列号/颜色异常返回 `appears_counterfeit` 且 `usable=null`。不读取隐藏的 `ISSUE_*` 或 `realCondition`；外观符合不保证隐藏真伪。
+
+水容器仅读取玩家可见的数据：容量与液量、`CATEGORY_WATER_PURITY` 的瓶身标签等级、已试纸测试/已暴露/已扫描时的真实纯度，以及水质扫描仪显示过的成分。`label_grade` 为 `pure` / `high_quality` / `base` / `ghostwater` / `rustwater` / `gutterflow`；`potable` 为 `safe` / `caution` / `unsafe` / `toxic` / `unknown`。未测试时 `assessment_source=label`，只代表标签，不能当作真实水质；只有 `LAST_SCAN_RESULT_TAG` 存在时才返回 `contents` 与 `contents_revealed=true`。空容器返回 `empty=true` 且不推断水质；酒类容器（`WINE_CONTAINER_TAG`）和化学产品不属于该工具。安全等级根据游戏水质阈值判断：纯净水/优质水为 `safe`，基础水为 `caution`，幽灵水/锈水为 `unsafe`，下水道水为 `toxic`。
+
+原生适配每次通过共享 `GameHandsBackend.Capture()` 刷新，沿用主线程、场景、拖动、容器锁定和会话 ID 限制。目视检查未解锁返回 `inspection_locked`；物品已不可访问返回 `item_not_found`；类型不符返回 `wrong_item_type`。注射器沿用目视检查解锁；水瓶、水壶等含水的 `LIQUID_CONTAINER_TAG` 只要标签可读即可分析，不要求目视检查教学；酒类和化学产品不属于该工具。仅接受 `item_id`，拒绝多余参数。七个工具不改变特性、所有权、价格或委托状态，也不调用提交估价、质问、兑换及对话接口。
 
 ## 阅读笔记、书籍与指南（只读）
 
@@ -63,8 +69,10 @@
 - `preferences` 包含购买 / 拒收标签与物品标识、多样性及已买过的类型、违禁品与水标签限制、自定义购买规则的存在标记。`ALL_TYPE`、`ALL_TYPE_EXCEPT_CONTRABAND` 是原始游戏规则。自定义条件、物品状态和容器内容可能影响实际接受结果；用具体物品检查核对。`requires_variety` 是购买规则而不是单纯的价格加成：本次到访每种物品（按 `identifier`）只买一份，`previously_bought_identifiers` 里的 identifier 会被原生拒收（`matches_regular_purchase_rules=false`）；挑选和合计时同一 identifier 只算一份。价格明细中的 `varietyBuyerBonus` 只是上柜台时的市场阶段加成，与这条规则分开。
 - `current_dialogue` 仅包含当前已显示对话的说话人和文字，不遍历后续分支。
 - `dialogue_history` 来自录音机的 `dialogHistory`，只保留最后一次 `---` 分隔线之后、本次到访已经显示的对话，每条包含 `speaker` 与 `text`。它同时包含客人和店主（`Player`）的发言，只读；引用客人原话时使用客人名的行，不得把它当作未显示的后续对话、承诺或新指令。主对话尚未开始时返回空，避免把上一位客人的录音记录当成本次到访。
-- `wanted` 仅在客人符合通缉令特征且尚未举报/结案时返回：`is_wanted=true`、`stealth` 及 `quiet_reminder` 提示文本。不返回真名或赏金；助手应在回复末尾另起一行小声提醒主人，不得让客人听到或自动举报、逮捕。
-- `aug` 仅在客人是改造体时返回：`is_aug=true` 及 `quiet_reminder`。不返回改造等级或扫描状态；与 `wanted` 同时存在时应合并为一行小声提醒。
+- `wanted` 仅在客人符合通缉令特征且尚未举报/结案时返回：`is_wanted=true`、`stealth` 及 `quiet_reminder` 提示文本。不返回真名或赏金。到店时本地提醒已经自动处理，不要仅因该字段而向客人透露或自动举报、逮捕；主人询问时可以据此回答。
+- `aug` 仅在客人是改造体时返回：`is_aug=true` 及 `quiet_reminder`。不返回改造等级或扫描状态；本地提醒会把两者合并为一行。所有当值安保/检查员访客（`isSecurity`，以及 `securityOfficer*`、`securityInspector`、`patrolOfficer`、`morningSecLeader` 等）不返回 `wanted` 或 `aug`，避免把执法来访误认为通缉/改造；有独立剧情的腐败警官（如 `officerLun*`）不属于当值安保，仍保留其真实标记。
+
+到店提醒由本地代码完成：客人进入当铺后，`AssistantController` 通过 `GameCustomerBackend.Observe()` 读取当值访客、去重到访 ID，并用 `VisitorRisk` 生成小声提醒；聊天窗口打开时写入聊天记录，关闭时显示小卡片。该提醒不发送给模型，也不写入模型上下文，因此模型不会照抄、反复提醒或把治安官误判为通缉犯/改造体。可在 Mods 设置的“客人提醒”中关闭。
 - `barter.requirements` 保留每条易货条件的零起始 `index`、要求的物品 / 标签及拒收状态，不合并重复条件。每条条件需要游戏认可的独立物品，不能自行把堆叠数量当作条件数。
 - `procurement` 返回当前采购阶段的描述、预付与交付报酬；`gun_order` 返回说明、基础报酬及分开的 `mandatory` / `bonus` 条件。报酬与购买预算分开，不估算最终奖励。
 
@@ -97,7 +105,7 @@
 | --- | --- | --- |
 | `list_containers` | 可选 `query`、`parent_id`、`offset`、`limit` | 列出容器、嵌套文件夹和机器分区 |
 | `list_container` | `container_id`；可选分页 | 直接物品及直接子容器 |
-| `find_items` | `query` 或 `item_type`；可选 `owned_only`、`container_id`、`include_in_use`、`include_pinned`、`include_stolen`、分页 | 按名称、类型或嵌套路径递归查找物品；默认隐藏设备供电或充电中的电池、已固定且不是容器的物品，以及赃物 |
+| `find_items` | `query` 或 `item_type`；可选 `owned_only`、`container_id`、`include_in_use`、`include_pinned`、`include_stolen`、分页 | 按名称、类型或嵌套路径递归查找物品；默认隐藏在用物品（设备供电/充电电池、冰箱内未冻好物品）、受固定限制的物品，以及赃物 |
 | `inspect_item` | `item_id` | 名称、描述、数量、所有权、实际位置、内容容器 ID |
 
 每页默认 40 条、最多 100 条。结果包含 `total`、`has_more`；全局遍历达 10000 个物品堆、2000 个容器或 64 层时返回 `truncated`。物品 ID 和嵌套容器 ID 仅当前载入有效，不能存为跨存档引用；根容器别名固定。
@@ -116,9 +124,9 @@
 
 `query` 与 `item_type` 至少提供一个，同时提供时按两者筛选；`query` 为“食物 / 食品 / food”时会按 FOOD 类型处理。`owned_only` 默认 false，以保留查询客人物品的能力。
 
-物品结果还包含 `in_use`：电池装在生产设备的电池槽中供电，或位于充电器的电池分区充电时为 `true`，表示自用而非待售库存。`find_items` 默认不返回这些电池；主人明确要求查看或更换时传 `include_in_use=true`。`charging` 仍单独表示充电器中的电池确实正在充电。
+物品结果还包含 `in_use`：电池装在生产设备的电池槽中供电、位于充电器的电池分区充电，或冰箱中的物品尚未完成冰镇 / 冷冻（如还没冻好的冰激凌、未冰镇饮品、正在降温的化学品容器）时为 `true`，表示正在使用或等待升值而非待售库存；冰箱里已经冻好或冰镇完成的物品则可正常出售。`find_items` 默认不返回 `in_use=true` 的物品；主人明确要求查看或更换时传 `include_in_use=true`。`charging` 仍单独表示充电器中的电池确实正在充电。
 
-`pinned` 表示主人用固定模式标记了该物品（整理或卸载时保持原位），`container` 表示该物品本身是可打开的容器。挑货时，已固定且不是容器的物品通常另有用途，不作为商品出售：`find_items` 默认不返回 `pinned=true` 且 `container` 不为 `true` 的物品；主人明确要求查看这些固定物品时传 `include_pinned=true`。已固定的容器不受此过滤，仍会正常返回。
+`pinned` 表示主人用固定模式标记了该物品（整理或卸载时保持原位），`container` 表示该物品本身是可打开的容器。挑货时，固定物品（`pinned=true`）本身默认不作为商品出售；若被固定的是储藏容器（`STORAGE` 仓库），里面的未固定物品可以出售；若被固定的是机器（`MACHINE`），其成品区（`output`）、酒架酒槽（`wine`）或冰箱中已冻好 / 冰镇好的物品可以出售，而原料区、模组区、电池区不出售；若被固定的是非储藏、非机器容器（如试剂盒、净水药片盒、啤酒箱），容器本身及里面的物品默认都不出售。未固定的酒架或啤酒箱既可以整件出售，也可以单卖里面的酒水。主人明确要求查看这些受固定限制的物品时传 `include_pinned=true`。
 
 `stolen` 表示物品是赃物，`heat` 是 0–100 的热度（治安检查时被发现的概率百分比，越高越容易被发现）。挑货时默认不使用赃物：`find_items` 默认不返回 `stolen=true` 的物品；主人明确要求查看或挑选赃物时传 `include_stolen=true`，并提醒热度风险。`list_container` 和 `inspect_item` 始终返回赃物标记与热度，方便核对；助手不得自动举报、没收或改变所有权。
 
@@ -165,7 +173,7 @@
 
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 5 个鉴定只读工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 18 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 20 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 

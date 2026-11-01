@@ -46,6 +46,7 @@ namespace ProbablyAI.Customers
             if (!PlayerStore.Instance.isClientArrived) return new CustomerSnapshot { Status = "arriving" };
             var client = instance.GetClientBlueprint(); // A getter, not an instantiation or reroll.
             if (client == null) return new CustomerSnapshot { Status = "arriving" };
+            bool onDutySecurity = VisitorRisk.IsOnDutySecurity(client.identifier, client.isSecurity, client.isSentenceOfficer);
             // The recorder separator is added when the current visit's main dialogue starts.
             // Before that, the last segment may still belong to an earlier visitor, so do not read it.
             var dialogueHistory = client.isMainDialogueStarted
@@ -60,9 +61,9 @@ namespace ProbablyAI.Customers
                     Faction = client.clientFaction, Intent = client.clientIntent.ToString(),
                     IntentDescription = DescribeIntent(client.clientIntent), BusinessComplete = client.isBusinessComplete,
                     PurchaseBudget = Budget(client),
-                    Wanted = CustomerWanted.Create(client.isWanted, client.isStealthWanted, client.reported,
+                    Wanted = onDutySecurity ? null : CustomerWanted.Create(client.isWanted, client.isStealthWanted, client.reported,
                         client.wantedPosterId, PlayerStore.Instance.wantedStatus),
-                    Aug = CustomerAug.Create(client.isAug),
+                    Aug = onDutySecurity ? null : CustomerAug.Create(client.isAug),
                     Preferences = new CustomerPreferences
                     {
                         BuyingTags = Copy(client.clientBuyingTagList), BuyingIdentifiers = Copy(client.clientBuyingIdList),
@@ -79,6 +80,32 @@ namespace ProbablyAI.Customers
                     DialogueHistory = dialogueHistory != null && dialogueHistory.Count > 0 ? dialogueHistory : null,
                     Procurement = Procurement(client), GunOrder = GunOrder(client.gunOrderData), ServiceCost = client.serviceCost
                 }
+            };
+        }
+
+        // Called every few frames by the local arrival watcher. Never throws; returns null while unavailable.
+        public CustomerVisit Observe()
+        {
+            if (Thread.CurrentThread.ManagedThreadId != mainThread || !active || !available() || PlayerStore.Instance == null)
+                return null;
+            var instance = PlayerStore.Instance.currentClientInstance;
+            if (!ReferenceEquals(observed, instance))
+            {
+                observed = instance;
+                visitId = instance == null ? null : "guest-" + session + "-" + (++sequence);
+            }
+            if (instance == null) return new CustomerVisit { Status = "absent" };
+            var client = instance.GetClientBlueprint();
+            if (client == null) return new CustomerVisit { Status = "arriving", Id = visitId };
+            bool onDutySecurity = VisitorRisk.IsOnDutySecurity(client.identifier, client.isSecurity, client.isSentenceOfficer);
+            var wanted = onDutySecurity ? null : CustomerWanted.Create(client.isWanted, client.isStealthWanted,
+                client.reported, client.wantedPosterId, PlayerStore.Instance.wantedStatus);
+            var aug = onDutySecurity ? null : CustomerAug.Create(client.isAug);
+            return new CustomerVisit
+            {
+                Status = PlayerStore.Instance.isClientArrived ? "present" : "arriving",
+                Id = visitId, Name = Plain(client.displayName),
+                Wanted = wanted != null, Aug = aug != null, OnDutySecurity = onDutySecurity
             };
         }
 

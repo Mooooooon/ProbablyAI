@@ -28,6 +28,7 @@
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
     <Compile Include="..\src\Customers\CustomerProtocol.cs" Link="CustomerProtocol.cs" />
     <Compile Include="..\src\Customers\CustomerService.cs" Link="CustomerService.cs" />
+    <Compile Include="..\src\Customers\VisitorRisk.cs" Link="VisitorRisk.cs" />
     <Compile Include="..\src\Customers\RecorderHistory.cs" Link="RecorderHistory.cs" />
     <Compile Include="..\src\Customers\CustomerPriceCalculator.cs" Link="CustomerPriceCalculator.cs" />
     <Compile Include="..\src\Customers\GameCustomerPricing.cs" Link="GameCustomerPricing.cs" />

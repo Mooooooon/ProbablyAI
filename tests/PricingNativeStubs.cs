@@ -23,6 +23,7 @@ internal sealed class GameItem
     public List<GameItem> FindAllChildItems() => new List<GameItem>(Descendants);
     public bool IsTag(string tag) => Tags.Contains(tag);
     public bool IsGameItemType(string type) => Tags.Contains(type);
+    public ItemFeature FindItemFeatureByCategory(string category) => itemFeatures.Find(f => f != null && f.category == category);
     public TagState GetTagReadonly(string tag)
     {
         ReadTags.Add(tag);
@@ -30,7 +31,15 @@ internal sealed class GameItem
     }
     public string ContrabandLevel;
 }
-internal sealed class TagState { public string Value; public int IntValue; public string GetString() => Value; public int GetInt() => IntValue; }
+internal sealed class TagState
+{
+    public string Value;
+    public int IntValue;
+    public bool Enabled;
+    public string GetString() => Value;
+    public int GetInt() => IntValue;
+    public bool IsEnabled() => Enabled;
+}
 internal sealed class StoreClient
 {
     public bool Buying = true, isRequireVariety;
@@ -70,7 +79,18 @@ internal static class GeneralHelper
     public static bool IsItemOwned(GameItem item) => item.Owned;
     public static bool IsItemEffectivelyOwned(GameItem item) => item.EffectivelyOwned;
 }
-internal static class WaterHelper { public static int GetContainerPrice(GameItem item) => item.WaterValue; }
+internal static class WaterHelper
+{
+    public const string LIQUID_CONTAINER_TAG = "LIQUID_CONTAINER_TAG";
+    public const string LIQUID_CONTAINER_CAPACITY = "LIQUID_CONTAINER_CAPACITY";
+    public const string LAST_SCAN_RESULT_TAG = "LAST_SCAN_RESULT_TAG";
+    public static int GetContainerPrice(GameItem item) => item.WaterValue;
+}
+internal static class WaterFeatureHelper
+{
+    public static readonly int[] WATER_PURITIES = { 9990, 9900, 9800, 9600, 9000, 3500 };
+    public static readonly string[] WATER_VALUE_DISPLAY = { "99.9%+", "99%-99.9%", "98%-99%", "96%-98%", "90%-96%", "90%-" };
+}
 internal sealed class HealthData
 {
     public static bool Addicted;
@@ -84,19 +104,37 @@ internal sealed class ItemFeature
 {
     public enum FeatureType { Normale, Event, Special, Temporary, TemporaryBuying, TemporarySelling, ClientTemporary }
     public enum ValueStage { Innate, Market, Final }
-    public string identifier, Display = "visible condition";
+    public string identifier, Display = "visible condition", category;
     public FeatureType featureType;
     public ValueStage Stage;
-    public bool isDisabled, Hidden, Exposed;
+    public bool isDisabled, Hidden, Exposed, Discovered;
     public int Current, Actual = 999;
+    public ItemCondition fakeCondition, realCondition;
     public ValueStage GetValueStage() => Stage;
     public int GetCurrentValueMod() => Exposed ? Actual : Current;
     public bool IsExposed() => Exposed;
+    public bool IsFeatureDiscovered() => Discovered;
+    public ItemCondition GetCurrentItemCondition() => Exposed ? realCondition : fakeCondition;
     public bool IsInitiallyShown() => true;
     public bool GetPublicHidden() => Hidden;
     public string GetBaseCurrentDisplay() => Display;
     public static ItemFeature CreateFeatureFromNegociationData(NegociationData data)
         => new ItemFeature { identifier = data.identifier, Current = data.value, Stage = ValueStage.Market, featureType = FeatureType.Event };
+}
+internal sealed class ItemCondition
+{
+    public int customValue;
+}
+internal sealed class Liquid
+{
+    public const string LIQUID_WATER = "water";
+    public string identifier, displayName, currentPart;
+    public static readonly List<Liquid> Liquids = new List<Liquid>
+    {
+        new Liquid { identifier = LIQUID_WATER, currentPart = "LIQUID_WATER", displayName = "水" },
+        new Liquid { identifier = "microbe", currentPart = "LIQUID_MICROBE", displayName = "微生物" },
+        new Liquid { identifier = "chemical_contaminant", currentPart = "LIQUID_CHEMICAL_CONTAMINANT", displayName = "化学污染物" }
+    };
 }
 internal static class ItemFeatureList
 {

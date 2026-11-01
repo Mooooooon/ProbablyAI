@@ -17,7 +17,8 @@ internal static partial class Program
             foreach (string prompt in new[] { AssistantPrompt.ChineseDefault, AssistantPrompt.EnglishDefault })
                 Assert(prompt.Contains("appraise_mechanical_hand") && prompt.Contains("appraise_ribwich") &&
                     prompt.Contains("appraise_plasma_fuel") && prompt.Contains("inspect_cigarette") &&
-                    prompt.Contains("inspect_food_stamp") && prompt.Contains("base_value") &&
+                    prompt.Contains("inspect_food_stamp") && prompt.Contains("inspect_injector") &&
+                    prompt.Contains("analyze_water") && prompt.Contains("base_value") &&
                     prompt.Contains("face_value") && prompt.Contains("unknown"), "inspection guidance missing");
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseFreshnessDefault, AssistantPrompt.PreviousEnglishFreshnessDefault,
                 AssistantPrompt.PreviousChineseInspectionDefault, AssistantPrompt.PreviousEnglishInspectionDefault,
@@ -33,7 +34,9 @@ internal static partial class Program
                 AssistantPrompt.PreviousChineseRibwichDefault, AssistantPrompt.PreviousEnglishRibwichDefault,
                 AssistantPrompt.PreviousChinesePlasmaDefault, AssistantPrompt.PreviousEnglishPlasmaDefault,
                 AssistantPrompt.PreviousChineseBatchDefault, AssistantPrompt.PreviousEnglishBatchDefault,
-                AssistantPrompt.PreviousChineseVarietyDefault, AssistantPrompt.PreviousEnglishVarietyDefault })
+                AssistantPrompt.PreviousChineseVarietyDefault, AssistantPrompt.PreviousEnglishVarietyDefault,
+                AssistantPrompt.PreviousChineseArrivalDefault, AssistantPrompt.PreviousEnglishArrivalDefault,
+                AssistantPrompt.PreviousChineseWaterInjectorDefault, AssistantPrompt.PreviousEnglishWaterInjectorDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "saved default not upgraded");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom rule") == previous + "\nCustom rule", "custom prompt replaced");
@@ -44,7 +47,7 @@ internal static partial class Program
             var registry = ToolRegistry.ForHands(new HandsService(new FakeHands()));
             new CustomerService(new FakeCustomer()).Register(registry);
             new InspectionService(new GameInspectionBackend(InspectionWorld())).Register(registry);
-            Assert(registry.Definitions().Count == 17, "inspection tools missing");
+            Assert(registry.Definitions().Count == 19, "inspection tools missing");
             foreach (JObject definition in InspectionProtocol.Tools())
             {
                 string name = (string)definition["function"]["name"];
@@ -56,7 +59,7 @@ internal static partial class Program
         await Check("inspection rejects malformed IDs and extra actions before touching native state", () =>
         {
             var hands = InspectionWorld(); var service = new InspectionService(new GameInspectionBackend(hands));
-            foreach (string tool in new[] { "appraise_mechanical_hand", "appraise_ribwich", "appraise_plasma_fuel", "inspect_cigarette", "inspect_food_stamp" })
+            foreach (string tool in new[] { "appraise_mechanical_hand", "appraise_ribwich", "appraise_plasma_fuel", "inspect_cigarette", "inspect_food_stamp", "inspect_injector", "analyze_water" })
                 foreach (JObject args in new[] { null, new JObject(), new JObject { ["item_id"] = false },
                     new JObject { ["item_id"] = 12 }, new JObject { ["item_id"] = " " },
                     new JObject { ["item_id"] = new string('x', 201) }, new JObject { ["item_id"] = "hand", ["submit"] = true } })
@@ -179,6 +182,136 @@ internal static partial class Program
             Assert(new GameInspectionBackend(unsupported).AppraisePlasmaFuel("plasma").ConditionAssessment == "unknown",
                 "unsupported state guessed");
         });
+        await Check("injector inspection reports visible body, indicator, serial and label defects", () =>
+        {
+            var hands = InspectionWorld();
+            var genuine = new GameInspectionBackend(hands).InspectInjector("injector");
+            Assert(genuine.VisualAssessment == "appears_genuine" && genuine.Usable == true && genuine.Issues.Count == 0,
+                "genuine injector misread");
+            Assert(genuine.Serial == "1331234" && genuine.Company == "Carmicheal Pharmaceutical" &&
+                genuine.Model == "Immunivax", "visible label lost");
+            foreach (var sample in new[]
+            {
+                ("INJECTOR_BODY", 2, "body_broken", "appears_unusable"),
+                ("INJECTOR_INDICATOR", 3, "indicator_unusable", "appears_unusable"),
+                ("INJECTOR_INDICATOR", 1, "indicator_expired", "appears_expired")
+            })
+            {
+                var broken = InspectionWorld();
+                broken.Items["injector"].TagStates[sample.Item1].IntValue = sample.Item2;
+                var result = new GameInspectionBackend(broken).InspectInjector("injector");
+                Assert(result.VisualAssessment == sample.Item4 && result.Usable == false &&
+                    result.Issues.SequenceEqual(new[] { sample.Item3 }), "visible injector defect lost: " + sample.Item1);
+            }
+            var recalled = InspectionWorld();
+            recalled.Items["injector"].TagStates["INJECTOR_SERIAL"].Value = "2501234";
+            var recalledResult = new GameInspectionBackend(recalled).InspectInjector("injector");
+            Assert(recalledResult.VisualAssessment == "appears_unusable" && recalledResult.Usable == false &&
+                recalledResult.Issues.SequenceEqual(new[] { "recalled_serial" }), "recalled serial accepted");
+            foreach (var sample in new[]
+            {
+                ("INJECTOR_SERIAL", "123456", "serial_format"),
+                ("INJECTOR_COMPANY", "Carmicheal Inc.", "label_company"),
+                ("INJECTOR_MODEL", "Immunovax", "label_model")
+            })
+            {
+                var counterfeit = InspectionWorld();
+                counterfeit.Items["injector"].TagStates[sample.Item1].Value = sample.Item2;
+                var result = new GameInspectionBackend(counterfeit).InspectInjector("injector");
+                Assert(result.VisualAssessment == "appears_counterfeit" && result.Usable == null &&
+                    result.Issues.SequenceEqual(new[] { sample.Item3 }), "visible label defect lost: " + sample.Item1);
+            }
+            var color = InspectionWorld();
+            color.Items["injector"].TagStates["INJECTOR_BODY"].IntValue = -1;
+            color.Items["injector"].TagStates["INJECTOR_COLOR"].IntValue = 0;
+            var colorResult = new GameInspectionBackend(color).InspectInjector("injector");
+            Assert(colorResult.VisualAssessment == "appears_counterfeit" && colorResult.Issues.SequenceEqual(new[] { "color" }),
+                "color variant accepted as genuine");
+        });
+        await Check("injector inspection ignores hidden issue tags and missing data stays unknown", () =>
+        {
+            var hands = InspectionWorld();
+            var item = hands.Items["injector"];
+            item.Tags.Add("ISSUE_BODY");
+            item.Tags.Add("ISSUE_SERIAL");
+            var result = new GameInspectionBackend(hands).InspectInjector("injector");
+            Assert(result.VisualAssessment == "appears_genuine" && result.Issues.Count == 0, "hidden issue tag used as evidence");
+            Assert(item.ReadTags.SetEquals(new[] { "INJECTOR_INDICATOR", "INJECTOR_BODY", "INJECTOR_COLOR",
+                "INJECTOR_SERIAL", "INJECTOR_COMPANY", "INJECTOR_MODEL" }), "nonvisual data read");
+            var missing = InspectionWorld();
+            missing.Items["injector"].Tags.Remove("INJECTOR_MODEL");
+            var missingResult = new GameInspectionBackend(missing).InspectInjector("injector");
+            Assert(missingResult.VisualAssessment == "unknown" &&
+                missingResult.Issues.SequenceEqual(new[] { "missing_data" }), "missing data guessed");
+            var unsupported = InspectionWorld();
+            unsupported.Items["injector"].TagStates["INJECTOR_BODY"].IntValue = 9;
+            Assert(new GameInspectionBackend(unsupported).InspectInjector("injector").VisualAssessment == "unknown",
+                "unsupported body state guessed");
+        });
+        await Check("water analysis separates the label from tested and scanned quality", () =>
+        {
+            var hands = InspectionWorld();
+            var item = hands.Items["water"];
+            var labelOnly = new GameInspectionBackend(hands).AnalyzeWater("water");
+            Assert(labelOnly.VolumeMl == 1000 && labelOnly.CapacityMl == 1000 && labelOnly.FillPercent == 100 &&
+                !labelOnly.Empty, "volume or capacity lost");
+            Assert(labelOnly.LabelGrade == "pure" && labelOnly.LabelPurityRange == "99.9%+" &&
+                labelOnly.AssessmentSource == "label" && !labelOnly.Tested && labelOnly.Grade == "unknown" &&
+                labelOnly.Potable == "safe" && !labelOnly.ContentsRevealed && labelOnly.Contents == null,
+                "label treated as tested water or scan leaked");
+
+            item.itemFeatures[0].Discovered = true;
+            var tested = new GameInspectionBackend(hands).AnalyzeWater("water");
+            Assert(tested.Tested && tested.Purity == 9500 && tested.PurityPercent == "95.00%" &&
+                tested.Grade == "rustwater" && tested.GradeRange == "90%-96%" && tested.Potable == "unsafe" &&
+                tested.LabelMatchesTest == false && tested.Issues.SequenceEqual(new[] { "label_mismatch" }),
+                "strip-tested purity or mismatch lost");
+            Assert(!tested.ContentsRevealed && tested.Contents == null, "composition leaked without a scan");
+
+            item.itemFeatures[0].Discovered = false;
+            item.Tags.Add("LAST_SCAN_RESULT_TAG");
+            item.TagStates["LAST_SCAN_RESULT_TAG"] = new TagState { Value = "[上次扫描]: 95.00%", Enabled = true };
+            var scanned = new GameInspectionBackend(hands).AnalyzeWater("water");
+            Assert(scanned.Tested && scanned.Purity == 9500 && scanned.ContentsRevealed && scanned.LastScan == "[上次扫描]: 95.00%" &&
+                scanned.Contents.Count == 3 && scanned.Contents[0].Liquid == "water" && scanned.Contents[0].Percent == 95,
+                "scan purity, composition or last-scan line lost");
+        });
+        await Check("water analysis keeps empty, missing-label and wrong-type states distinct", () =>
+        {
+            Assert(WaterAssessment.GradeCode(3000) == "unknown" && WaterAssessment.GradeRange(3000) == null &&
+                WaterAssessment.Potable(3000) == "toxic", "water below gutterflow not treated as unknown");
+            var empty = InspectionWorld();
+            foreach (string tag in new[] { "LIQUID_WATER", "LIQUID_MICROBE", "LIQUID_CHEMICAL_CONTAMINANT" })
+                empty.Items["water"].TagStates[tag].IntValue = 0;
+            empty.Items["water"].itemFeatures[0].Discovered = true;
+            var emptyResult = new GameInspectionBackend(empty).AnalyzeWater("water");
+            Assert(emptyResult.Empty && emptyResult.VolumeMl == 0 && emptyResult.Potable == "unknown" &&
+                emptyResult.Purity == null, "empty container reported water quality");
+
+            var missing = InspectionWorld();
+            missing.Items["water"].itemFeatures.Clear();
+            var missingResult = new GameInspectionBackend(missing).AnalyzeWater("water");
+            Assert(!missingResult.Empty && missingResult.LabelGrade == "unknown" &&
+                missingResult.AssessmentSource == "unknown" && missingResult.Potable == "unknown",
+                "missing label guessed or volume lost");
+
+            var hands = InspectionWorld();
+            var service = new InspectionService(new GameInspectionBackend(hands));
+            Assert(service.Execute("analyze_water", InspectionArgs("cig")).Code == "wrong_item_type", "cigarette analyzed as water");
+            hands.Items["water"].Tags.Add("WINE_CONTAINER_TAG");
+            Assert(service.Execute("analyze_water", InspectionArgs("water")).Code == "wrong_item_type", "wine container analyzed as water");
+            Assert(service.Execute("inspect_injector", InspectionArgs("water")).Code == "wrong_item_type", "water inspected as injector");
+            var chemical = InspectionWorld();
+            chemical.Items["water"].Tags.Add("CHEMICAL_PRODUCT_TAG");
+            Assert(new InspectionService(new GameInspectionBackend(chemical)).Execute("analyze_water", InspectionArgs("water")).Code ==
+                "wrong_item_type", "chemical product analyzed as water");
+            var dryChemical = InspectionWorld();
+            dryChemical.Items["water"].TagStates["LIQUID_WATER"].IntValue = 0;
+            dryChemical.Items["water"].TagStates["LIQUID_CHEMICAL_CONTAMINANT"].IntValue = 50000;
+            Assert(new InspectionService(new GameInspectionBackend(dryChemical)).Execute("analyze_water", InspectionArgs("water")).Code ==
+                "wrong_item_type", "container without water analyzed as water");
+        });
+
         await Check("standard cigarette appearance does not expose hidden counterfeit flags", () =>
         {
             var hands = InspectionWorld(); var item = hands.Items["cig"];
@@ -302,6 +435,9 @@ internal static partial class Program
             Assert(service.Execute("appraise_plasma_fuel", InspectionArgs("plasma")).Code == "inspection_locked", "locked plasma inspected");
             Assert(service.Execute("inspect_cigarette", InspectionArgs("cig")).Code == "inspection_locked", "locked cigarette inspected");
             Assert(service.Execute("inspect_food_stamp", InspectionArgs("stamp")).Code == "inspection_locked", "locked food stamp inspected");
+            Assert(service.Execute("inspect_injector", InspectionArgs("injector")).Code == "inspection_locked", "locked injector inspected");
+            // Water analysis reads a public label; it does not depend on the visual-inspection tutorial.
+            Assert(service.Execute("analyze_water", InspectionArgs("water")).Success, "water analysis unnecessarily locked");
         });
         await Check("inspection refreshes IDs and refuses wrong types and inaccessible items", () =>
         {
@@ -315,11 +451,13 @@ internal static partial class Program
             Assert(service.Execute("inspect_food_stamp", InspectionArgs("cig")).Code == "wrong_item_type", "cigarette inspected as food stamp");
             Assert(service.Execute("appraise_mechanical_hand", InspectionArgs("stamp")).Code == "wrong_item_type", "food stamp appraised as hand");
             Assert(service.Execute("inspect_cigarette", InspectionArgs("stamp")).Code == "wrong_item_type", "food stamp inspected as cigarette");
+            Assert(service.Execute("inspect_injector", InspectionArgs("cig")).Code == "wrong_item_type", "cigarette inspected as injector");
+            Assert(service.Execute("analyze_water", InspectionArgs("injector")).Code == "wrong_item_type", "injector analyzed as water");
             hands.Items["cig"].Tags.Remove("INSPECTABLE_TAG");
             Assert(service.Execute("inspect_cigarette", InspectionArgs("cig")).Code == "wrong_item_type", "noninspectable item accepted");
             hands.Refresh = () => hands.World.Items.Clear();
             Assert(service.Execute("appraise_mechanical_hand", InspectionArgs("hand")).Code == "item_not_found", "inaccessible object leaked from ID cache");
-            Assert(hands.Captures == 11 && hands.Items["hand"].HandValueReads == 0, "refresh bypassed");
+            Assert(hands.Captures == 13 && hands.Items["hand"].HandValueReads == 0, "refresh bypassed");
         });
         await Check("inspection propagates native availability and thread errors without private details", () =>
         {
@@ -342,11 +480,13 @@ internal static partial class Program
             int round = 0;
             var transport = new RegistryTransport((messages, tools, token) =>
             {
-                Assert(tools.Count == 17 && tools.Any(t => (string)t["function"]["name"] == "appraise_mechanical_hand") &&
+                Assert(tools.Count == 19 && tools.Any(t => (string)t["function"]["name"] == "appraise_mechanical_hand") &&
                     tools.Any(t => (string)t["function"]["name"] == "appraise_ribwich") &&
                     tools.Any(t => (string)t["function"]["name"] == "appraise_plasma_fuel") &&
                     tools.Any(t => (string)t["function"]["name"] == "inspect_cigarette") &&
-                    tools.Any(t => (string)t["function"]["name"] == "inspect_food_stamp"), "model missing inspection tools");
+                    tools.Any(t => (string)t["function"]["name"] == "inspect_food_stamp") &&
+                    tools.Any(t => (string)t["function"]["name"] == "inspect_injector") &&
+                    tools.Any(t => (string)t["function"]["name"] == "analyze_water"), "model missing inspection tools");
                 switch (round++)
                 {
                     case 0: return Call("hand-read", "appraise_mechanical_hand", InspectionArgs("hand"));
@@ -362,13 +502,19 @@ internal static partial class Program
                     case 4:
                         Assert((int)JObject.Parse((string)messages.Last["content"])["data"]["base_value"] == 700, "ribwich result lost");
                         return Call("plasma-read", "appraise_plasma_fuel", InspectionArgs("plasma"));
-                    default:
+                    case 5:
                         Assert((int)JObject.Parse((string)messages.Last["content"])["data"]["base_value"] == 525, "plasma result lost");
-                        return new ChatTurn { Text = "机械手鉴定基准价 425，香烟外观符合标准，食品券面值 160 信用点，肋明治基准价 700，等离子燃料匣基准价 525。" };
+                        return Call("injector-read", "inspect_injector", InspectionArgs("injector"));
+                    case 6:
+                        Assert((string)JObject.Parse((string)messages.Last["content"])["data"]["visual_assessment"] == "appears_genuine", "injector result lost");
+                        return Call("water-read", "analyze_water", InspectionArgs("water"));
+                    default:
+                        Assert((string)JObject.Parse((string)messages.Last["content"])["data"]["label_grade"] == "pure", "water result lost");
+                        return new ChatTurn { Text = "机械手鉴定基准价 425，香烟外观符合标准，食品券面值 160 信用点，肋明治基准价 700，等离子燃料匣基准价 525，注射器外观符合标准，水标签为纯净水但未测试。" };
                 }
             });
-            var response = await new HandsAgent(transport, registry).RunAsync(new ConnectionOptions(), "鉴定机械手、香烟、食品券、肋明治和等离子燃料匣", null, default);
-            Assert(response.ToolCalls == 5 && response.Operations.Count == 0 && inventory.Moves == 0 && hands.Captures == 5, "inspection mutated game or skipped refresh");
+            var response = await new HandsAgent(transport, registry).RunAsync(new ConnectionOptions(), "鉴定所有物品并分析水质", null, default);
+            Assert(response.ToolCalls == 7 && response.Operations.Count == 0 && inventory.Moves == 0 && hands.Captures == 7, "inspection mutated game or skipped refresh");
         });
         await Check("follow-up inspection reads changed native attributes instead of earlier results", async () =>
         {
@@ -432,13 +578,40 @@ internal static partial class Program
         plasma.TagStates["PLASMA_CASING_CONDITION_UNCOVERED"].Value = "NONE";
         plasma.TagStates["PLASMA_CASING_CONDITION_REINFORCED"].Value = "NONE";
         plasma.TagStates["PLASMA_SEAL"].Value = "LL";
+        var injector = new GameItem();
+        injector.Tags.UnionWith(new[] { "INS_INJECTOR_TAG", "INSPECTABLE_TAG" });
+        injector.TagStates["INJECTOR_INDICATOR"] = new TagState();
+        injector.TagStates["INJECTOR_BODY"] = new TagState();
+        injector.TagStates["INJECTOR_COLOR"] = new TagState { IntValue = -1 };
+        injector.TagStates["INJECTOR_SERIAL"] = new TagState { Value = "1331234" };
+        injector.TagStates["INJECTOR_COMPANY"] = new TagState { Value = "Carmicheal Pharmaceutical" };
+        injector.TagStates["INJECTOR_MODEL"] = new TagState { Value = "Immunivax" };
+        foreach (string tag in new[] { "INJECTOR_INDICATOR", "INJECTOR_BODY", "INJECTOR_COLOR",
+            "INJECTOR_SERIAL", "INJECTOR_COMPANY", "INJECTOR_MODEL" }) injector.Tags.Add(tag);
+        var water = new GameItem();
+        water.Tags.UnionWith(new[] { "LIQUID_CONTAINER_TAG", "INSPECTABLE_TAG" });
+        water.TagStates["LIQUID_CONTAINER_CAPACITY"] = new TagState { IntValue = 1000000 };
+        water.TagStates["LIQUID_WATER"] = new TagState { IntValue = 950000 };
+        water.TagStates["LIQUID_MICROBE"] = new TagState { IntValue = 30000 };
+        water.TagStates["LIQUID_CHEMICAL_CONTAMINANT"] = new TagState { IntValue = 20000 };
+        foreach (string tag in new[] { "LIQUID_CONTAINER_CAPACITY", "LIQUID_WATER", "LIQUID_MICROBE",
+            "LIQUID_CHEMICAL_CONTAMINANT" }) water.Tags.Add(tag);
+        water.itemFeatures.Add(new ItemFeature
+        {
+            category = "CATEGORY_WATER_PURITY",
+            fakeCondition = new ItemCondition { customValue = 9990 },
+            realCondition = new ItemCondition { customValue = 9500 }
+        });
         hands.Items["hand"] = hand; hands.Items["cig"] = cigarette; hands.Items["stamp"] = stamp;
-        hands.Items["ribwich"] = ribwich; hands.Items["plasma"] = plasma;
+        hands.Items["ribwich"] = ribwich; hands.Items["plasma"] = plasma; hands.Items["injector"] = injector;
+        hands.Items["water"] = water;
         hands.World.Items.Add(new ItemInfo { Id = "hand", Name = "机械手", Quantity = 3, ContainerId = "nested", Path = "物品栏 → 箱子 → 机械手" });
         hands.World.Items.Add(new ItemInfo { Id = "cig", Name = "香烟", Quantity = 1, ContainerId = "counter", Path = "柜台 → 香烟" });
         hands.World.Items.Add(new ItemInfo { Id = "stamp", Name = "食品券", Quantity = 1, ContainerId = "customer", Path = "窗口 → 食品券" });
         hands.World.Items.Add(new ItemInfo { Id = "ribwich", Name = "肋明治", Quantity = 1, ContainerId = "customer", Path = "窗口 → 肋明治" });
         hands.World.Items.Add(new ItemInfo { Id = "plasma", Name = "等离子燃料匣", Quantity = 1, ContainerId = "customer", Path = "窗口 → 等离子燃料匣" });
+        hands.World.Items.Add(new ItemInfo { Id = "injector", Name = "注射器", Quantity = 1, ContainerId = "customer", Path = "窗口 → 注射器" });
+        hands.World.Items.Add(new ItemInfo { Id = "water", Name = "瓶装水", Quantity = 1, ContainerId = "customer", Path = "窗口 → 瓶装水" });
         return hands;
     }
 }

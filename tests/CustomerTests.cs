@@ -37,6 +37,39 @@ internal static partial class Program
                 (string)customer["wanted"]["quiet_reminder"] == "（小声）主人，这个人符合通缉令上的特征呢。", "wanted JSON lost");
             Assert(customer["wanted"]["real_name"] == null && customer["wanted"]["reward"] == null, "hidden identity or bounty leaked");
         });
+        await Check("arrival notices combine wanted and augmented visitors and skip on-duty security", () =>
+        {
+            Assert(VisitorRisk.Compose(true, false) == "（小声）主人，这个人符合通缉令上的特征呢。", "wanted notice lost");
+            Assert(VisitorRisk.Compose(false, true) == "（小声）主人，这个人好像是改造体呢。", "aug notice lost");
+            Assert(VisitorRisk.Compose(true, true) == "（小声）主人，这个人符合通缉令上的特征，而且好像是改造体呢。", "combined notice lost");
+            Assert(VisitorRisk.Compose(false, false) == null, "ordinary visitor announced");
+            foreach (string staff in new[] { "securityOfficer", "securityOfficerFine", "securityOfficerRevokePermit",
+                "securityInspector", "patrolOfficer", "secSurplusMerchant", "secRequisitionOfficer", "serpico5" })
+                Assert(VisitorRisk.IsOnDutySecurity(staff, true, false), "on-duty security not recognized: " + staff);
+            Assert(VisitorRisk.IsOnDutySecurity("morningSecLeader", false, false), "morning security leader not recognized");
+            Assert(VisitorRisk.IsOnDutySecurity("securityInspector", false, false), "name fallback lost");
+            Assert(VisitorRisk.IsOnDutySecurity("unknownOfficer", false, true), "sentence officer not recognized");
+            Assert(VisitorRisk.IsKnownCorruptOfficer("officerLunSurplus") && !VisitorRisk.IsKnownCorruptOfficer("wanted1"),
+                "corrupt officer marker wrong");
+            Assert(!VisitorRisk.IsOnDutySecurity("officerLunSurplus", true, false), "named corrupt officer hidden with ordinary staff");
+            Assert(!VisitorRisk.IsOnDutySecurity("wanted1", false, false), "ordinary wanted visitor suppressed");
+            var staffVisit = new CustomerVisit { Status = "present", Id = "visit-staff", Wanted = true, Aug = true, OnDutySecurity = true };
+            Assert(VisitorRisk.Decide(staffVisit, null) == null, "security officer accused of wanted/aug");
+            var visit = new CustomerVisit { Status = "arriving", Id = "visit-wanted", Wanted = true, Aug = true };
+            Assert(VisitorRisk.Decide(visit, null) == VisitorRisk.Compose(true, true), "arrival notice missing");
+            Assert(VisitorRisk.Decide(visit, "visit-wanted") == null, "same visit announced twice");
+            Assert(VisitorRisk.Decide(new CustomerVisit { Status = "absent", Id = null }, null) == null, "absent visit announced");
+        });
+        await Check("local arrival notices stay in the chat history but are never sent to the model", () =>
+        {
+            var memory = new ConversationMemory();
+            memory.PostNotice("（小声）主人，这个人符合通缉令上的特征呢。");
+            memory.PostNotice("  ");
+            Assert(memory.Notices().Count == 1 && memory.Messages().Count == 0 &&
+                memory.MessagesForModel(name => false).Count == 0, "notice leaked into the model transcript");
+            memory.Clear();
+            Assert(memory.Notices().Count == 0 && memory.TurnCount == 0, "clear kept a notice");
+        });
         await Check("recorder history returns only the current visit with speakers and full text", () =>
         {
             var history = RecorderHistory.CurrentVisit(new[]

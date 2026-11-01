@@ -1,1 +1,1 @@
-v0.7.6: pick or restock the counter several goods at a time instead of waiting for each item; check multiple candidates and their combined budget in one query; fixed variety customers (one item per identifier, deduplicated totals).
+v0.7.7: added water analysis and injector inspection; immediate arrival alerts for wanted/augmented visitors (excluding security staff); refined goods-picking rules for pinned storage/machines/reagent kits, pre-freeze vs. frozen fridge items, and wine racks/beer cases.

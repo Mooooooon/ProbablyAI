@@ -226,5 +226,89 @@ namespace ProbablyAI.Inspection
             result.VisualAssessment = result.Issues.Count == 0 ? "appears_genuine" : "appears_counterfeit";
             return result;
         }
+
+        public InjectorInspection InspectInjector(string itemId)
+        {
+            // Resolve enforces the visual-inspection unlock, the inspectable tag and the shared refresh.
+            var item = Resolve(itemId, "INS_INJECTOR_TAG", out var info);
+            // These are the same seven visible tags InjectorUI.OnInit renders.
+            var readings = new InjectorReadings
+            {
+                HasIndicator = item.IsTag("INJECTOR_INDICATOR"),
+                HasBody = item.IsTag("INJECTOR_BODY"),
+                HasColor = item.IsTag("INJECTOR_COLOR"),
+                HasSerial = item.IsTag("INJECTOR_SERIAL"),
+                HasCompany = item.IsTag("INJECTOR_COMPANY"),
+                HasModel = item.IsTag("INJECTOR_MODEL")
+            };
+            readings.Indicator = readings.HasIndicator ? item.GetTagReadonly("INJECTOR_INDICATOR").GetInt() : 0;
+            readings.Body = readings.HasBody ? item.GetTagReadonly("INJECTOR_BODY").GetInt() : 0;
+            readings.Color = readings.HasColor ? item.GetTagReadonly("INJECTOR_COLOR").GetInt() : 0;
+            readings.Serial = readings.HasSerial ? item.GetTagReadonly("INJECTOR_SERIAL").GetString() : null;
+            readings.Company = readings.HasCompany ? item.GetTagReadonly("INJECTOR_COMPANY").GetString() : null;
+            readings.Model = readings.HasModel ? item.GetTagReadonly("INJECTOR_MODEL").GetString() : null;
+            // Never read ISSUE_* tags or the hidden CATEGORY_GENUINE_INJECTOR condition.
+            var result = InjectorAssessment.Evaluate(readings);
+            result.Item = info;
+            return result;
+        }
+
+        public WaterInspection AnalyzeWater(string itemId)
+        {
+            var world = hands.Capture();
+            if (PlayerStore.Instance == null)
+                throw new HandsException("store_unavailable", T("当前无法读取物品，请返回当铺并等待载入完成。"));
+            var info = world.Items.FirstOrDefault(i => i.Id == itemId);
+            if (info == null) throw new HandsException("item_not_found", T("物品已不在当前容器树中。"));
+            var item = hands.ResolveCurrentItem(itemId);
+            // Wine and chemical products are liquid containers too, but their labels do not describe drinking water.
+            if (!item.IsTag(WaterHelper.LIQUID_CONTAINER_TAG) || item.IsTag("WINE_CONTAINER_TAG") || item.IsTag("CHEMICAL_PRODUCT_TAG"))
+                throw new HandsException("wrong_item_type", T("此物品不属于该工具支持的水容器类型。"));
+
+            var readings = new WaterReadings();
+            int total = 0;
+            int water = 0;
+            foreach (var liquid in Liquid.Liquids)
+            {
+                int amount = item.GetTagReadonly(liquid.currentPart).GetInt();
+                if (amount <= 0) continue;
+                total += amount;
+                if (liquid.identifier == Liquid.LIQUID_WATER) water += amount;
+                readings.Liquids.Add(new WaterLiquid
+                {
+                    Identifier = liquid.identifier, DisplayName = liquid.displayName, AmountUl = amount
+                });
+            }
+            // An empty water bottle stays analyzable as empty; a non-empty container without water is not water.
+            if (total > 0 && water <= 0)
+                throw new HandsException("wrong_item_type", T("容器里没有可分析的水。"));
+            readings.VolumeUl = total;
+            readings.CapacityUl = item.IsTag(WaterHelper.LIQUID_CONTAINER_CAPACITY)
+                ? item.GetTagReadonly(WaterHelper.LIQUID_CONTAINER_CAPACITY).GetInt() : 0;
+
+            // The label is always visible; it is a claim until the water is tested, exposed or scanned.
+            var feature = item.FindItemFeatureByCategory("CATEGORY_WATER_PURITY");
+            if (feature != null)
+            {
+                var condition = feature.GetCurrentItemCondition();
+                if (condition != null) readings.LabelPurity = condition.customValue;
+                if (feature.IsFeatureDiscovered() || feature.IsExposed())
+                    readings.TestedPurity = WaterPurity(water, total);
+            }
+            // The aquascan writes a public last-scan line and also shows the liquid composition.
+            var scan = item.GetTagReadonly(WaterHelper.LAST_SCAN_RESULT_TAG);
+            if (scan != null && scan.IsEnabled() && !string.IsNullOrWhiteSpace(scan.GetString()))
+            {
+                readings.LastScan = scan.GetString();
+                readings.TestedPurity = WaterPurity(water, total);
+                readings.ContentsRevealed = true;
+            }
+            var result = WaterAssessment.Evaluate(readings);
+            result.Item = info;
+            return result;
+        }
+
+        private static int WaterPurity(int water, int total)
+            => total > 0 ? (int)((long)water * 10000L / total) : 0;
     }
 }

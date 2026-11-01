@@ -56,11 +56,21 @@ namespace ProbablyAI.Services
                 "Ask once about ambiguous references or scope only when they cannot be resolved safely from context.")
             + "\n\nAfter completing Master's task, end the reply. Do not close with a question, a request for confirmation or an unsolicited next step; do not ask permission for results that are already complete.";
 
-        internal static readonly string PreviousChineseDocumentDefault = PreviousChineseWantedDefault +
+        private const string ChineseWantedReminder =
             "\n\n当 get_current_customer 返回 wanted 时，在正常回复的最后另起一行，用括号小声提醒主人，例如“（小声）主人，这个人符合通缉令上的特征呢。”也可直接使用 wanted.quiet_reminder 的原文。只提醒一次，不要当着客人说出通缉、赏金、真名、举报或报警安排，也不要自动举报、逮捕或改变交易；是否处理由主人决定。";
 
-        internal static readonly string PreviousEnglishDocumentDefault = PreviousEnglishWantedDefault +
+        internal static readonly string PreviousChineseDocumentDefault = PreviousChineseWantedDefault + ChineseWantedReminder;
+
+        private const string EnglishWantedReminder =
             "\n\nWhen get_current_customer returns wanted, add a quiet parenthetical reminder on a new line at the end of the normal reply, e.g. “(whispering) Master, this person matches the wanted poster.” You may use wanted.quiet_reminder verbatim. Remind once; do not mention wanted status, bounty, real name, reporting or alerting in front of the customer, and do not report, arrest or change the trade automatically. Leave the decision to Master.";
+
+        internal static readonly string PreviousEnglishDocumentDefault = PreviousEnglishWantedDefault + EnglishWantedReminder;
+
+        private const string ChineseAugReminder =
+            "\n\n当 get_current_customer 返回 aug 时，也要在回复末尾另起一行小声提醒主人，例如“（小声）主人，这个人好像是改造体呢。”如果同时有 wanted，合并成一行，不要重复刷屏。不要当着客人说出改造体、通缉、赏金或真名，也不要自动举报、攻击或改变交易；是否处理由主人决定。";
+
+        private const string EnglishAugReminder =
+            "\n\nWhen get_current_customer returns aug, also add a quiet parenthetical reminder on a new line at the end, e.g. “(whispering) Master, this person seems to be an augmented human.” If wanted is also returned, combine both into one line instead of repeating. Do not mention aug, wanted status, bounty or real name in front of the customer, and do not report, attack or change the trade automatically. Leave the decision to Master.";
 
         internal static readonly string PreviousChineseAugDefault = PreviousChineseDocumentDefault
             .Replace("查询需求不代表主人要求搬动物品；当前工具不提供成交、对话选项或完成委托的操作。",
@@ -72,11 +82,9 @@ namespace ProbablyAI.Services
                 "Asking about requirements does not authorize moving items. Current tools cannot complete trades, choose dialogue options or finish orders. When picking goods for a customer, ignore raw materials in machine input compartments by default: they are for processing before sale. Output compartments may be sold, but do not move input materials unless Master explicitly asks.")
             + "\n\nWhen Master asks about a note, book, guide or paper document, query the real item first, then call read_document. Only its title, body, signature, pages or text is the document content; inspect_item's description is only a summary and must not be treated as the full text or invented from the item name. Guide text may include UI labels or localization differences; say so when it cannot be read. The tool is read-only and does not open UI, flip pages or change items.";
 
-        internal static readonly string PreviousChineseBatteryDefault = PreviousChineseAugDefault +
-            "\n\n当 get_current_customer 返回 aug 时，也要在回复末尾另起一行小声提醒主人，例如“（小声）主人，这个人好像是改造体呢。”如果同时有 wanted，合并成一行，不要重复刷屏。不要当着客人说出改造体、通缉、赏金或真名，也不要自动举报、攻击或改变交易；是否处理由主人决定。";
+        internal static readonly string PreviousChineseBatteryDefault = PreviousChineseAugDefault + ChineseAugReminder;
 
-        internal static readonly string PreviousEnglishBatteryDefault = PreviousEnglishAugDefault +
-            "\n\nWhen get_current_customer returns aug, also add a quiet parenthetical reminder on a new line at the end, e.g. “(whispering) Master, this person seems to be an augmented human.” If wanted is also returned, combine both into one line instead of repeating. Do not mention aug, wanted status, bounty or real name in front of the customer, and do not report, attack or change the trade automatically. Leave the decision to Master.";
+        internal static readonly string PreviousEnglishBatteryDefault = PreviousEnglishAugDefault + EnglishAugReminder;
 
         internal static readonly string PreviousChinesePinnedDefault = PreviousChineseBatteryDefault +
             "\n\n给客人挑货时，不要选择设备中正在供电或充电的电池：find_items 默认不会列出 in_use=true 的电池（通常装在生产设备的电池槽或充电器中，属于自用而非待售库存）；即使 list_container 中看到它们，也不要搬动或放上柜台。只有主人明确要求查看或更换电池时，才可以加 include_in_use=true 查询，并先说明用途。";
@@ -122,11 +130,70 @@ namespace ProbablyAI.Services
         internal static readonly string PreviousEnglishVarietyDefault = PreviousEnglishBatchDefault +
             "\n\nWhen picking goods or organizing several items, combine them into one move_items call and check the candidates with one check_customer_items call instead of one tool call per item. Report per-item results and do not retry operations that already succeeded.";
 
-        public static readonly string ChineseDefault = PreviousChineseVarietyDefault +
+        private const string ChineseVarietyRule =
             "\n\n给客人挑货时留意 preferences.requires_variety（多样性要求）：为 true 时这位客人本次到访每种物品（按 identifier）只买一份，previously_bought_identifiers 里的 identifier 会被原生拒收；挑选、合计和预算结论都按每种 identifier 一份计算，不要放两个相同 identifier 的物品，check_customer_items 返回 duplicate_identifiers 时先去掉重复再报价。pricing 里的 varietyBuyerBonus 只是市场阶段的价格加成，不是这条购买规则。";
 
-        public static readonly string EnglishDefault = PreviousEnglishVarietyDefault +
+        private const string EnglishVarietyRule =
             "\n\nWhen picking goods, check preferences.requires_variety: when true, the customer takes only one item per identifier for this visit and natively refuses identifiers listed in previously_bought_identifiers. Pick, total and judge affordability at most one item per identifier, never place two items with the same identifier, and drop what check_customer_items reports in duplicate_identifiers before quoting. varietyBuyerBonus in pricing is only a market-stage price modifier, not this purchasing rule.";
+
+        // Released v0.7.6 default, kept recognizable so saved prompts upgrade after the reminder move.
+        internal static readonly string PreviousChineseArrivalDefault = PreviousChineseVarietyDefault + ChineseVarietyRule;
+
+        internal static readonly string PreviousEnglishArrivalDefault = PreviousEnglishVarietyDefault + EnglishVarietyRule;
+
+        private const string ChineseArrivalGuidance =
+            "\n\n客人到店时，小鲸会在聊天或界面提示里自动小声提醒通缉令或改造体；不要在回复中主动追加这类提醒，也不要在客人面前说出通缉、赏金、真名、举报或报警安排。主人点名询问某位客人是否通缉或改造时，再根据 get_current_customer 的 wanted / aug 回答；不要在治安官或检查员身上推断通缉或改造。";
+
+        private const string EnglishArrivalGuidance =
+            "\n\nWhen a customer arrives, Xiaojing automatically whispers a local notice in chat or on screen if they match a wanted poster or are an augmented human; do not add such reminders to your own replies or mention wanted status, bounty, real name, reporting or alerting in front of the customer. Answer from get_current_customer's wanted / aug only when Master asks about that visitor; do not infer wanted or augmented status for a security officer or inspector.";
+
+        private const string ChineseWaterInjectorGuidance =
+            "\n\n分析水/水质或液体容器时先查询真实物品，再调用 analyze_water：报告容量、标签等级、已测试或已扫描的纯度与可见成分；未测试时明确说明标签未经验证，不把标签当成真实水质。鉴定针管/注射器时调用 inspect_injector，根据针体破损、指示器、序列号、公司和型号说明是否可用或疑似假货；unknown 时说明无法判断。两者均只读，不揭露隐藏特性、不质问客人、不改价。";
+
+        private const string EnglishWaterInjectorGuidance =
+            "\n\nTo analyze water, water quality or a liquid container, query the real item first, then call analyze_water: report capacity, label grade, tested or scanned purity and visible contents. When untested, say the label is unverified and never treat it as the real quality. To inspect a syringe/injector, call inspect_injector and explain usability or suspected counterfeiting from the visible body, indicator, serial, company and model; report unknown as inconclusive. Both tools are read-only: they do not expose hidden features, confront customers or change prices.";
+
+        internal static readonly string PreviousChineseWaterInjectorDefault = PreviousChineseArrivalDefault
+            .Replace(ChineseWantedReminder, "")
+            .Replace(ChineseAugReminder, "")
+            + ChineseArrivalGuidance + ChineseWaterInjectorGuidance;
+
+        internal static readonly string PreviousEnglishWaterInjectorDefault = PreviousEnglishArrivalDefault
+            .Replace(EnglishWantedReminder, "")
+            .Replace(EnglishAugReminder, "")
+            + EnglishArrivalGuidance + EnglishWaterInjectorGuidance;
+
+        private const string LegacyChineseInUseGuidance =
+            "给客人挑货时，不要选择设备中正在供电或充电的电池：find_items 默认不会列出 in_use=true 的电池（通常装在生产设备的电池槽或充电器中，属于自用而非待售库存）；即使 list_container 中看到它们，也不要搬动或放上柜台。只有主人明确要求查看或更换电池时，才可以加 include_in_use=true 查询，并先说明用途。";
+
+        private const string CurrentChineseInUseGuidance =
+            "给客人挑货时，不要选择设备中正在供电或充电的电池，以及冰箱里尚未冻好或冰镇好的物品（例如还没冻好的冰激凌或未冰镇饮品，意图是冻起来升值）：find_items 默认不会列出 in_use=true 的这类在用/待冻物品；已经冻好或冰镇完成的冰箱物品可以正常出售。即使 list_container 中看到 in_use=true 的物品，也不要搬动或放上柜台；只有主人明确要求查看或更换电池、未冻好物品时，才可以加 include_in_use=true 查询，并先说明用途。";
+
+        private const string LegacyEnglishInUseGuidance =
+            "When picking goods for a customer, do not select batteries that are powering or charging equipment: find_items hides batteries with in_use=true by default (usually installed in a machine's battery compartment or a charger, so they are in use rather than stock). Even if list_container shows them, do not move them or place them on the counter. Only set include_in_use=true when Master explicitly asks to inspect or replace a battery, and explain why first.";
+
+        private const string CurrentEnglishInUseGuidance =
+            "When picking goods for a customer, do not select batteries that are powering or charging equipment, or fridge items that are not yet chilled or frozen (such as un-frozen ice cream or un-chilled drinks being chilled/frozen to increase value): find_items hides such in_use=true items by default, while already frozen or chilled fridge items may be sold. Even if list_container shows in_use=true items, do not move them or place them on the counter. Only set include_in_use=true when Master explicitly asks to inspect or replace a battery or un-frozen item, and explain why first.";
+
+        private const string LegacyChinesePinnedGuidance =
+            "给客人挑货时，也不要选择主人已固定的物品：find_items 默认不会列出 pinned=true 且本身不是容器的物品（主人把它们留在原位，通常另有用途，不作为商品出售）；即使 list_container 中看到它们，也不要搬动或放上柜台。只有主人明确要求查看这些固定物品时，才可以加 include_pinned=true 查询。";
+
+        private const string CurrentChinesePinnedGuidance =
+            "给客人挑货时，也不要选择主人已固定的物品：find_items 默认不会列出 pinned=true 的固定物品本身；若被固定的是储藏容器（STORAGE 仓库），里面的未固定物品可以出售；若被固定的是机器（MACHINE），其成品区（output）、酒架酒槽（wine）或冰箱中已冻好/冰镇好的物品可以出售（原料区、模组区、电池区不出售）；若被固定的是非储藏、非机器容器（如试剂盒、净水药片盒），容器本身及里面的试纸、药片等都不出售。未固定的酒架或啤酒箱既可以整件出售，也可以单卖里面的酒水。即使 list_container 中看到受固定限制的物品，也不要搬动或放上柜台；只有主人明确要求查看这些固定物品时，才可以加 include_pinned=true 查询。";
+
+        private const string LegacyEnglishPinnedGuidance =
+            "When picking goods for a customer, also do not select items Master has pinned: find_items hides pinned=true items that are not containers by default (Master pinned them to keep them in place, usually because they serve another purpose and are not merchandise). Even if list_container shows them, do not move them or place them on the counter. Only set include_pinned=true when Master explicitly asks to inspect pinned items.";
+
+        private const string CurrentEnglishPinnedGuidance =
+            "When picking goods for a customer, also do not select items Master has pinned: find_items hides any pinned=true item itself by default. If a pinned item is a warehouse/storage container (STORAGE), unpinned items inside it may be sold; if it is a machine (MACHINE), items in its output compartment, wine rack slots (wine) or already frozen/chilled fridge compartments may be sold (while input, module and power compartments are not sold); if a pinned container is neither storage nor a machine (such as a reagent kit or water tablet box), neither the container nor the items inside it may be sold. Unpinned wine racks or beer cases may be sold either as a whole or by their individual bottles/cans. Even if list_container shows pin-restricted items, do not move them or place them on the counter. Only set include_pinned=true when Master explicitly asks to inspect pinned items.";
+
+        public static readonly string ChineseDefault = PreviousChineseWaterInjectorDefault
+            .Replace(LegacyChineseInUseGuidance, CurrentChineseInUseGuidance)
+            .Replace(LegacyChinesePinnedGuidance, CurrentChinesePinnedGuidance);
+
+        public static readonly string EnglishDefault = PreviousEnglishWaterInjectorDefault
+            .Replace(LegacyEnglishInUseGuidance, CurrentEnglishInUseGuidance)
+            .Replace(LegacyEnglishPinnedGuidance, CurrentEnglishPinnedGuidance);
 
         internal static readonly string PreviousChineseChargingDefault = PreviousChineseBatteryDefault +
             "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
@@ -181,6 +248,8 @@ namespace ProbablyAI.Services
                 value == PreviousChinesePlasmaDefault || value == PreviousEnglishPlasmaDefault ||
                 value == PreviousChineseBatchDefault || value == PreviousEnglishBatchDefault ||
                 value == PreviousChineseVarietyDefault || value == PreviousEnglishVarietyDefault ||
+                value == PreviousChineseArrivalDefault || value == PreviousEnglishArrivalDefault ||
+                value == PreviousChineseWaterInjectorDefault || value == PreviousEnglishWaterInjectorDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

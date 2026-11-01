@@ -45,7 +45,7 @@ dotnet build .\ProbablyAI.csproj -c Release -p:GameDirectory='D:\SteamLibrary\st
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-测试输出是最终依据；当前为 168 项。提交前必须全绿。所有新增逻辑优先补纯逻辑测试；涉及 Unity 原生对象的适配层可以只做编译验证，但要在说明中写清未覆盖的部分。
+测试输出是最终依据；当前为 175 项。提交前必须全绿。所有新增逻辑优先补纯逻辑测试；涉及 Unity 原生对象的适配层可以只做编译验证，但要在说明中写清未覆盖的部分。
 
 ### 安装到本机游戏
 

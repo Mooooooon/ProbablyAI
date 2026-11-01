@@ -127,8 +127,10 @@ namespace ProbablyAI.Hands
                 if (string.IsNullOrWhiteSpace(name)) name = item.identifier ?? T("未命名物品");
                 bool charging = IsCharging(item);
                 // A battery in a machine's power compartment is installed for the machine's own use,
-                // not loose stock the assistant may pick for a customer.
+                // and an un-chilled/un-frozen item in the fridge is still being cooled to increase value.
                 bool installed = role == "power" && item.IsTag("power_source_item");
+                string fridgeRole = FridgeRole(id);
+                bool cooling = fridgeRole != null && !IsColdReady(item, fridgeRole);
                 // Pinned items stay put during sorting/unloading, usually because the owner still needs them.
                 bool pinned = ItemPinHelper.IsPinned(item);
                 bool container = item.IsTag("CONTAINER_TAG") || item.IsTag("BACKPACK_TAG");
@@ -145,7 +147,7 @@ namespace ProbablyAI.Hands
                     Stolen = stolen ? true : (bool?)null,
                     Heat = stolen ? heat : (int?)null,
                     Charging = charging ? true : (bool?)null,
-                    InUse = charging || installed ? true : (bool?)null,
+                    InUse = charging || installed || cooling ? true : (bool?)null,
                     Description = Plain(item.shortDescription), Types = item.itemTypes?.ToList() ?? new List<string>()
                 };
                 world.Items.Add(itemInfo);
@@ -153,6 +155,39 @@ namespace ProbablyAI.Hands
                 itemInfo.ContentContainerId = AddWindow(item.contentWindow, item, itemInfo.Path, id, null, depth + 1);
                 if (itemInfo.ContentContainerId != null) itemInfo.Container = true;
             }
+        }
+
+        private string FridgeRole(string containerId)
+        {
+            var seen = new HashSet<string>();
+            while (!string.IsNullOrEmpty(containerId) && seen.Add(containerId) && containers.TryGetValue(containerId, out var binding))
+            {
+                var role = binding.Info.Role;
+                if (role == "chill" || role == "freeze") return role;
+                containerId = binding.Info.ParentId;
+            }
+            return null;
+        }
+
+        private static bool IsColdReady(GameItem item, string fridgeRole)
+        {
+            if (item == null || fridgeRole == null) return true;
+            bool frozen = item.FindItemFeatureByID(MachineFridge.FROZEN_FEATURE_ID) != null ||
+                item.FindItemFeatureByID(MachineFridge.LEGACY_FROZEN_DESSERT_FEATURE_ID) != null ||
+                item.IsTag(MachineFridge.FROZEN_KEPT_FROZEN_TAG);
+            bool chilled = item.FindItemFeatureByID(MachineFridge.CHILLED_FEATURE_ID) != null ||
+                item.IsTag(MachineFridge.CHILLED_KEPT_COLD_TAG);
+            bool iceCold = item.FindItemFeatureByID(MachineFridge.ICE_COLD_FEATURE_ID) != null ||
+                item.IsTag(MachineFridge.ICE_COLD_KEPT_TAG);
+            if (!HandsService.IsFridgeItemReady(fridgeRole, item.identifier, item.itemTypes, frozen, chilled, iceCold))
+                return false;
+            var content = item.contentWindow?.childElement as GameInventory;
+            if (content?.childItems != null)
+            {
+                foreach (var child in content.childItems)
+                    if (child != null && child.unitCount > 0 && !IsColdReady(child, fridgeRole)) return false;
+            }
+            return true;
         }
 
         private static bool IsCharging(GameItem item)

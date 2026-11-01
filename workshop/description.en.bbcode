@@ -24,14 +24,14 @@ Unsure about a customer's intentions? Ask Xiaojing directly:
 · “How much budget does this customer have left, and what are their preferences?”
 · “Check if I have items they want in my inventory, but let me know first before moving anything.”
 She will query live customer preferences, refusal rules, and barter/order requirements. She can also read the recorder history for the current visit and answer what the customer said earlier. Items show a stolen marker and heat; stolen goods are skipped by default when picking goods unless you explicitly ask.
-[*]🔍 [b]Mechanical Hand, Ribwich, Plasma Fuel, Cigarette & Food Stamp Appraisal[/b]
-After unlocking visual inspection, ask “Appraise this mechanical hand,” “Is this Ribwich worth anything?”, “How is this Plasma Cartridge?”, “Check this cigarette” or “Is this food stamp genuine?” Xiaojing reads only what the inspection screen shows: native base values and visible condition for hands, Ribwiches and Plasma Cartridges; cigarette seal, logo, lettering and packaging; food stamp security seal, logo, chip, lettering and printed face value, with visible defects. All appraisals are read-only: she will not submit an estimate, confront the customer or redeem a stamp.
+[*]🔍 [b]Mechanical Hand, Ribwich, Plasma Fuel, Cigarette, Food Stamp, Injector & Water Inspection[/b]
+After unlocking visual inspection, ask “Appraise this mechanical hand,” “Is this Ribwich worth anything?”, “How is this Plasma Cartridge?”, “Check this cigarette,” “Is this food stamp genuine?” or “Is this injector still usable?” Xiaojing reads only what the inspection screen shows: native base values and visible condition for hands, Ribwiches and Plasma Cartridges; cigarette seal, logo, lettering and packaging; food stamp security seal, logo, chip, lettering and printed face value; and injector body, indicator, serial, company and model, including whether it is broken, expired, recalled or a suspected counterfeit. Water containers can be analyzed for capacity, label grade, already tested/scanned purity and contents; untested labels are explicitly marked unverified. All appraisals are read-only: she will not submit an estimate, confront the customer or redeem a stamp.
 [*]⚡ [b]Chat Quick Replies[/b]
 Two buttons in the chat window: “Pick goods for this customer's needs” chooses suitable goods for the current customer's requirements and budget, then places them on the counter; “Appraise what the customer brought” inspects each item in the customer window.
 [*]🧠 [b]Thinking Level[/b]
 F7 settings now offer follow model default, thinking off, low, high or max. The request includes thinking and reasoning_effort where supported, so you can trade speed for deeper reasoning.
 [*]🕵️ [b]Wanted & Augmented Visitor Alerts[/b]
-When a visitor matches a wanted poster or is an augmented human, Xiaojing adds a quiet parenthetical warning at the end of the reply. She never reveals it to the customer and never reports, attacks or changes the trade automatically.
+As soon as a visitor enters the shop, Xiaojing whispers a local notice in chat or on a small card if they match a wanted poster or are an augmented human, without waiting for a chat reply. She reminds once per visit, never reveals it to the customer, and never reports, attacks or changes the trade automatically. On-duty security officers and inspectors are never misreported.
 [*]📖 [b]Read Notes, Books & Guides[/b]
 Reads mentor notes, intel slips, book pages, and the visible text of cigarette, food stamp, injector and mechanical-hand guides or wanted posters. Read-only: no windows opened, pages flipped or items changed.
 [*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]
@@ -42,36 +42,18 @@ UI, system prompts, and tool descriptions automatically adapt to the game's lang
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.7[/b]
+[list]
+[*]Added water analysis and injector inspection: check water capacity, label grade and already tested/scanned purity and contents (untested labels are explicitly marked unverified); inspect injector body, indicator, serial, company and model for broken, expired, recalled or counterfeit issues.
+[*]Wanted and augmented visitor alerts now trigger immediately on arrival (in chat or on an auto-dismissing card), explicitly excluding on-duty security officers and inspectors; configurable under Visitor notices.
+[*]Refined goods-picking rules: pinned items themselves are excluded by default; items inside pinned storage or machine output/wine racks remain sellable, while items inside pinned reagent kits or tablet boxes are excluded; pre-freeze/pre-chill items in the fridge (such as un-frozen ice cream or un-chilled drinks) are kept off the counter until frozen/chilled; unpinned wine racks and beer cases can be sold whole or by individual bottles/cans.
+[/list]
+
 [b]v0.7.6[/b]
 [list]
 [*]Pick or restock the counter several goods at a time instead of waiting for each item; every move still follows native ownership, lock, capacity and location rules.
 [*]Added batch checks: query several candidate items and their combined budget at once, with the total and budget verdict together.
 [*]Fixed variety customers: one item per identifier per visit, identifiers already bought are refused, and picking, totals and the budget verdict are deduplicated instead of treating variety as only a price bonus.
-[/list]
-
-[b]v0.7.5[/b]
-[list]
-[*]Fixed other mods sometimes crashing during load, the UI switching to English, or the save list appearing empty when this mod was enabled: the game locale is now read after the game's localization initialization completes.
-[*]Fixed the version reported in the log not matching the manifest version.
-[/list]
-
-[b]v0.7.4[/b]
-[list]
-[*]Added recorder dialogue: read what the current customer has said during this visit. Read-only; it does not advance dialogue.
-[*]Items show a stolen marker and heat; stolen goods are skipped by default when picking goods and can be inspected explicitly.
-[*]Added Ribwich and Plasma Cartridge appraisal: visible condition, defects and native appraisal base value.
-[*]Pinned non-container items are excluded by default when picking goods, so items kept for other purposes are not treated as merchandise.
-[/list]
-
-[b]v0.7.3[/b]
-[list]
-[*]Added portrait breathing: Xiaojing gently changes height from planted feet while idle; the toggle, distance and cycle are adjustable in the mod settings.
-[*]Fixed device batteries being picked as goods: batteries in machine power compartments or charging are marked in_use and hidden from find_items by default, so they are not placed on the counter.
-[/list]
-
-[b]v0.7.2[/b]
-[list]
-[*]Charging batteries in a charger are excluded by default when picking goods for a customer.
 [/list]
 
 [i]Older versions are listed in the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url].[/i]

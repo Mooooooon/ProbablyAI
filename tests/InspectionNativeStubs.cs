@@ -42,6 +42,13 @@ internal static class InsStampHelper
     public const int STAMP_SEAL_COUNT = 2, STAMP_LOGO_COUNT = 6, STAMP_CHIP_COUNT = 4, STAMP_LETTERING_COUNT = 9;
 }
 
+internal static class InsInjectorHelper
+{
+    public const string CORRECT_COMPANY = "Carmicheal Pharmaceutical";
+    public const string CORRECT_MODEL = "Immunivax";
+    public static readonly int[] RECALLED_PREFIX = { 250, 251, 301, 355, 385, 386, 421 };
+}
+
 internal static class RibwichHelper
 {
     public const string RIBWICH_TAG = "RIBWICH_TAG";
