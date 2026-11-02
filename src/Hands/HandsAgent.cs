@@ -42,6 +42,7 @@ namespace ProbablyAI.Hands
             try
             {
                 memory?.BindConnection(connection);
+                memory?.TrimToContext(connection.MaxHistoryTurns, connection.MaxHistoryTokens, registry.ChangesState);
                 var prefix = new JArray { new JObject { ["role"] = "system", ["content"] = connection.SystemPrompt } };
                 if (memory != null) foreach (var message in memory.MessagesForModel(registry.ChangesState)) prefix.Add(message.DeepClone());
                 if (refreshShopContext)

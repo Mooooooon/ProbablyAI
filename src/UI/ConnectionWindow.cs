@@ -60,6 +60,13 @@ namespace ProbablyAI.UI
                     .AddDropdown(ThinkingLabels(), Math.Max(0, Array.IndexOf(ThinkingLevels.All, ThinkingLevels.Normalize(draft.ThinkingLevel))), SelectThinking, "thinking")
                     .AddLabel(T("低 / 高 / 最高会发送 thinking.enabled 和 reasoning_effort；关闭只发送 thinking.disabled。服务不支持时请选择“跟随模型默认”。"))
                     .AddSeparator(verticalPadding: 10)
+                    .AddHeader(T("聊天上下文"))
+                    .AddLabel(T("对话轮次上限（1–50）"))
+                    .AddInput("8", draft.MaxHistoryTurns.ToString(), id: "max_turns")
+                    .AddLabel(T("历史 token 上限（1000–200000，估算）"))
+                    .AddInput("32000", draft.MaxHistoryTokens.ToString(), id: "max_tokens")
+                    .AddLabel(T("超过任一上限时从最旧的完整轮次开始丢弃；不会截断工具调用与结果配对。token 数量为估算，不含系统提示词和工具定义。"))
+                    .AddSeparator(verticalPadding: 10)
                     .AddHeader(T("助手提示词"))
                     .AddLabel(T("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。"))
                     .AddInput(T("留空使用默认女仆助手提示词"), "", id: "system_prompt", onTyping: value => draft.SystemPrompt = value)
@@ -83,6 +90,8 @@ namespace ProbablyAI.UI
             ConfigureInput("base_url", 2048);
             ConfigureInput("api_key", 4096, password: true);
             ConfigureInput("model", 256);
+            ConfigureNumberInput("max_turns", 3);
+            ConfigureNumberInput("max_tokens", 7);
             ConfigureInput("system_prompt", AssistantPrompt.MaxLength, multiline: true);
             // Configure multiline before assigning text so TMP does not strip paragraph breaks.
             window.Get("system_prompt").SetString(draft.SystemPrompt);
@@ -120,6 +129,16 @@ namespace ProbablyAI.UI
             draft.SystemPrompt = AssistantPrompt.Default;
             window.Get("system_prompt").SetString(draft.SystemPrompt);
             Status(T("已填入默认女仆助手提示词。点击“保存配置”后生效，也可以先发送测试消息预览。"));
+        }
+
+        private void ConfigureNumberInput(string id, int limit)
+        {
+            var element = window.Get(id);
+            if (element?.input == null) return;
+            element.input.contentType = TMP_InputField.ContentType.IntegerNumber;
+            element.input.lineType = TMP_InputField.LineType.SingleLine;
+            element.input.characterLimit = limit;
+            element.SetPreferredSize(-1f, 36f);
         }
 
         private void SetPlainText(string id)
@@ -220,8 +239,19 @@ namespace ProbablyAI.UI
             draft.Model = window.Get("model").GetString();
             draft.ThinkingLevel = ThinkingLevels.All[Math.Max(0, Math.Min(ThinkingLevels.All.Length - 1, window.Get("thinking").GetIndex()))];
             draft.SystemPrompt = window.Get("system_prompt").GetString();
+            draft.MaxHistoryTurns = ReadLimit("max_turns", ConnectionOptions.HistoryTurnsMin,
+                ConnectionOptions.HistoryTurnsMax, T("对话轮次上限应为 1–50。"));
+            draft.MaxHistoryTokens = ReadLimit("max_tokens", ConnectionOptions.HistoryTokensMin,
+                ConnectionOptions.HistoryTokensMax, T("历史 token 上限应为 1000–200000。"));
             draft.RememberApiKey = window.Get("remember_key").GetBool();
             return draft.Copy();
+        }
+
+        private int ReadLimit(string id, int min, int max, string error)
+        {
+            if (!int.TryParse(window.Get(id).GetString().Trim(), out int value) || value < min || value > max)
+                throw new ArgumentException(error);
+            return value;
         }
 
         private void Save()
@@ -234,13 +264,17 @@ namespace ProbablyAI.UI
                 window.Get("model").SetString(saved.Model);
                 window.Get("thinking")?.SetIndex(Math.Max(0, Array.IndexOf(ThinkingLevels.All, saved.ThinkingLevel)));
                 window.Get("system_prompt").SetString(saved.SystemPrompt);
+                window.Get("max_turns").SetString(saved.MaxHistoryTurns.ToString());
+                window.Get("max_tokens").SetString(saved.MaxHistoryTokens.ToString());
                 draft.BaseUrl = saved.BaseUrl;
                 draft.Model = saved.Model;
                 draft.ThinkingLevel = saved.ThinkingLevel;
                 draft.SystemPrompt = saved.SystemPrompt;
+                draft.MaxHistoryTurns = saved.MaxHistoryTurns;
+                draft.MaxHistoryTokens = saved.MaxHistoryTokens;
                 Status(saved.RememberApiKey
-                    ? T("配置与提示词已保存，下次发送生效；API Key 保存在本机。")
-                    : T("配置与提示词已保存，下次发送生效；API Key 仅本次运行有效。"));
+                    ? T("配置、提示词与上下文上限已保存，下次发送生效；API Key 保存在本机。")
+                    : T("配置、提示词与上下文上限已保存，下次发送生效；API Key 仅本次运行有效。"));
             }
             catch (ArgumentException error) { Status(error.Message); }
             catch (InvalidOperationException error) { Status(error.Message); }
@@ -269,7 +303,7 @@ namespace ProbablyAI.UI
         private void SetBusy(bool value)
         {
             busy = value;
-            foreach (var id in new[] { "base_url", "api_key", "model", "thinking", "remember_key", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
+            foreach (var id in new[] { "base_url", "api_key", "model", "thinking", "remember_key", "max_turns", "max_tokens", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
                 window.Get(id)?.SetInteractable(!value);
             window.Get("models")?.SetInteractable(!value && models.Count > 0);
             window.Get("cancel")?.SetInteractable(value);

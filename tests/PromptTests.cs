@@ -196,6 +196,23 @@ internal static partial class Program
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseVarietyDefault, AssistantPrompt.PreviousEnglishVarietyDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "variety default did not upgrade");
         });
+        await Check("liquid operation guidance is built into prompts and old defaults upgrade", () =>
+        {
+            Assert(AssistantPrompt.ChineseDefault.Contains("pour_liquid") &&
+                AssistantPrompt.ChineseDefault.Contains("dump_liquid") &&
+                AssistantPrompt.ChineseDefault.Contains("fill_liquid") &&
+                AssistantPrompt.ChineseDefault.Contains("moved_ml") &&
+                AssistantPrompt.ChineseDefault.Contains("不能指定毫升数") &&
+                AssistantPrompt.ChineseDefault.Contains("analyze_water"), "Chinese liquid guidance missing");
+            Assert(AssistantPrompt.EnglishDefault.Contains("pour_liquid") &&
+                AssistantPrompt.EnglishDefault.Contains("dump_liquid") &&
+                AssistantPrompt.EnglishDefault.Contains("fill_liquid") &&
+                AssistantPrompt.EnglishDefault.Contains("moved_ml") &&
+                AssistantPrompt.EnglishDefault.Contains("millilitres cannot be chosen") &&
+                AssistantPrompt.EnglishDefault.Contains("analyze_water"), "English liquid guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseLiquidDefault, AssistantPrompt.PreviousEnglishLiquidDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "liquid default did not upgrade");
+        });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
         {
             var store = new ConnectionSettingsStore(() => null, _ => { });

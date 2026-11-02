@@ -13,15 +13,34 @@ namespace ProbablyAI.Services
     public sealed class ConversationMemory
     {
         private readonly Queue<JArray> turns = new Queue<JArray>();
-        private readonly int maxTurns;
-        private readonly int maxCharacters;
+        private int maxTurns;
+        private int maxTokens;
         private string connectionHash;
         public int TurnCount => turns.Count;
+        public int MaxTurns => maxTurns;
+        public int MaxTokens => maxTokens;
 
-        public ConversationMemory(int maxTurns = 8, int maxCharacters = 100000)
+        public ConversationMemory(int maxTurns = ConnectionOptions.DefaultHistoryTurns,
+            int maxTokens = ConnectionOptions.DefaultHistoryTokens)
         {
-            if (maxTurns < 1 || maxCharacters < 1) throw new System.ArgumentOutOfRangeException();
-            this.maxTurns = maxTurns; this.maxCharacters = maxCharacters;
+            Configure(maxTurns, maxTokens);
+        }
+
+        // Apply the player's turn/token budget before a request. Limits are not part of the
+        // connection identity: changing them keeps the existing conversation.
+        public void TrimToContext(int turnLimit, int tokenLimit, Func<string, bool> changesState)
+        {
+            Configure(turnLimit, tokenLimit);
+            while (turns.Count > maxTurns) turns.Dequeue();
+            while (turns.Count > 0 && EstimateForModel(changesState) > maxTokens) turns.Dequeue();
+        }
+
+        public void Configure(int turnLimit, int tokenLimit)
+        {
+            if (turnLimit < 1 || tokenLimit < 1) throw new ArgumentOutOfRangeException();
+            maxTurns = turnLimit;
+            maxTokens = tokenLimit;
+            while (turns.Count > maxTurns) turns.Dequeue();
         }
 
         public bool BindConnection(ConnectionOptions options)
@@ -56,7 +75,7 @@ namespace ProbablyAI.Services
                 {
                     names.TryGetValue((string)clone["tool_call_id"], out var name);
                     JObject toolResult;
-                    if (name != null && changesState(name))
+                    if (name != null && changesState != null && changesState(name))
                     {
                         try { toolResult = JObject.Parse((string)clone["content"]); }
                         catch (JsonException) { toolResult = new JObject(); }
@@ -71,6 +90,10 @@ namespace ProbablyAI.Services
             return result;
         }
 
+        // Estimated tokens of the transcript actually sent to the model, not the raw history.
+        public int EstimateForModel(Func<string, bool> changesState)
+            => TokenEstimator.EstimateMany(MessagesForModel(changesState));
+
         public void Commit(JArray exchange)
         {
             turns.Enqueue((JArray)exchange.DeepClone());
@@ -79,8 +102,7 @@ namespace ProbablyAI.Services
 
         private void TrimTurns()
         {
-            while (turns.Count > maxTurns || turns.Sum(t => t.ToString(Formatting.None).Length) > maxCharacters)
-                turns.Dequeue();
+            while (turns.Count > maxTurns) turns.Dequeue();
         }
 
         // The local watcher posts these; they are shown in the chat window but never sent to the model.

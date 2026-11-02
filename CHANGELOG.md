@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.7.9 — 2026-11-03
+
+### 中文
+
+- 新增液体操作：可以直接说“把这瓶水倒进水壶”“把这瓶脏水倒掉”或“拿这个空瓶去水龙头接水”。小鲸会使用游戏原生的物品对物品操作，遵守所有权、锁定、容量、过滤器、温度和水龙头解锁规则；一次倒出能倒入的全部液体，不能指定毫升数，结果报告实际倒出 / 接收量和两边余量。目标过滤器可能截留杂质，空滴管对容器使用时会按原生行为改为吸取；不会凭空生成液体或容器、不销毁物品、不改变所有权或价格。
+- F7 新增聊天上下文设置：可自由设置对话轮次上限（1–50）和历史 token 上限（1,000–200,000，估算）。超过任一上限时从最旧的完整轮次开始丢弃，不会拆断工具调用与结果配对；只修改上限不会清空当前聊天。旧配置自动采用默认值。
+- 修正日志中的版本号与 manifest 版本不一致的问题。
+
+### English
+
+- Added liquid handling: ask Xiaojing to pour water or wine into another container, dump a liquid container into the pawnshop drain, or fill a bottle at the faucet. She uses the game's native item-on-item action, respecting ownership, locks, capacity, filters, temperature and faucet unlock rules. One call transfers everything the source can pour; millilitres cannot be chosen, and the result reports the actual amount moved, the amount received and both remaining levels. A target filter may retain contaminants, and an empty dropper draws liquid natively. It never creates liquid or containers, destroys items, or changes ownership or prices.
+- F7 now has chat context settings: set the maximum conversation turns (1–50) and the history token limit (1,000–200,000, estimated). When either limit is exceeded, the oldest complete turns are dropped without splitting tool calls from their results, and changing only the limits keeps the current conversation. Old configurations use the defaults automatically.
+- Fixed the version reported in the log not matching the manifest version.
+
 ## 0.7.8 — 2026-11-01
 
 ### 中文

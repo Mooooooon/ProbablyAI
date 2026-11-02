@@ -152,7 +152,8 @@ internal static partial class Program
                 AssistantPrompt.PreviousChineseBatchDefault, AssistantPrompt.PreviousEnglishBatchDefault,
                 AssistantPrompt.PreviousChineseVarietyDefault, AssistantPrompt.PreviousEnglishVarietyDefault,
                 AssistantPrompt.PreviousChineseArrivalDefault, AssistantPrompt.PreviousEnglishArrivalDefault,
-                AssistantPrompt.PreviousChineseWaterInjectorDefault, AssistantPrompt.PreviousEnglishWaterInjectorDefault })
+                AssistantPrompt.PreviousChineseWaterInjectorDefault, AssistantPrompt.PreviousEnglishWaterInjectorDefault,
+                AssistantPrompt.PreviousChineseLiquidDefault, AssistantPrompt.PreviousEnglishLiquidDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "old built-in prompt did not upgrade");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom addition") == previous + "\nCustom addition", "customized built-in prompt replaced");

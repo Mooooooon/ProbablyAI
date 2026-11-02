@@ -9,6 +9,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="HandsTests.cs" />
     <Compile Include="ChatTests.cs" />
+    <Compile Include="ContextTests.cs" />
     <Compile Include="FreshnessTests.cs" />
     <Compile Include="CustomerTests.cs" />
     <Compile Include="PricingTests.cs" />
@@ -17,6 +18,7 @@
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="InspectionTests.cs" />
     <Compile Include="InspectionNativeStubs.cs" />
+    <Compile Include="LiquidTests.cs" />
     <Compile Include="DocumentTests.cs" />
     <Compile Include="PortraitTests.cs" />
     <Compile Include="..\src\UI\PortraitBreathing.cs" Link="PortraitBreathing.cs" />
@@ -24,6 +26,10 @@
     <Compile Include="..\src\Documents\DocumentProtocol.cs" Link="Documents\DocumentProtocol.cs" />
     <Compile Include="..\src\Documents\DocumentService.cs" Link="Documents\DocumentService.cs" />
     <Compile Include="..\src\Inspection\*.cs" Link="Inspection\%(Filename)%(Extension)" />
+    <Compile Include="..\src\Liquids\LiquidContracts.cs" Link="Liquids\LiquidContracts.cs" />
+    <Compile Include="..\src\Liquids\LiquidRules.cs" Link="Liquids\LiquidRules.cs" />
+    <Compile Include="..\src\Liquids\LiquidProtocol.cs" Link="Liquids\LiquidProtocol.cs" />
+    <Compile Include="..\src\Liquids\LiquidService.cs" Link="Liquids\LiquidService.cs" />
     <Compile Include="..\src\Localization\*.cs" Link="Localization\%(Filename)%(Extension)" />
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
     <Compile Include="..\src\Customers\CustomerProtocol.cs" Link="CustomerProtocol.cs" />
@@ -36,6 +42,7 @@
     <Compile Include="..\src\Tools\ToolRegistry.cs" Link="ToolRegistry.cs" />
     <Compile Include="..\src\UI\AlphaHitMask.cs" Link="AlphaHitMask.cs" />
     <Compile Include="..\src\Services\ConversationMemory.cs" Link="ConversationMemory.cs" />
+    <Compile Include="..\src\Services\TokenEstimator.cs" Link="TokenEstimator.cs" />
     <Compile Include="..\src\Hands\HandsContracts.cs" Link="HandsContracts.cs" />
     <Compile Include="..\src\Hands\HandsService.cs" Link="HandsService.cs" />
     <Compile Include="..\src\Hands\HandsProtocol.cs" Link="HandsProtocol.cs" />

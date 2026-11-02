@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -14,7 +16,13 @@ internal static partial class Program
     private static async Task RunChatTests()
     {
         await Check("branding preserves the requested exact display name", () =>
-            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.7.6", "branding mismatch"));
+            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.7.9", "branding mismatch"));
+        await Check("branding version matches the manifest", () =>
+        {
+            var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "manifest.xml"));
+            var match = Regex.Match(File.ReadAllText(path), "<ModVersion>([^<]+)</ModVersion>");
+            Assert(match.Success && match.Groups[1].Value == Branding.Version, "manifest and branding versions differ");
+        });
         await Check("portrait alpha hit test passes through transparent pixels and bounds", () =>
         {
             var mask = new AlphaHitMask(2, 2, new byte[] { 0, 254, 12, 240 });
@@ -160,14 +168,15 @@ internal static partial class Program
                 return new ChatTurn { Text = "第二轮回复。" };
             });
             var agent = new HandsAgent(transport, new HandsService(new FakeHands()));
-            await agent.RunAsync(new ConnectionOptions(), "帮我挑选商品", null, default, memory);
+            var limitedOptions = new ConnectionOptions { MaxHistoryTurns = 2, MaxHistoryTokens = 10000 };
+            await agent.RunAsync(limitedOptions, "帮我挑选商品", null, default, memory);
             var msgs = memory.Messages();
             Assert(msgs.Count == 3, "expected notice + user + assistant in visible history");
             Assert((string)msgs[0]["content"] == "（小声）主人，这个人符合通缉令上的特征呢。", "notice should precede user message");
             Assert((string)msgs[1]["content"] == "帮我挑选商品", "user message should follow notice");
             Assert((string)msgs[2]["content"] == "好的，已经为您挑选。", "assistant reply should follow user message");
-            // Next turn should trim the notice out because maxTurns is 2.
-            await agent.RunAsync(new ConnectionOptions(), "第二轮对话", null, default, memory);
+            // Next turn should trim the notice out because the configured turn limit is 2.
+            await agent.RunAsync(limitedOptions, "第二轮对话", null, default, memory);
             var afterTrim = memory.Messages();
             Assert(!afterTrim.ToString().Contains("通缉令") && memory.Notices().Count == 0, "notice should expire with turns");
         });

@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.8）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.9）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -169,11 +169,36 @@
 
 成功返回 `success=true, code=ok`；空间不足时返回 `success=false, code=partial`，`data` 中包含 `requested`、实际 `moved` 和 `remaining`。不要把 `remaining` 当作成功数量。查询状态和移动状态不能跨多个回合视为不变。
 
-目前不提供购买 / 出售、改变所有权、凭空生成、直接销毁、解锁、清空垃圾桶或启动机器的接口。原生容器回调和机器自动加工仍遵循游戏本身的行为。
+目前不提供购买 / 出售、改变所有权、凭空生成物品、直接销毁物品、解锁、清空垃圾桶或启动机器的接口。原生容器回调和机器自动加工仍遵循游戏本身的行为。
+
+## 液体操作
+
+`LiquidService` / `ILiquidBackend` 提供三个改变液体状态的工具，聊天和 F7 助手指令均可调用。先用 `find_items` / `list_container` 取得真实容器 ID，再调用：
+
+| 工具 | 参数 | 作用 |
+| --- | --- | --- |
+| `pour_liquid` | `source_item_id`、`target_item_id` | 把源容器中的液体倒入另一个液体容器 |
+| `dump_liquid` | `item_id` | 把液体倒进当铺排水口，保留容器本身 |
+| `fill_liquid` | `item_id` | 在当铺水龙头接水，受解锁与容量限制 |
+
+```json
+{"source_item_id":"用本轮物品查询结果替换","target_item_id":"用另一件真实容器替换"}
+```
+
+这些工具走游戏原生的物品对物品操作（`GameItem.MayTarget` / `CanTarget` / `Target`），不是直接改液体标签；所有权、锁定、容量、温度、过滤器以及酒类 / 滴管等原生回调都由游戏判定。具体规则：
+
+- 一次倒出源容器能倒入的全部液体，不能指定毫升数。目标容器有过滤器时可能截留部分杂质；结果中的 `moved_ml` 是源减少量，`received_ml` 是目标增加量，二者不同时返回 `filtered_ml`。
+- 普通倒水 `direction=source_to_target`。空滴管对容器使用时会按原生行为改为吸取液体，返回 `direction=target_to_source`，不能当作“倒出”。
+- 成品酒按原生规则一次倒入 750 ml；目标剩余空间不足时提前返回 `target_too_small`。
+- `dump_liquid` 使用当铺固定排水口；`fill_liquid` 使用当铺固定水龙头，需要对应水龙头升级已解锁，否则返回 `tap_locked`。接到的水按当天原生纯度生成，不指定水质。
+- 只接受表中参数，拒绝多余参数。缺少 `LIQUID_CONTAINER_CAPACITY` 的旧式液体容器返回 `unsupported_container`；客人的或非自有的容器返回 `not_owned`；空源容器、满目标容器在调用原生动作前返回 `source_empty` / `target_full`。原生 `MayTarget` / `CanTarget` 拒绝时返回 `liquid_action_rejected`。
+- 返回 `not_poured` / `not_dumped` / `not_filled` 表示操作后体积没有变化，不能当作成功。结果包含容器名称、路径、容量、当前液量和实际移动量；不返回纯度或成分，需要水质结论时使用 `analyze_water`。
+- 三项工具不生成容器、不销毁物品、不改变所有权、价格或物品特性，也不提交估价或完成委托。
+
 
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 20 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`LiquidService.Register` 注册 3 个液体操作工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 23 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 
@@ -210,7 +235,7 @@ void RegisterTools(ProbablyAI.Tools.ToolRegistry registry)
 
 ## 聊天会话
 
-点击立绘使用 `ConversationMemory` 保留有限历史，包括完整的工具调用和结果。`Messages()` 用于原始界面记录，`MessagesForModel()` 在副本中省略历史只读查询数据，并给过去的操作结果加上 `historical=true`；保持调用配对和原有对话。取消途中会给尚未执行的调用补充 `not_executed` 结果，避免下次对话出现悬空的 tool call；并记录已完成动作。历史按完整轮次裁剪，最多 8 轮 / 约 10 万字符，不写存档或磁盘。更换服务地址、密钥、模型或系统提示词后，下次发送会清理旧上下文；同一助手不能并发执行两个工具循环。
+点击立绘使用 `ConversationMemory` 保留有限历史，包括完整的工具调用和结果。`Messages()` 用于原始界面记录，`MessagesForModel()` 在副本中省略历史只读查询数据，并给过去的操作结果加上 `historical=true`；保持调用配对和原有对话。取消途中会给尚未执行的调用补充 `not_executed` 结果，避免下次对话出现悬空的 tool call；并记录已完成动作。历史按完整轮次裁剪，默认最多 8 轮；F7 可把轮次上限设为 1–50、历史 token 上限设为 1,000–200,000。每次请求前按实际发送给模型的转写（省略旧只读结果、保留过去操作）重新估算 token，并从最旧的完整轮次开始丢弃；不会截断工具调用与结果配对。token 是估算值，不含系统提示词、工具定义和本轮实况。历史不写存档或磁盘。更换服务地址、密钥、模型或系统提示词后，下次发送会清理旧上下文；只改轮次 / token 上限不会清空聊天。同一助手不能并发执行两个工具循环。
 
 游戏中的 `HandsAgent` 启用 `refreshShopContext`：每条消息先通过现有 `get_current_customer` 和 `list_container(counter, limit=100)` 工具同步读取实况，作为临时 `shop_observation` 数据发给模型。它不修改自定义系统提示词，不伪造模型的思考或工具调用，不加入可见聊天或历史，也不会自动执行移动或未来扩展工具。刷新失败保留明确的失败结果，分页保留 `total` / `has_more`，不把未知部分解释为空或用旧记录补齐。成交可能只修改所有权；`owned=false` 的物品不属于待售自有货物。普通金额回复无需例行重复解释来源，只有影响判断或用户询问时再说明。
 

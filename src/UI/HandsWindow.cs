@@ -69,7 +69,7 @@ namespace ProbablyAI.UI
                                 .AddButton(T("执行助手指令"), RunInstruction, "run")
                                 .AddButton(T("停止"), Cancel, "stop")
                             .End()
-                            .AddLabel(T("支持上柜台、从客人窗口拿取、入库、归档、投放垃圾桶和机器投料。只按游戏规则移动；每次指令独立处理。"))
+                            .AddLabel(T("支持上柜台、从客人窗口拿取、入库、归档、投放垃圾桶、机器投料和倒水 / 倒掉液体 / 水龙头接水。只按游戏规则移动；每次指令独立处理。"))
                         .End()
                     .End()
                 .EndTabs()

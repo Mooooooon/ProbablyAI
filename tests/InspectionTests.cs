@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using ProbablyAI.Customers;
 using ProbablyAI.Hands;
 using ProbablyAI.Inspection;
+using ProbablyAI.Liquids;
 using ProbablyAI.Services;
 using ProbablyAI.Tools;
 
@@ -36,7 +37,8 @@ internal static partial class Program
                 AssistantPrompt.PreviousChineseBatchDefault, AssistantPrompt.PreviousEnglishBatchDefault,
                 AssistantPrompt.PreviousChineseVarietyDefault, AssistantPrompt.PreviousEnglishVarietyDefault,
                 AssistantPrompt.PreviousChineseArrivalDefault, AssistantPrompt.PreviousEnglishArrivalDefault,
-                AssistantPrompt.PreviousChineseWaterInjectorDefault, AssistantPrompt.PreviousEnglishWaterInjectorDefault })
+                AssistantPrompt.PreviousChineseWaterInjectorDefault, AssistantPrompt.PreviousEnglishWaterInjectorDefault,
+                AssistantPrompt.PreviousChineseLiquidDefault, AssistantPrompt.PreviousEnglishLiquidDefault })
             {
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "saved default not upgraded");
                 Assert(AssistantPrompt.Normalize(previous + "\nCustom rule") == previous + "\nCustom rule", "custom prompt replaced");

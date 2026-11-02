@@ -14,11 +14,19 @@ This mod is currently in [b]early active development[/b]. Xiaojing is still lear
 [*]🔍 [b]Item Visual Inspection[/b]: After unlocking inspection, Xiaojing assists in reading visible details on mechanical hands, Ribwiches, Plasma Cartridges, cigarettes, food stamps, injectors, and water containers to detect defects and counterfeits (read-only; does not submit quotes).
 [*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Quick buttons for “Pick goods for customer” and “Appraise customer items”; whispers local notices when wanted or augmented visitors arrive (on-duty security staff excluded).
 [*]📖 [b]Read Notes, Books & Guides[/b]: Read-only access to mentor notes, intel slips, book pages, and visible text on guide cards and wanted posters.
+[*]💧 [b]Liquid Handling[/b]: Pour water or wine, dump a container at the drain, or fill bottles at the faucet in plain language. Uses the native item-on-item logic and respects ownership, locks, capacity, filters and faucet unlocks, reporting actual volumes and remaining levels.
+[*]🧠 [b]Adjustable Chat Context[/b]: F7 sets conversation turns (1–50) and a history token limit (1,000–200,000, estimated); excess history is trimmed from the oldest complete turns without splitting tool calls from results.
 [*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]: Press [b]F7[/b] for settings. Supports any OpenAI-compatible endpoint (DeepSeek, OpenAI, or local models via Ollama/vLLM); includes thinking level configuration and editable system prompts.
 [*]🌐 [b]Automatic Bilingual Support[/b]: Mod UI and prompts automatically switch with the game's Chinese/English locale.
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.9[/b]
+[list]
+[*]Added liquid handling: pour water/wine, dump at the drain, or fill at the faucet while respecting native ownership, locks, capacity, filters and unlock rules.
+[*]F7 now sets conversation turns and a history token limit, trimming the oldest complete turns; fixed the log version not matching the manifest.
+[/list]
+
 [b]v0.7.8[/b]
 [list]
 [*]Fixed wanted/augmented arrival notices remaining stuck at the bottom of the chat window: reminders now integrate chronologically into the transcript and expire naturally with conversation turns.

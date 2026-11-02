@@ -44,12 +44,23 @@ namespace ProbablyAI.Services
         public const string DefaultBaseUrl = "https://api.deepseek.com";
         public const string DefaultModel = "deepseek-flash";
 
+        // History limits are per request and measured on the model transcript; the token
+        // count is an estimate, not a tokenizer run.
+        public const int DefaultHistoryTurns = 8;
+        public const int HistoryTurnsMin = 1;
+        public const int HistoryTurnsMax = 50;
+        public const int DefaultHistoryTokens = 32000;
+        public const int HistoryTokensMin = 1000;
+        public const int HistoryTokensMax = 200000;
+
         public string BaseUrl { get; set; } = DefaultBaseUrl;
         public string ApiKey { get; set; } = "";
         public string Model { get; set; } = DefaultModel;
         public string ThinkingLevel { get; set; } = ThinkingLevels.Default;
         public string SystemPrompt { get; set; } = AssistantPrompt.Default;
         public bool RememberApiKey { get; set; } = true;
+        public int MaxHistoryTurns { get; set; } = DefaultHistoryTurns;
+        public int MaxHistoryTokens { get; set; } = DefaultHistoryTokens;
 
         public ConnectionOptions Copy() => new ConnectionOptions
         {
@@ -58,7 +69,9 @@ namespace ProbablyAI.Services
             Model = Model,
             ThinkingLevel = ThinkingLevel,
             SystemPrompt = SystemPrompt,
-            RememberApiKey = RememberApiKey
+            RememberApiKey = RememberApiKey,
+            MaxHistoryTurns = MaxHistoryTurns,
+            MaxHistoryTokens = MaxHistoryTokens
         };
 
         public ConnectionOptions Normalized(bool requireModel = true)
@@ -69,6 +82,11 @@ namespace ProbablyAI.Services
             copy.Model = (copy.Model ?? "").Trim();
             copy.ThinkingLevel = ThinkingLevels.Normalize(copy.ThinkingLevel);
             copy.SystemPrompt = AssistantPrompt.Normalize(copy.SystemPrompt);
+            // Old configuration files gain the defaults; out-of-range values fall back safely.
+            if (copy.MaxHistoryTurns < HistoryTurnsMin || copy.MaxHistoryTurns > HistoryTurnsMax)
+                copy.MaxHistoryTurns = DefaultHistoryTurns;
+            if (copy.MaxHistoryTokens < HistoryTokensMin || copy.MaxHistoryTokens > HistoryTokensMax)
+                copy.MaxHistoryTokens = DefaultHistoryTokens;
             if (!Uri.TryCreate(copy.BaseUrl, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp) ||
                 string.IsNullOrEmpty(uri.Host))

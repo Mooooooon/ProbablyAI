@@ -6,6 +6,7 @@ using ProbablyAI.Tools;
 using ProbablyAI.Customers;
 using ProbablyAI.Documents;
 using ProbablyAI.Inspection;
+using ProbablyAI.Liquids;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
@@ -103,6 +104,7 @@ namespace ProbablyAI
             customerBackend = new GameCustomerBackend(CanShow, handsBackend);
             new CustomerService(customerBackend).Register(Tools);
             new InspectionService(new GameInspectionBackend(handsBackend)).Register(Tools);
+            new LiquidService(new GameLiquidBackend(handsBackend)).Register(Tools);
             new DocumentService(new GameDocumentBackend(handsBackend)).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);
             agent = new HandsAgent(transport, Tools, refreshShopContext: true);

@@ -187,13 +187,24 @@ namespace ProbablyAI.Services
         private const string CurrentEnglishPinnedGuidance =
             "When picking goods for a customer, also do not select items Master has pinned: find_items hides any pinned=true item itself by default. If a pinned item is a warehouse/storage container (STORAGE), unpinned items inside it may be sold; if it is a machine (MACHINE), items in its output compartment, wine rack slots (wine) or already frozen/chilled fridge compartments may be sold (while input, module and power compartments are not sold); if a pinned container is neither storage nor a machine (such as a reagent kit or water tablet box), neither the container nor the items inside it may be sold. Unpinned wine racks or beer cases may be sold either as a whole or by their individual bottles/cans. Even if list_container shows pin-restricted items, do not move them or place them on the counter. Only set include_pinned=true when Master explicitly asks to inspect pinned items.";
 
-        public static readonly string ChineseDefault = PreviousChineseWaterInjectorDefault
+        private const string ChineseLiquidGuidance =
+            "\n\n需要倒水、倒酒或处理液体容器时，先查询真实物品，再调用 `pour_liquid`（倒入另一个液体容器）、`dump_liquid`（倒入当铺排水口）或 `fill_liquid`（在水龙头接水）。这些工具走游戏原生的物品对物品操作：一次倒出源容器能倒入的全部液体，不能指定毫升数；受所有权、锁定、容量、过滤器、温度及水龙头解锁状态限制。结果中的 `moved_ml` 是实际移动量；`success=false` 或 `not_poured` / `not_dumped` / `not_filled` 表示没有液体移动，不能声称完成。空滴管对容器使用时会改为吸取液体，`direction` 会标明 `source_to_target` 或 `target_to_source`。不要把未测试的水质、未扫描的成分或配方当作已知；需要水质结论时再调用 `analyze_water`。";
+
+        private const string EnglishLiquidGuidance =
+            "\n\nWhen Master asks to pour water or wine, or otherwise handle a liquid container, query the real items first, then call `pour_liquid` (pour into another liquid container), `dump_liquid` (dump into the pawnshop drain) or `fill_liquid` (draw water at the faucet). These tools use the game's native item-on-item action: one call transfers everything the source can pour and the millilitres cannot be chosen; ownership, locks, capacity, filters, temperature and faucet unlock rules apply. `moved_ml` is the actual amount moved; `success=false` or `not_poured` / `not_dumped` / `not_filled` means nothing moved, so never claim completion. Using an empty dropper on a container draws liquid instead, and `direction` reports `source_to_target` or `target_to_source`. Never treat untested water quality, unscanned contents or a recipe as known; call `analyze_water` when a water-quality conclusion is needed.";
+
+        // The released v0.7.8 default, kept recognizable so unedited saves upgrade.
+        internal static readonly string PreviousChineseLiquidDefault = PreviousChineseWaterInjectorDefault
             .Replace(LegacyChineseInUseGuidance, CurrentChineseInUseGuidance)
             .Replace(LegacyChinesePinnedGuidance, CurrentChinesePinnedGuidance);
 
-        public static readonly string EnglishDefault = PreviousEnglishWaterInjectorDefault
+        internal static readonly string PreviousEnglishLiquidDefault = PreviousEnglishWaterInjectorDefault
             .Replace(LegacyEnglishInUseGuidance, CurrentEnglishInUseGuidance)
             .Replace(LegacyEnglishPinnedGuidance, CurrentEnglishPinnedGuidance);
+
+        public static readonly string ChineseDefault = PreviousChineseLiquidDefault + ChineseLiquidGuidance;
+
+        public static readonly string EnglishDefault = PreviousEnglishLiquidDefault + EnglishLiquidGuidance;
 
         internal static readonly string PreviousChineseChargingDefault = PreviousChineseBatteryDefault +
             "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
@@ -250,6 +261,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseVarietyDefault || value == PreviousEnglishVarietyDefault ||
                 value == PreviousChineseArrivalDefault || value == PreviousEnglishArrivalDefault ||
                 value == PreviousChineseWaterInjectorDefault || value == PreviousEnglishWaterInjectorDefault ||
+                value == PreviousChineseLiquidDefault || value == PreviousEnglishLiquidDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.
