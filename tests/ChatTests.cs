@@ -16,7 +16,7 @@ internal static partial class Program
     private static async Task RunChatTests()
     {
         await Check("branding preserves the requested exact display name", () =>
-            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.7.9", "branding mismatch"));
+            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.7.10", "branding mismatch"));
         await Check("branding version matches the manifest", () =>
         {
             var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "manifest.xml"));
@@ -120,12 +120,14 @@ internal static partial class Program
             Assert(results.Length == 2 && (string)JObject.Parse((string)results[1]["content"])["code"] == "not_executed", "dangling tool call in history");
             Assert(backend.Moves == 1 && !agent.IsRunning && (string)history.Last["role"] == "assistant", "cancellation cleanup");
         });
-        await Check("history trimming retains complete exchanges and clear removes them", () =>
+        await Check("history keeps complete exchanges while the sent context is trimmed and clear removes them", () =>
         {
             var memory = new ConversationMemory(2, 10000);
             for (int i = 0; i < 3; i++) memory.Commit(new JArray(new JObject { ["role"] = "user", ["content"] = "u" + i }, new JObject { ["role"] = "assistant", ["content"] = "a" + i }));
             var messages = memory.Messages();
-            Assert(messages.Count == 4 && (string)messages.First["content"] == "u1" && (string)messages.Last["content"] == "a2", "exchange split while trimming");
+            Assert(messages.Count == 6 && (string)messages.First["content"] == "u0", "stored history lost a turn");
+            var context = memory.ContextMessages(2, 10000, _ => false);
+            Assert(context.Count == 4 && (string)context.First["content"] == "u1" && (string)context.Last["content"] == "a2", "exchange split while selecting context");
             memory.Clear(); Assert(memory.Messages().Count == 0, "history not cleared");
             Expect<ArgumentOutOfRangeException>(() => new ConversationMemory(0));
         });

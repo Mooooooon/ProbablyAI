@@ -65,7 +65,7 @@ namespace ProbablyAI.UI
                     .AddInput("8", draft.MaxHistoryTurns.ToString(), id: "max_turns")
                     .AddLabel(T("历史 token 上限（1000–200000，估算）"))
                     .AddInput("32000", draft.MaxHistoryTokens.ToString(), id: "max_tokens")
-                    .AddLabel(T("超过任一上限时从最旧的完整轮次开始丢弃；不会截断工具调用与结果配对。token 数量为估算，不含系统提示词和工具定义。"))
+                    .AddLabel(T("这两个上限只决定发送给模型的历史；完整聊天记录保存在本机，直到手动清空。超限时从最旧的完整轮次开始省略，不会截断工具调用与结果配对。token 数量为估算。"))
                     .AddSeparator(verticalPadding: 10)
                     .AddHeader(T("助手提示词"))
                     .AddLabel(T("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。"))

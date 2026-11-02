@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.7.10 — 2026-11-03
+
+### 中文
+
+- 新增 `use_item_on_item`：可以对水瓶、水壶等水容器使用净水药片、营养药片、UV 过滤器或水配给。使用游戏原生的物品对物品操作，由游戏判定所有权、锁定、目标容器、容量和消耗；药片与水配给通常被消耗，UV 过滤器保留。目标必须是水容器，酒类、化学产品容器或没有水的药片 / UV 目标会被拒绝。不会打开试纸 / 扫描仪界面，也不读取未测试的纯度或成分；净化反应可能需要时间。
+- 聊天记录改为持久存储：完整对话按存档槽保存在本机 `ModData/probably_ai`，重启游戏或重新载入存档后恢复；只有手动“清空聊天”或更换连接 / 提示词才会删除。F7 的对话轮次（1–50）与历史 token 上限（1,000–200,000，估算）现在只决定发送给模型的历史，超限时从最旧完整轮次开始省略，不再删除聊天记录或本机文件。
+- 聊天记录文件不保存 API Key，只保存公开连接哈希与聊天消息；旧配置和损坏文件会安全回退到新对话。
+
+### English
+
+- Added `use_item_on_item`: use a purification tablet, nutrient tablet, UV filter or water ration on a water bottle, pitcher or tank. It uses the game's native item-on-item action, with ownership, locks, target container, capacity and consumption decided by the game; tablets and rations are normally consumed, while the UV filter remains. The target must be a water container; wine, chemical-product and dry tablet/UV targets are rejected. It does not open test-strip or scanner UI and never reads untested purity or contents; purification may take time.
+- Chat history is now persistent: the complete transcript is stored per save slot under local `ModData/probably_ai` and restored after a restart or reload. Only an explicit **Clear chat** or a connection/prompt change removes it. The F7 turn limit (1–50) and history token limit (1,000–200,000, estimated) now only choose what is sent to the model; excess older complete turns are omitted from that request instead of being deleted from the transcript or local file.
+- The history file stores no API key, only a public connection hash and chat messages; old configurations and corrupt files fall back to a new conversation.
+
 ## 0.7.9 — 2026-11-03
 
 ### 中文

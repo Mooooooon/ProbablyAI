@@ -34,34 +34,27 @@ internal static partial class Program
             var message = new JObject { ["role"] = "user", ["content"] = "你好" };
             Assert(TokenEstimator.Estimate(message) >= 5, "message overhead missing");
         });
-        await Check("memory trims whole turns by count and respects a token budget", () =>
+        await Check("memory keeps the complete archive while sending only whole turns within limits", () =>
         {
             var memory = new ConversationMemory(10, 100000);
             for (int i = 0; i < 5; i++)
                 memory.Commit(Exchange("u" + i, "a" + i));
-            Assert(memory.TurnCount == 5, "turns lost before trimming");
-            memory.TrimToContext(2, 100000, _ => false);
-            Assert(memory.TurnCount == 2 && (string)memory.Messages().First["content"] == "u3", "turn limit did not trim oldest turns");
+            Assert(memory.TurnCount == 5 && memory.Messages().Count == 10, "archive did not retain every turn");
+            var context = memory.ContextMessages(2, 100000, _ => false);
+            Assert(context.Count == 4 && (string)context.First["content"] == "u3" && memory.TurnCount == 5, "turn limit changed the archive or chose the wrong turns");
             memory.Clear();
-            memory.Configure(10, 100000);
             for (int i = 0; i < 3; i++)
                 memory.Commit(ToolExchange("read-" + i, "find_items", new string('a', 3000)));
-            int readBudget = memory.EstimateForModel(_ => false);
-            memory.TrimToContext(10, readBudget, _ => false);
-            Assert(memory.TurnCount == 3, "read-only projection exceeded its own budget: kept " + memory.TurnCount +
-                ", budget " + readBudget + ", estimate " + memory.EstimateForModel(_ => false));
+            int readBudget = TokenEstimator.EstimateMany(memory.ContextMessages(10, 1000000, _ => false));
+            Assert(memory.ContextMessages(10, readBudget, _ => false).Count == 6, "read-only projection did not fit its own budget");
             memory.Clear();
-            memory.Configure(10, 100000);
             for (int i = 0; i < 3; i++)
                 memory.Commit(ToolExchange("move-" + i, "move_item", new string('a', 3000)));
-            int moveBudget = memory.EstimateForModel(name => name == "move_item");
-            Assert(moveBudget > readBudget, "past operations counted like omitted reads");
-            memory.TrimToContext(10, readBudget, name => name == "move_item");
-            Assert(memory.TurnCount < 3, "token budget kept oversized retained results");
-            Expect<ArgumentOutOfRangeException>(() => memory.Configure(0, 1000));
-            Expect<ArgumentOutOfRangeException>(() => memory.Configure(1, 0));
+            Assert(memory.ContextMessages(10, readBudget, name => name == "move_item").Count < 6, "token budget kept oversized retained results");
+            Expect<ArgumentOutOfRangeException>(() => memory.ContextMessages(0, 1000, _ => false));
+            Expect<ArgumentOutOfRangeException>(() => memory.ContextMessages(1, 0, _ => false));
         });
-        await Check("agent applies configured turn and token limits before each request", async () =>
+        await Check("agent applies configured send limits without deleting archived turns", async () =>
         {
             var memory = new ConversationMemory(10, 100000);
             for (int i = 0; i < 5; i++)
@@ -76,7 +69,7 @@ internal static partial class Program
             });
             await new HandsAgent(transport, new HandsService(new FakeHands()))
                 .RunAsync(options, "现在", null, default, memory);
-            Assert(memory.TurnCount == 2, "current exchange not committed after trimming: " + memory.TurnCount);
+            Assert(memory.TurnCount == 6 && memory.Messages().Count == 12, "request context deleted archived turns");
         });
         await Check("changing only the history limits keeps the conversation", () =>
         {
@@ -90,6 +83,55 @@ internal static partial class Program
             Assert(!memory.BindConnection(limited) && memory.TurnCount == 1, "history limits treated as a new connection");
             limited.Model = "another-model";
             Assert(memory.BindConnection(limited) && memory.TurnCount == 0, "model change kept context");
+        });
+        await Check("conversation history is restored from storage and survives a new memory instance", () =>
+        {
+            var store = new FakeConversationStore();
+            var options = new ConnectionOptions();
+            var memory = new ConversationMemory(store: store);
+            Assert(!memory.BindConnection(options), "initial bind cleared context");
+            memory.Commit(Exchange("主人，在吗？", "在的，主人。"));
+            memory.Commit(ToolExchange("move-1", "move_item", "{\"moved\":1}"));
+            Assert(store.Saves >= 2 && !string.IsNullOrEmpty(store.Text), "commits were not persisted");
+            var restored = new ConversationMemory(store: store);
+            Assert(!restored.BindConnection(options), "restored context rejected its own connection");
+            Assert(restored.TurnCount == 2 && restored.Messages().Count == 4, "saved turns were not restored");
+            Assert(restored.ContextMessages(8, 32000, name => name == "move_item").Count == 4, "restored tool pair was split");
+            var readProjection = restored.ContextMessages(8, 32000, _ => false);
+            Assert(readProjection.Count == 4 &&
+                (string)JObject.Parse((string)readProjection[3]["content"])["code"] == "historical_read_omitted",
+                "restored read projection did not omit its stale result");
+        });
+        await Check("stored history belongs to one connection and can be cleared manually", () =>
+        {
+            var store = new FakeConversationStore();
+            var first = new ConnectionOptions { Model = "first-model" };
+            var memory = new ConversationMemory(store: store);
+            memory.BindConnection(first);
+            memory.Commit(Exchange("旧对话", "旧回复"));
+            var changed = new ConnectionOptions { Model = "second-model" };
+            var next = new ConversationMemory(store: store);
+            Assert(next.BindConnection(changed) && next.TurnCount == 0 && store.Text == null, "stored context moved across connections");
+            next.Commit(Exchange("新对话", "新回复"));
+            Assert(store.Text != null && next.TurnCount == 1, "new connection was not persisted");
+            next.Clear();
+            Assert(next.TurnCount == 0 && store.Text == null && store.Deletes > 0, "manual clear kept the saved file");
+            Assert(new ConversationMemory(store: store).TurnCount == 0, "cleared history came back");
+        });
+        await Check("local notices and corrupt files do not pollute restored history", () =>
+        {
+            var store = new FakeConversationStore();
+            var memory = new ConversationMemory(store: store);
+            memory.PostNotice("（小声）主人，这个人符合通缉令上的特征呢。");
+            memory.Commit(Exchange("你好", "主人好。"));
+            var restored = new ConversationMemory(store: store);
+            Assert(restored.Notices().Count == 0 && restored.TurnCount == 1, "local notice was restored");
+            store.Text = "{broken-json";
+            var corrupt = new ConversationMemory(store: store);
+            Assert(corrupt.TurnCount == 0 && !string.IsNullOrEmpty(corrupt.LoadWarning), "corrupt history was accepted");
+            store.Text = new string('x', 17 * 1024 * 1024);
+            var oversized = new ConversationMemory(store: store);
+            Assert(oversized.TurnCount == 0 && !string.IsNullOrEmpty(oversized.LoadWarning), "oversized history was accepted");
         });
     }
 
@@ -112,5 +154,14 @@ internal static partial class Program
                 })
             },
             new JObject { ["role"] = "tool", ["tool_call_id"] = id, ["content"] = content });
+    }
+
+    private sealed class FakeConversationStore : IConversationStore
+    {
+        public string Text;
+        public int Saves, Deletes;
+        public string Load() => Text;
+        public void Save(string text) { Text = text; Saves++; }
+        public void Delete() { Text = null; Deletes++; }
     }
 }

@@ -6,6 +6,7 @@ using ProbablyAI.Customers;
 using ProbablyAI.Documents;
 using ProbablyAI.Hands;
 using ProbablyAI.Inspection;
+using ProbablyAI.Items;
 using ProbablyAI.Liquids;
 using ProbablyAI.Services;
 using ProbablyAI.Tools;
@@ -20,8 +21,9 @@ internal static partial class Program
             new CustomerService(new FakeCustomer()).Register(registry);
             new InspectionService(new GameInspectionBackend(InspectionWorld())).Register(registry);
             new LiquidService(new FakeLiquid()).Register(registry);
+            new ItemUseService(new FakeItemUse()).Register(registry);
             new DocumentService(new FakeDocument()).Register(registry);
-            Assert(registry.Definitions().Count == 23, "document tool missing");
+            Assert(registry.Definitions().Count == 24, "document tool missing");
             Assert(!registry.ChangesState("read_document"), "document read marked as mutation");
             var definition = registry.Definitions().First(d => (string)d["function"]["name"] == "read_document");
             Assert(!(bool)definition["function"]["parameters"]["additionalProperties"] &&

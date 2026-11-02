@@ -15,12 +15,19 @@ This mod is currently in [b]early active development[/b]. Xiaojing is still lear
 [*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Quick buttons for “Pick goods for customer” and “Appraise customer items”; whispers local notices when wanted or augmented visitors arrive (on-duty security staff excluded).
 [*]📖 [b]Read Notes, Books & Guides[/b]: Read-only access to mentor notes, intel slips, book pages, and visible text on guide cards and wanted posters.
 [*]💧 [b]Liquid Handling[/b]: Pour water or wine, dump a container at the drain, or fill bottles at the faucet in plain language. Uses the native item-on-item logic and respects ownership, locks, capacity, filters and faucet unlocks, reporting actual volumes and remaining levels.
-[*]🧠 [b]Adjustable Chat Context[/b]: F7 sets conversation turns (1–50) and a history token limit (1,000–200,000, estimated); excess history is trimmed from the oldest complete turns without splitting tool calls from results.
+[*]💊 [b]Item Use[/b]: Use purification tablets, nutrient tablets, UV filters or water rations on water containers. Tablets and rations are normally consumed while the UV filter remains, all through native ownership, capacity and target rules.
+[*]💾 [b]Persistent Chat & Adjustable Context[/b]: The complete transcript is saved per save slot locally and restored after a restart or reload; only Clear chat removes it. F7 sets conversation turns (1–50) and a history token limit (1,000–200,000, estimated) for what is sent to the model; excess turns are omitted without deleting the transcript or splitting tool pairs.
 [*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]: Press [b]F7[/b] for settings. Supports any OpenAI-compatible endpoint (DeepSeek, OpenAI, or local models via Ollama/vLLM); includes thinking level configuration and editable system prompts.
 [*]🌐 [b]Automatic Bilingual Support[/b]: Mod UI and prompts automatically switch with the game's Chinese/English locale.
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.10[/b]
+[list]
+[*]Added item use: purification tablets, nutrient tablets, UV filters and water rations on water containers, following native rules.
+[*]Chat history persists per save slot and returns after a restart or reload; only Clear chat removes it. F7 context limits now only choose what is sent to the model.
+[/list]
+
 [b]v0.7.9[/b]
 [list]
 [*]Added liquid handling: pour water/wine, dump at the drain, or fill at the faucet while respecting native ownership, locks, capacity, filters and unlock rules.

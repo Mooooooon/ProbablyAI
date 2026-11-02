@@ -193,6 +193,12 @@ namespace ProbablyAI.Services
         private const string EnglishLiquidGuidance =
             "\n\nWhen Master asks to pour water or wine, or otherwise handle a liquid container, query the real items first, then call `pour_liquid` (pour into another liquid container), `dump_liquid` (dump into the pawnshop drain) or `fill_liquid` (draw water at the faucet). These tools use the game's native item-on-item action: one call transfers everything the source can pour and the millilitres cannot be chosen; ownership, locks, capacity, filters, temperature and faucet unlock rules apply. `moved_ml` is the actual amount moved; `success=false` or `not_poured` / `not_dumped` / `not_filled` means nothing moved, so never claim completion. Using an empty dropper on a container draws liquid instead, and `direction` reports `source_to_target` or `target_to_source`. Never treat untested water quality, unscanned contents or a recipe as known; call `analyze_water` when a water-quality conclusion is needed.";
 
+        private const string ChineseItemUseGuidance =
+            "\n\n需要对着液体容器使用净水药片、营养药片、UV 过滤器或水配给时，先查询两件真实物品，再调用 `use_item_on_item`。该工具只支持这些安全物品，使用游戏原生的物品对物品操作；药片和水配给通常会被消耗，UV 过滤器不会。目标必须是水容器：药片和 UV 过滤器要求容器里已有水，水配给也可以倒入空容器；酒类、化学产品以及药片 / UV 使用的空容器会被拒绝。药片加入后净化反应可能需要时间，不要立刻声称水质已达标；需要结论时用试纸 / 扫描或 `analyze_water`。不支持武器、医疗、手术、动物、机器启动或会打开界面的工具。";
+
+        private const string EnglishItemUseGuidance =
+            "\n\nWhen Master asks to use a purification tablet, nutrient tablet, UV filter or water ration on a liquid container, query both real items first, then call `use_item_on_item`. This tool supports only those safe items and uses the game's native item-on-item action; tablets and water rations are normally consumed, while the UV filter is not. The target must be a water container: tablets and the UV filter require water already inside, while a water ration may also fill an empty container; wine, chemical products and empty containers for tablets/UV are rejected. Purification may take time after a tablet is added, so do not claim the water is already clean; use a test strip, scan or `analyze_water` when a conclusion is needed. Weapons, medical items, surgery, animals, machine startup and UI-opening tools are not supported.";
+
         // The released v0.7.8 default, kept recognizable so unedited saves upgrade.
         internal static readonly string PreviousChineseLiquidDefault = PreviousChineseWaterInjectorDefault
             .Replace(LegacyChineseInUseGuidance, CurrentChineseInUseGuidance)
@@ -202,9 +208,14 @@ namespace ProbablyAI.Services
             .Replace(LegacyEnglishInUseGuidance, CurrentEnglishInUseGuidance)
             .Replace(LegacyEnglishPinnedGuidance, CurrentEnglishPinnedGuidance);
 
-        public static readonly string ChineseDefault = PreviousChineseLiquidDefault + ChineseLiquidGuidance;
+        // The released v0.7.9 default with liquid guidance, kept recognizable for item-use upgrades.
+        internal static readonly string PreviousChineseItemUseDefault = PreviousChineseLiquidDefault + ChineseLiquidGuidance;
 
-        public static readonly string EnglishDefault = PreviousEnglishLiquidDefault + EnglishLiquidGuidance;
+        internal static readonly string PreviousEnglishItemUseDefault = PreviousEnglishLiquidDefault + EnglishLiquidGuidance;
+
+        public static readonly string ChineseDefault = PreviousChineseItemUseDefault + ChineseItemUseGuidance;
+
+        public static readonly string EnglishDefault = PreviousEnglishItemUseDefault + EnglishItemUseGuidance;
 
         internal static readonly string PreviousChineseChargingDefault = PreviousChineseBatteryDefault +
             "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
@@ -262,6 +273,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseArrivalDefault || value == PreviousEnglishArrivalDefault ||
                 value == PreviousChineseWaterInjectorDefault || value == PreviousEnglishWaterInjectorDefault ||
                 value == PreviousChineseLiquidDefault || value == PreviousEnglishLiquidDefault ||
+                value == PreviousChineseItemUseDefault || value == PreviousEnglishItemUseDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

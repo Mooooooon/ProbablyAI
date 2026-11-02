@@ -6,6 +6,7 @@ using ProbablyAI.Tools;
 using ProbablyAI.Customers;
 using ProbablyAI.Documents;
 using ProbablyAI.Inspection;
+using ProbablyAI.Items;
 using ProbablyAI.Liquids;
 using UnityEngine;
 using UnityEngine.Localization;
@@ -105,14 +106,28 @@ namespace ProbablyAI
             new CustomerService(customerBackend).Register(Tools);
             new InspectionService(new GameInspectionBackend(handsBackend)).Register(Tools);
             new LiquidService(new GameLiquidBackend(handsBackend)).Register(Tools);
+            new ItemUseService(new GameItemUseBackend(handsBackend)).Register(Tools);
             new DocumentService(new GameDocumentBackend(handsBackend)).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);
             agent = new HandsAgent(transport, Tools, refreshShopContext: true);
-            conversation = new ConversationMemory();
+            conversation = CreateConversation();
+            if (!string.IsNullOrEmpty(conversation.LoadWarning)) log.Warning(conversation.LoadWarning);
             nextBuildAttempt = 0f;
             nextVisitCheck = 0f;
             notifiedVisitId = null;
             TryBuildPortrait();
+        }
+
+        private ConversationMemory CreateConversation()
+        {
+            var playerStore = PlayerStore.Instance;
+            int slot = playerStore == null ? -1 : playerStore.saveSlotId;
+            string file = slot >= 0 ? "chat-history-" + slot + ".local.json" : "chat-history.local.json";
+            var store = new ConversationStore(file,
+                () => ModHelper.ReadModDataFileText(ModEntry.ModId, file),
+                text => ModHelper.WriteModDataFileText(ModEntry.ModId, file, text),
+                () => ModHelper.DeleteModDataFile(ModEntry.ModId, file));
+            return new ConversationMemory(store: store);
         }
 
         private bool InStore()

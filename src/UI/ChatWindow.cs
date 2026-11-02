@@ -277,7 +277,7 @@ namespace ProbablyAI.UI
         private void Clear()
         {
             if (busy || agent.IsRunning) { Status(T("请先停止当前请求，再清空聊天。")); return; }
-            memory.Clear(); currentActions.Clear(); currentUser = null; Render(); Status(T("聊天已清空。"));
+            memory.Clear(); currentActions.Clear(); currentUser = null; Render(); Status(T("聊天与保存的上下文已清空。"));
         }
 
         // A local arrival notice is visible here but never sent to the model.
