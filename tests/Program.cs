@@ -247,6 +247,7 @@ internal static partial class Program
         await RunLiquidTests();
         await RunItemUseTests();
         await RunDocumentTests();
+        await RunLabelTests();
         await RunPromptTests();
         await RunLocalizationTests();
         await RunPortraitTests();

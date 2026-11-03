@@ -17,6 +17,7 @@ This mod is currently in [b]early active development[/b]. Xiaojing is still lear
 [*]💧 [b]Liquid Handling[/b]: Pour water or wine, dump a container at the drain, or fill bottles at the faucet in plain language. Uses the native item-on-item logic and respects ownership, locks, capacity, filters and faucet unlocks, reporting actual volumes and remaining levels.
 [*]💊 [b]Item Use[/b]: Perform native non-combat item-on-item and use/activate actions like a player: test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted. Weapons can slaughter animals (such as rats), but are never used on customers or enemies, and the shotgun shooting mode is not automated; trading and save editing remain excluded.
 [*]💾 [b]Persistent Chat & Adjustable Context[/b]: The complete transcript is saved per save slot locally and restored after a restart or reload; only Clear chat removes it. F7 sets conversation turns (1–50) and a history token limit (1,000–200,000, estimated) for what is sent to the model; excess turns are omitted without deleting the transcript or splitting tool pairs.
+[*]🏷️ [b]Labels & Custom Names[/b]: Use a standard label printer to edit allowed labels, or a blue labeler to set/clear custom names. Queries choices and verifies results through native rules. Labels do not change real properties or water quality.
 [*]🔧 [b]Generic Item Durability[/b]: Query current/maximum durability, percentage and exhaustion for filters and all items using native durability. Displayed and tested values are distinguished; F7 manual details show it too.
 [*]🔁 [b]Adjustable Tool Limits[/b]: F7 sets rounds per message (1–1000, default 16) and tool calls (1–10000, default 48). Saved limits survive restarts. Raise both for repeated tasks; this may increase time and API costs. Running tasks can still be stopped.
 [*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]: Press [b]F7[/b] for settings. Supports any OpenAI-compatible endpoint (DeepSeek, OpenAI, or local models via Ollama/vLLM); includes thinking level configuration and editable system prompts.
@@ -24,6 +25,12 @@ This mod is currently in [b]early active development[/b]. Xiaojing is still lear
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.14[/b]
+[list]
+[*]Added label editing: the assistant queries native choices, uses a real standard label printer and verifies the result. Changing a label does not change real properties or water quality.
+[*]Added blue-labeler naming: set or clear custom item names through the native editor and verify the result. Ownership, locks, target and input limits apply; an editor already in use is left untouched.
+[/list]
+
 [b]v0.7.13[/b]
 [list]
 [*]F7 now lets you set model rounds and tool calls per message for complex repeated tasks. Defaults remain 16 rounds / 48 calls, adjustable up to 1000 rounds / 10000 calls; saved limits survive restarts.
@@ -40,30 +47,6 @@ This mod is currently in [b]early active development[/b]. Xiaojing is still lear
 [list]
 [*]Opened all non-combat item actions: use any non-combat item on another item or character, or use/activate a single item. Test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted.
 [*]Weapons, attacks, enemy targets and item actions during combat remain excluded; trading, dialogue choices and save editing remain manual.
-[/list]
-
-[b]v0.7.10[/b]
-[list]
-[*]Added item use: purification tablets, nutrient tablets, UV filters and water rations on water containers, following native rules.
-[*]Chat history persists per save slot and returns after a restart or reload; only Clear chat removes it. F7 context limits now only choose what is sent to the model.
-[/list]
-
-[b]v0.7.9[/b]
-[list]
-[*]Added liquid handling: pour water/wine, dump at the drain, or fill at the faucet while respecting native ownership, locks, capacity, filters and unlock rules.
-[*]F7 now sets conversation turns and a history token limit, trimming the oldest complete turns; fixed the log version not matching the manifest.
-[/list]
-
-[b]v0.7.8[/b]
-[list]
-[*]Fixed wanted/augmented arrival notices remaining stuck at the bottom of the chat window: reminders now integrate chronologically into the transcript and expire naturally with conversation turns.
-[*]Streamlined Steam Workshop description text to prevent character limit overflow.
-[/list]
-
-[b]v0.7.7[/b]
-[list]
-[*]Added water analysis and injector inspection; immediate arrival alerts for wanted/augmented visitors (excluding security staff).
-[*]Refined goods-picking rules for pinned containers, machine outputs, fridge items, and wine racks.
 [/list]
 
 [i]Older versions are listed in the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url].[/i]

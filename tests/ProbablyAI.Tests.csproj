@@ -22,6 +22,10 @@
     <Compile Include="LiquidTests.cs" />
     <Compile Include="ItemUseTests.cs" />
     <Compile Include="DocumentTests.cs" />
+    <Compile Include="LabelTests.cs" />
+    <Compile Include="..\src\Labels\LabelContracts.cs" Link="Labels\LabelContracts.cs" />
+    <Compile Include="..\src\Labels\LabelProtocol.cs" Link="Labels\LabelProtocol.cs" />
+    <Compile Include="..\src\Labels\LabelService.cs" Link="Labels\LabelService.cs" />
     <Compile Include="PortraitTests.cs" />
     <Compile Include="..\src\UI\PortraitBreathing.cs" Link="PortraitBreathing.cs" />
     <Compile Include="..\src\Documents\DocumentContracts.cs" Link="Documents\DocumentContracts.cs" />

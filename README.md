@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.7.13。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.7.14。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -98,6 +98,10 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 - 不绕过所有权、锁定、容量或界面状态；客人物品只有在原生 `CAN_USE_ON_NON_OWNED_TAG` 允许时才能使用。试纸、扫描仪、书籍等可能打开游戏原生窗口，助手不会代替玩家点选界面；需要水质 / 物品数据时仍用 `analyze_water`、`read_document` 等只读工具。
 - 不代替玩家选择对话、买卖、提交报价或改存档；交易和对话选项仍由玩家操作。结果中的 `changed=false` 表示没有观察到可见变化，不应重复执行同一次操作。
 
+## 标签打印机与物品改名
+
+助手可以使用真实的普通标签打印机修改道具标签，或使用蓝色标签机设置 / 清除自定义名称。例如：“把这瓶水的标签改成基础水”“把这个箱子改名为药品”“清除这个箱子的自定义名称”。先查询原生允许的标签选项，再执行编辑并核对结果；无需玩家手动选择窗口内选项。遵守原生所有权、锁定、目标和名称长度限制；改标签不会改变真实水质或品质，也不会自动交易。已有标签窗口正在使用时需先关闭。
+
 ## 阅读笔记、书籍与指南
 
 当主人问“导师笔记里写了什么”“这本手册怎么讲”“通缉令上写了谁”时，助手会先查找真实物品，再调用只读的 `read_document`：
@@ -192,6 +196,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 | `src/Inspection/` | 机械手、肋明治与等离子燃料鉴定、香烟与食品券外观检查及七个只读模型工具 |
 | `src/Liquids/` | 倒水、倒掉液体和水龙头接水的原生液体操作工具 |
 | `src/Items/` | 非战斗物品对物品使用和单件使用 / 激活的原生适配工具 |
+| `src/Labels/` | 标签选项查询、普通标签机修改标签、蓝色标签机设置 / 清除名称 |
 | `src/Documents/` | 导师笔记、书籍和指南界面的只读文字读取工具 |
 | `src/Tools/ToolRegistry.cs` | 当前和后续工具的统一注册、Schema 与分发 |
 | `src/Services/ConversationMemory.cs` | 完整历史归档、发送上下文裁剪、工具配对与连接变更清理 |
@@ -220,11 +225,11 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-当前基线为 218 项测试（以实际输出为准），覆盖连接与密钥隔离、工具循环和取消、物品查询与通用耐久、嵌套容器与批量移动、客人需求与报价、水质与鉴定、液体操作、物品使用、提示词迁移、聊天持久化与上下文裁剪、本地化和立绘逻辑。测试文件与功能的对应关系见开发导航；原生 UI 和场景行为仍需游戏实测。
+当前基线为 227 项测试（以实际输出为准），覆盖连接与密钥隔离、工具循环和取消、物品查询与通用耐久、嵌套容器与批量移动、客人需求与报价、水质与鉴定、液体操作、物品使用、提示词迁移、聊天持久化与上下文裁剪、本地化和立绘逻辑。测试文件与功能的对应关系见开发导航；原生 UI 和场景行为仍需游戏实测。
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.13/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.14/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

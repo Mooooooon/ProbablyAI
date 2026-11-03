@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.13）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.14）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -226,9 +226,39 @@
 - 结果包含源物品是否被消耗、使用前后数量、是否观察到状态变化，以及目标液量（如果目标是液体容器）。原生动作被接受即返回 `ok`；`changed=false` 表示没有观察到可见变化，不代表可以重复执行。试纸、扫描仪、书籍等可能打开原生窗口，结果会提示按原生界面继续；助手不读取未显示的纯度 / 成分，也不代替玩家点选界面。
 - 不代替玩家选择对话、买卖、提交报价或改存档；交易、对话选项和存档仍由玩家操作。
 
+## 标签打印机与改名
+
+`LabelService` / `ILabelBackend` 为聊天和 F7 助手指令提供三项工具。先查询真实道具与目标物品；普通标签打印机的 identifier 为 `labeler`，蓝色标签机为 `labeler_blue`，不能用名称代替物品 ID。
+
+| 工具 | 参数 | 行为 |
+| --- | --- | --- |
+| `get_label_options` | `tool_item_id`、`target_item_id` | 只读检查标签机是否能作用于目标，返回普通标签机的类别 / 选项，或蓝色标签机的当前自定义名称及长度限制 |
+| `set_item_label` | 上述 ID，加 `category_id`、`condition_id` | 使用普通标签机设置一项原生允许编辑的标签，执行后重新查询核实 |
+| `rename_item` | 上述 ID，加 `name` | 使用蓝色标签机设置自定义名称；`name=""` 清除自定义名称并恢复原名 |
+
+`get_label_options` 返回 `mode`（`labels` / `custom_name`）、`item`、`tool_item_id`、`custom_name`（如有）、`name_character_limit`（改名模式），以及 `labels`。每项标签包含 `category_id`、`name`、`current_condition_id`、`current_display`、`exposed` 和 `choices`；每个选项包含 `condition_id` 与 `display`。这些是原生标签窗口会显示的数据，不读取隐藏真实属性。选项来自 `LabelerHelper.IsEditableLabelFeature` 与 `ItemConditionList`，因此游戏禁止编辑的类别不会返回。不要猜测 ID，也不要把标签宣称的属性当成真实属性。
+
+例如先用查询得到的物品 ID 调用：
+
+```json
+{"tool_item_id":"i-labeler","target_item_id":"i-bottle"}
+```
+
+然后从结果挑出主人要求的 `category_id` / `condition_id` 传给 `set_item_label`。给多个物品贴相同标签时，各目标仍需查询兼容选项并分别执行。改名示例（示例 ID 必须替换为实际查询值）：
+
+```json
+{"tool_item_id":"i-blue-labeler","target_item_id":"i-bottle","name":"基础水"}
+```
+
+这三个工具都先刷新物品树并执行原生 `MayTarget` / `CanTarget` 检查，不绕过所有权、锁定、目标和场景限制。编辑还通过 `GameItemUseBackend` 走真实物品对物品使用路径，再调用 `LabelerElement.OnDropdownValueChanged` 或 `LabelerBlueUIManager.OnEditEnd` / `OnClearButtonClick`。不直接修改存档，不凭空创建标签机。完成或出错后关闭本次打开的标签窗口；已有标签窗口正在使用时返回 `label_ui_busy`，不覆盖玩家正在编辑的内容。普通 `use_item_on_item` 对标签机只会打开窗口；要完成编辑应使用上述专用工具。
+
+名称最多 200 个 UTF-16 字符，并遵守原生输入框更短的上限，不接受换行、控制字符或纯空白名称；只有空字符串表示清除名称。不修改 identifier；原生禁止对档案架 `dossier` 改名。标签只能选查询返回的原生选项，不能填写任意属性或数值；改标签可能清除原生揭露标记，但不会因此净化液体或改变真实品质，相关报价影响仍由游戏处理，不自动完成交易。
+
+编辑结果返回 `before`、`after` 和 `changed`。只有实际重新读取的标签 / 名称与请求一致才返回 `ok`；已符合请求时可返回 `changed=false`。不能核实时返回 `not_applied`，异常时返回 `label_failed`；操作可能已有部分原生效果，应先查询而非盲目重试。道具失效、选项失效、错误标签机、名称过长和原生拒绝均返回对应错误。当前原生窗口显示、事件回调与同帧连续编辑仅通过真实游戏程序集编译验证，仍需游戏实测；模拟测试覆盖协议、参数、结果核实、错误及完整模型工具循环。
+
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`LiquidService.Register` 注册 3 个液体操作工具，`ItemUseService.Register` 注册 2 个物品使用工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 25 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`LiquidService.Register` 注册 3 个液体操作工具，`ItemUseService.Register` 注册 2 个物品使用工具，`DocumentService.Register` 注册 1 个文档阅读工具，`LabelService.Register` 注册 3 个标签工具，共 28 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；默认每条消息最多 16 轮 / 48 次模型工具调用；F7 可设置处理轮数（1–1000，含最终回复的模型请求）与调用次数（1–10000），保存后下条消息生效。调用次数不含消息开始时自动刷新的客人 / 柜台实况。若模型一轮返回的整批调用会超出剩余次数，该批全部不执行。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 

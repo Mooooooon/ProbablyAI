@@ -59,7 +59,7 @@ dotnet build .\ProbablyAI.csproj -c Release -p:GameDirectory='D:\SteamLibrary\st
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-测试输出是最终依据；当前基线为 218 项，后续以实际输出为准。提交前必须全绿。所有新增逻辑优先补纯逻辑测试；涉及 Unity 原生对象的适配层可以只做编译验证，但要在说明中写清未覆盖的部分。
+测试输出是最终依据；当前基线为 227 项，后续以实际输出为准。提交前必须全绿。所有新增逻辑优先补纯逻辑测试；涉及 Unity 原生对象的适配层可以只做编译验证，但要在说明中写清未覆盖的部分。
 
 测试使用非默认游戏目录时，同样在 `dotnet run` 命令中传入 `-p:GameDirectory=...`。
 

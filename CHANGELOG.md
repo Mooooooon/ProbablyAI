@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 0.7.14 — 2026-11-03
+
+### 中文
+
+- 新增标签编辑：助手先查询原生可编辑选项，再使用真实的普通标签打印机修改标签并核对结果。改标签不会改变真实品质或水质。
+- 新增蓝色标签机改名：可设置或清除道具自定义名称，自动完成原生窗口内的编辑并核实；遵守所有权、锁定、目标和输入长度限制，不覆盖玩家已打开的标签编辑窗口。
+
+### English
+
+- Added label editing: the assistant queries native choices, uses a real standard label printer and verifies the result. Changing a label does not change real properties or water quality.
+- Added blue-labeler naming: set or clear custom item names through the native editor and verify the result. Ownership, locks, target and input limits apply; an editor already in use is left untouched.
+
 ## 0.7.13 — 2026-11-03
 
 ### 中文

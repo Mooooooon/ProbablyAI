@@ -8,6 +8,7 @@ using ProbablyAI.Documents;
 using ProbablyAI.Inspection;
 using ProbablyAI.Items;
 using ProbablyAI.Liquids;
+using ProbablyAI.Labels;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
@@ -108,6 +109,7 @@ namespace ProbablyAI
             new LiquidService(new GameLiquidBackend(handsBackend)).Register(Tools);
             new ItemUseService(new GameItemUseBackend(handsBackend)).Register(Tools);
             new DocumentService(new GameDocumentBackend(handsBackend)).Register(Tools);
+            new LabelService(new GameLabelBackend(handsBackend)).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);
             agent = new HandsAgent(transport, Tools, refreshShopContext: true);
             conversation = CreateConversation();

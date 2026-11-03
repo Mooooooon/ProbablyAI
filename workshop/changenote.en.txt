@@ -1,3 +1,3 @@
-v0.7.13:
-- F7 now lets you set model rounds and tool calls per message for complex repeated tasks. Defaults remain 16 rounds / 48 calls, adjustable up to 1000 rounds / 10000 calls; saved limits survive restarts.
-- Item queries now show generic visible durability: current/maximum values, remaining percentage and exhaustion, for filters and all items using native durability. Displayed and tested readings are distinguished. F7 manual details show it too; requery after using an item or filtering water.
+v0.7.14:
+- Added label editing: the assistant queries native choices, uses a real standard label printer and verifies the result. Changing a label does not change real properties or water quality.
+- Added blue-labeler naming: set or clear custom item names through the native editor and verify the result. Ownership, locks, target and input limits apply; an editor already in use is left untouched.
