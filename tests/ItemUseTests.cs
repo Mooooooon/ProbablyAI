@@ -112,6 +112,10 @@ internal static partial class Program
             Assert(ItemUseRules.ValidateUse(Source("gun", null, 1, combat: true), other).Code == "combat_item", "combat source accepted");
             Assert(ItemUseRules.ValidateUse(item, Target("enemy", 0, enemy: true)).Code == "combat_target", "enemy target accepted");
             Assert(ItemUseRules.ValidateUse(item, Target("gun", 0, combat: true)) == null, "weapon target rejected");
+            Assert(ItemUseRules.ValidateUse(Source("knife", null, 1, combat: true, weapon: true), Target("rat", 0, animal: true)) == null,
+                "weapon-on-animal slaughter rejected");
+            Assert(ItemUseRules.ValidateUse(Source("knife", null, 1, combat: true, weapon: true), other).Code == "combat_item",
+                "weapon on a non-animal target accepted");
             Assert(ItemUseRules.ValidateUse(item, item).Code == "same_item", "self use accepted");
             Assert(ItemUseRules.ValidateUse(Source("locked", null, 1, locked: true), other).Code == "container_locked", "locked source accepted");
             Assert(ItemUseRules.ValidateActivate(Source("gun", null, 1, combat: true)).Code == "combat_item", "combat activation accepted");
@@ -181,19 +185,20 @@ internal static partial class Program
     }
 
     private static ItemUseReading Source(string id, string kind, int quantity = 1, string name = null,
-        bool locked = false, bool combat = false)
+        bool locked = false, bool combat = false, bool weapon = false)
         => new ItemUseReading
         {
             Item = new ItemInfo { Id = id, Name = name ?? id, Path = "物品栏 → " + (name ?? id), Quantity = quantity, Owned = true },
-            Kind = kind, Quantity = quantity, Locked = locked, Combat = combat
+            Kind = kind, Quantity = quantity, Locked = locked, Combat = combat, Weapon = weapon
         };
 
     private static ItemUseReading Target(string id, int volumeUl, int capacityUl = 1000000,
-        bool locked = false, bool combat = false, bool enemy = false)
+        bool locked = false, bool combat = false, bool enemy = false, bool animal = false)
         => new ItemUseReading
         {
             Item = new ItemInfo { Id = id, Name = id, Path = "物品栏 → " + id, Quantity = 1, Owned = true },
-            Locked = locked, Combat = combat, Enemy = enemy, LiquidContainer = true, SupportedLiquid = true,
+            Locked = locked, Combat = combat, Enemy = enemy, Animal = animal,
+            LiquidContainer = true, SupportedLiquid = true,
             VolumeUl = volumeUl, CapacityUl = capacityUl
         };
 

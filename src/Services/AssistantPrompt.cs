@@ -205,6 +205,12 @@ namespace ProbablyAI.Services
         private const string EnglishGeneralItemUseGuidance =
             "\n\nWhen Master asks to use an item, query the real item first, then call `use_item_on_item` (use on another item or character) or `activate_item` (use or activate a single item, like double-clicking). Except for weapons, ammunition, explosives, combat abilities, enemy targets and actions during combat, non-combat items follow the game's native rules; test strips, scanners, books, medical items, surgery, animals, machines and tools may open native windows, consume items or change state, so report only what the result shows. The assistant does not choose dialogue, trade, submit quotes or edit saves, and explains native refusals instead of bypassing ownership, locks, capacity or rules. Never claim an effect that was not observed.";
 
+        private const string ChineseWeaponGuidance =
+            "\n\n这个游戏不是战斗游戏：武器主要用于屠宰动物（如老鼠）获取肉类，唯一类似战斗的动作是用霰弹枪击杀改造体顾客，属于商店的特殊射击模式。助手可以对动物使用武器或刀具进行屠宰，但不会对顾客、敌人或其他角色使用武器，也不会进入射击模式或操作霰弹枪击杀；主人明确要求时说明这不是助手代操作的动作。除武器对顾客 / 敌人、弹药、爆炸物、战斗能力和被锁定的操作外，其他非战斗物品按原生规则使用；试纸、扫描仪、书籍、医疗、手术、动物、机器和工具等可能打开原生窗口或消耗物品。助手不代替玩家选择对话、买卖、提交报价或改存档；原生拒绝时说明原因，不绕过所有权、锁定、容量或规则。不要声称未观察到的效果。";
+
+        private const string EnglishWeaponGuidance =
+            "\n\nThis is not a combat game: weapons are mainly used to slaughter animals (such as rats) for meat, and the only combat-like action is shooting an augmented customer with the shotgun, which is the shop's special shooting mode. The assistant may use a weapon or blade on an animal to slaughter it, but never on customers, enemies or other characters, and never enters shooting mode or operates the shotgun kill; if Master asks, explain that this is not something the assistant performs. Apart from weapons used on customers/enemies, ammunition, explosives, combat abilities and locked actions, other non-combat items follow the native rules; test strips, scanners, books, medical items, surgery, animals, machines and tools may open native windows or consume items. The assistant does not choose dialogue, trade, submit quotes or edit saves, and explains native refusals instead of bypassing ownership, locks, capacity or rules. Never claim an effect that was not observed.";
+
         // The released v0.7.8 default, kept recognizable so unedited saves upgrade.
         internal static readonly string PreviousChineseLiquidDefault = PreviousChineseWaterInjectorDefault
             .Replace(LegacyChineseInUseGuidance, CurrentChineseInUseGuidance)
@@ -224,9 +230,14 @@ namespace ProbablyAI.Services
 
         internal static readonly string PreviousEnglishGeneralItemUseDefault = PreviousEnglishItemUseDefault + EnglishItemUseGuidance;
 
-        public static readonly string ChineseDefault = PreviousChineseGeneralItemUseDefault + ChineseGeneralItemUseGuidance;
+        // The released v0.7.11 default with the general non-combat item guidance.
+        internal static readonly string PreviousChineseWeaponDefault = PreviousChineseGeneralItemUseDefault + ChineseGeneralItemUseGuidance;
 
-        public static readonly string EnglishDefault = PreviousEnglishGeneralItemUseDefault + EnglishGeneralItemUseGuidance;
+        internal static readonly string PreviousEnglishWeaponDefault = PreviousEnglishGeneralItemUseDefault + EnglishGeneralItemUseGuidance;
+
+        public static readonly string ChineseDefault = PreviousChineseWeaponDefault + ChineseWeaponGuidance;
+
+        public static readonly string EnglishDefault = PreviousEnglishWeaponDefault + EnglishWeaponGuidance;
 
         internal static readonly string PreviousChineseChargingDefault = PreviousChineseBatteryDefault +
             "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
@@ -286,6 +297,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseLiquidDefault || value == PreviousEnglishLiquidDefault ||
                 value == PreviousChineseItemUseDefault || value == PreviousEnglishItemUseDefault ||
                 value == PreviousChineseGeneralItemUseDefault || value == PreviousEnglishGeneralItemUseDefault ||
+                value == PreviousChineseWeaponDefault || value == PreviousEnglishWeaponDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

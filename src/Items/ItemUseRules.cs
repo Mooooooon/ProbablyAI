@@ -17,8 +17,8 @@ namespace ProbablyAI.Items
                 return Error("item_not_found", T("物品已不在当前容器树中。"));
             if (!string.IsNullOrEmpty(source.Item.Id) && source.Item.Id == target.Item.Id)
                 return Error("same_item", T("不能对物品自身使用。"));
-            if (source.Combat)
-                return Error("combat_item", T("武器、弹药、爆炸物、战斗能力或敌人目标不能由助手使用。"));
+            if (source.Combat && !(source.Weapon && target.Animal))
+                return Error("combat_item", T("武器只能用于屠宰动物；不会对顾客、敌人或其他角色使用武器。"));
             if (target.Enemy)
                 return Error("combat_target", T("不能对敌人使用物品。"));
             if (source.Locked || target.Locked)

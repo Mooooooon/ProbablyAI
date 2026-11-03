@@ -15,13 +15,19 @@ This mod is currently in [b]early active development[/b]. Xiaojing is still lear
 [*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Quick buttons for “Pick goods for customer” and “Appraise customer items”; whispers local notices when wanted or augmented visitors arrive (on-duty security staff excluded).
 [*]📖 [b]Read Notes, Books & Guides[/b]: Read-only access to mentor notes, intel slips, book pages, and visible text on guide cards and wanted posters.
 [*]💧 [b]Liquid Handling[/b]: Pour water or wine, dump a container at the drain, or fill bottles at the faucet in plain language. Uses the native item-on-item logic and respects ownership, locks, capacity, filters and faucet unlocks, reporting actual volumes and remaining levels.
-[*]💊 [b]Item Use[/b]: Perform native non-combat item-on-item and use/activate actions like a player: test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted. Weapons, attacks, trading and save editing remain excluded; the game's native rules decide the result.
+[*]💊 [b]Item Use[/b]: Perform native non-combat item-on-item and use/activate actions like a player: test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted. Weapons can slaughter animals (such as rats), but are never used on customers or enemies, and the shotgun shooting mode is not automated; trading and save editing remain excluded.
 [*]💾 [b]Persistent Chat & Adjustable Context[/b]: The complete transcript is saved per save slot locally and restored after a restart or reload; only Clear chat removes it. F7 sets conversation turns (1–50) and a history token limit (1,000–200,000, estimated) for what is sent to the model; excess turns are omitted without deleting the transcript or splitting tool pairs.
 [*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]: Press [b]F7[/b] for settings. Supports any OpenAI-compatible endpoint (DeepSeek, OpenAI, or local models via Ollama/vLLM); includes thinking level configuration and editable system prompts.
 [*]🌐 [b]Automatic Bilingual Support[/b]: Mod UI and prompts automatically switch with the game's Chinese/English locale.
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.12[/b]
+[list]
+[*]Corrected the game-mechanics description: this is not a traditional combat game; weapons are mainly used to slaughter animals (such as rats) for meat, and the only combat-like action is the special shotgun shooting mode against augmented customers.
+[*]The assistant may use weapons on animals, but never on customers, enemies or other characters, and never automates the shotgun kill.
+[/list]
+
 [b]v0.7.11[/b]
 [list]
 [*]Opened all non-combat item actions: use any non-combat item on another item or character, or use/activate a single item. Test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted.

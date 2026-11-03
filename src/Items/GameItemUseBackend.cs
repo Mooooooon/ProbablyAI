@@ -93,6 +93,8 @@ namespace ProbablyAI.Items
                 Locked = owner != null && owner.Locked,
                 Combat = IsCombatItem(item),
                 Enemy = item.IsTag("enemy"),
+                Weapon = item.IsGameItemType("WEAPON"),
+                Animal = item.IsTag("ANIMAL_ITEM_TAG"),
                 Quantity = item.unitCount,
                 LiquidContainer = container,
                 SupportedLiquid = hasCapacity && capacity > 0,

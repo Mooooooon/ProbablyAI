@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.7.11。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.7.12。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -21,7 +21,7 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 - F6：本次运行中显示 / 隐藏立绘。F7：打开 / 关闭连接配置窗口（输入框聚焦时也能关闭）。
 - 客人进店时自动小声提醒：符合通缉令特征或改造体时，立即在聊天或屏幕上的小卡片里提醒，不必等到聊天。提醒只触发一次，不向客人透露，也不会自动举报或攻击；治安官、检查员等当值安保访客不会被误报。可在 Mods 设置的“客人提醒”中关闭。
 - 可按自然语言指令倒水、倒酒、倒掉液体和在水龙头接水，使用游戏原生的物品对物品操作，并由游戏判定所有权、锁定、容量、过滤器和水龙头解锁状态。
-- 可像玩家一样对非战斗物品执行原生物品对物品和使用 / 激活操作：试纸、扫描仪、书籍、医疗、手术、动物、食物、机器和工具等都可以尝试；武器、攻击、交易和改存档仍不开放。
+- 可像玩家一样对非战斗物品执行原生物品对物品和使用 / 激活操作：试纸、扫描仪、书籍、医疗、手术、动物、食物、机器和工具等都可以尝试；武器可用于屠宰动物，但不会对顾客、敌人使用或代操作霰弹枪射击模式，交易和改存档仍不开放。
 - 聊天上下文上限可调：F7 可设置发送给模型的对话轮次（1–50）和历史 token 估算上限（1,000–200,000），超限时从最旧的完整轮次开始省略；完整聊天记录按存档槽保存在本机，重启后恢复，手动清空聊天才删除。
 - 主菜单 → Mods → 深空AI：可能是DeepSeek 的齿轮中，可保存高度、左右位置、底部位置、透明度、呼吸动画及快捷键设置。
 
@@ -84,7 +84,7 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 
 ## 使用物品
 
-助手现在可以像玩家一样对非战斗物品执行原生的“物品对物品”和“使用 / 激活”操作。例如：“用水质试纸测一下这瓶水”“给枪装上这个瞄准镜”“用医疗包处理这只动物”“阅读这本书”“对着这瓶水使用净水药片”。
+助手现在可以像玩家一样对非战斗物品执行原生的“物品对物品”和“使用 / 激活”操作。例如：“用水质试纸测一下这瓶水”“给枪装上这个瞄准镜”“用医疗包处理这只动物”“用砍刀屠宰这只老鼠获取肉类”“阅读这本书”“对着这瓶水使用净水药片”。
 
 - `use_item_on_item`：把一个真实物品拖到另一个物品或角色上，走原生 `MayTarget` / `CanTarget` / `Target`。
 - `activate_item`：使用 / 激活单个物品，相当于在物品栏里双击，走原生 `MayActivateSlotItem` / `CanActivateSlotItem` / `ActivateSlotItem`。
@@ -92,7 +92,7 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 范围与限制：
 
 - 不再限制物品白名单；试纸、扫描仪、书籍、医疗、手术、动物、食物、机器和工具等非战斗物品都可以尝试，是否允许、消耗、打开窗口和产生效果完全由游戏原生规则决定。
-- 武器、弹药、爆炸物、战斗能力不能作为源物品，敌人目标和战斗中的操作会被拒绝；目标是武器、防具、机器、动物或医疗对象等非敌人时仍可使用。
+- 武器可以用于屠宰动物（如老鼠）获取肉类；不会对顾客、敌人或其他角色使用武器，也不会进入射击模式或代操作霰弹枪击杀改造体顾客。武器、弹药、爆炸物和战斗能力不能用于其他目标。
 - 不绕过所有权、锁定、容量或界面状态；客人物品只有在原生 `CAN_USE_ON_NON_OWNED_TAG` 允许时才能使用。试纸、扫描仪、书籍等可能打开游戏原生窗口，助手不会代替玩家点选界面；需要水质 / 物品数据时仍用 `analyze_water`、`read_document` 等只读工具。
 - 不代替玩家选择对话、买卖、提交报价或改存档；交易和对话选项仍由玩家操作。结果中的 `changed=false` 表示没有观察到可见变化，不应重复执行同一次操作。
 
@@ -220,7 +220,7 @@ dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.11/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.12/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

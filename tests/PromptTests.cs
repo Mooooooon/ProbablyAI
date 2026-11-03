@@ -217,15 +217,20 @@ internal static partial class Program
         {
             Assert(AssistantPrompt.ChineseDefault.Contains("use_item_on_item") &&
                 AssistantPrompt.ChineseDefault.Contains("activate_item") &&
+                AssistantPrompt.ChineseDefault.Contains("不是战斗游戏") &&
+                AssistantPrompt.ChineseDefault.Contains("屠宰动物") &&
+                AssistantPrompt.ChineseDefault.Contains("霰弹枪") &&
                 AssistantPrompt.ChineseDefault.Contains("非战斗物品") &&
-                AssistantPrompt.ChineseDefault.Contains("武器") &&
                 AssistantPrompt.ChineseDefault.Contains("不绕过") &&
                 AssistantPrompt.ChineseDefault.Contains("不要声称未观察到的效果"), "Chinese general item-use guidance missing");
             Assert(AssistantPrompt.EnglishDefault.Contains("use_item_on_item") &&
                 AssistantPrompt.EnglishDefault.Contains("activate_item") &&
+                AssistantPrompt.EnglishDefault.Contains("not a combat game") &&
+                AssistantPrompt.EnglishDefault.Contains("slaughter animals") &&
+                AssistantPrompt.EnglishDefault.Contains("shotgun") &&
                 AssistantPrompt.EnglishDefault.Contains("non-combat") &&
                 AssistantPrompt.EnglishDefault.Contains("Never claim an effect"), "English general item-use guidance missing");
-            foreach (string previous in new[] { AssistantPrompt.PreviousChineseGeneralItemUseDefault, AssistantPrompt.PreviousEnglishGeneralItemUseDefault })
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseWeaponDefault, AssistantPrompt.PreviousEnglishWeaponDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "general item-use default did not upgrade");
         });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>

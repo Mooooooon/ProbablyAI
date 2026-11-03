@@ -13,6 +13,8 @@ namespace ProbablyAI.Items
         public bool Locked { get; set; }
         public bool Combat { get; set; }
         public bool Enemy { get; set; }
+        public bool Weapon { get; set; }
+        public bool Animal { get; set; }
         public int Quantity { get; set; }
 
         public bool LiquidContainer { get; set; }

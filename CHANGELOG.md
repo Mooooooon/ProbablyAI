@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.7.12 — 2026-11-03
+
+### 中文
+
+- 修正提示词对游戏机制的理解：这不是传统战斗游戏；武器主要用于屠宰动物（如老鼠）获取肉类，唯一类似战斗的动作是对顾客使用霰弹枪击杀改造体，属于商店的特殊射击模式。
+- 开放武器用于动物屠宰：`use_item_on_item` 允许武器 / 刀具对动物目标执行原生屠宰或采集回调；武器仍不会对顾客、敌人或其他角色使用，也不会进入射击模式或自动操作霰弹枪击杀。
+- 修正相关说明中的“战斗中”泛化表述，明确只有对顾客的霰弹枪射击模式不代操作；其他非战斗物品操作与限制不变。
+
+### English
+
+- Corrected the prompt's understanding of the game: this is not a traditional combat game. Weapons are mainly used to slaughter animals (such as rats) for meat, and the only combat-like action is shooting an augmented customer with the shotgun, which is the shop's special shooting mode.
+- Opened weapon use for animal slaughter: `use_item_on_item` may use a weapon or blade on an animal through the native slaughter/harvest callbacks. Weapons are still never used on customers, enemies or other characters, and the assistant never enters shooting mode or performs the shotgun kill automatically.
+- Corrected generic "in combat" wording; only the customer shotgun shooting mode is not automated. Other non-combat item actions and limits are unchanged.
+
 ## 0.7.11 — 2026-11-03
 
 ### 中文

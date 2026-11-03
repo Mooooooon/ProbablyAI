@@ -19,6 +19,7 @@ namespace ProbablyAI.Localization
             ["不能对物品自身使用。"] = "An item cannot be used on itself.",
             ["武器、弹药、爆炸物、战斗能力或敌人目标不能由助手使用。"] = "Weapons, ammunition, explosives, combat abilities and enemy targets cannot be used by the assistant.",
             ["武器、弹药、爆炸物或战斗能力不能由助手使用。"] = "Weapons, ammunition, explosives and combat abilities cannot be used by the assistant.",
+            ["武器只能用于屠宰动物；不会对顾客、敌人或其他角色使用武器。"] = "Weapons may only be used to slaughter animals; they are never used on customers, enemies or other characters.",
             ["不能对敌人使用物品。"] = "Items cannot be used on enemies.",
             ["目标容器不支持游戏的原生液体数据，无法安全使用。"] = "The target container does not expose the game's native liquid data and cannot be used safely.",
             ["物品或目标容器当前被锁定，无法使用。"] = "The item or target container is locked and cannot be used.",

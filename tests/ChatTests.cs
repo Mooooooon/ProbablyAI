@@ -16,7 +16,7 @@ internal static partial class Program
     private static async Task RunChatTests()
     {
         await Check("branding preserves the requested exact display name", () =>
-            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.7.11", "branding mismatch"));
+            Assert(Branding.Name == "深空AI：可能是DeepSeek" && Branding.Version == "0.7.12", "branding mismatch"));
         await Check("branding version matches the manifest", () =>
         {
             var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "manifest.xml"));

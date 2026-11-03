@@ -73,7 +73,7 @@ These tools do not create liquid or containers, destroy items, or change ownersh
 
 ## Using items
 
-Xiaojing can now perform native non-combat item-on-item and use/activate actions like a player. Examples: “Test this bottle with a water test strip,” “Attach this scope to the gun,” “Treat this animal with the medical kit,” “Read this book,” or “Use a purification tablet on this bottle.”
+Xiaojing can now perform native non-combat item-on-item and use/activate actions like a player. Examples: “Test this bottle with a water test strip,” “Attach this scope to the gun,” “Treat this animal with the medical kit,” “Slaughter this rat with the cleaver for meat,” “Read this book,” or “Use a purification tablet on this bottle.”
 
 - `use_item_on_item` applies one real item to another item or character through the native `MayTarget` / `CanTarget` / `Target` path.
 - `activate_item` uses or activates one item, equivalent to double-clicking it in the inventory, through the native `MayActivateSlotItem` / `CanActivateSlotItem` / `ActivateSlotItem` path.
@@ -81,7 +81,7 @@ Xiaojing can now perform native non-combat item-on-item and use/activate actions
 Scope and limits:
 
 - There is no item whitelist. Test strips, scanners, books, medical items, surgery, animals, food, machines and tools can all be attempted; the game's native rules decide whether the action is allowed, what is consumed, which windows open and what effect occurs.
-- Weapons, ammunition, explosives and combat abilities cannot be used as the source; enemy targets and actions during combat are rejected. Target weapons, armor, machines, animals and medical subjects are still allowed.
+- Weapons may be used on animals (such as rats) for slaughter and meat; they are never used on customers, enemies or other characters, and the assistant never enters shooting mode or performs the shotgun kill on an augmented customer. Ammunition, explosives and combat abilities cannot be used on other targets.
 - Ownership, locks, capacity and screen state are never bypassed. Customer items are usable only when the native `CAN_USE_ON_NON_OWNED_TAG` allows it. Test strips, scanners and books may open native windows; the assistant does not click those windows or replace `analyze_water` / `read_document` for data.
 - The assistant does not choose dialogue, trade, submit quotes or edit saves; those remain manual. `changed=false` means no visible change was observed, so the same action should not be repeated blindly.
 
@@ -104,4 +104,4 @@ API keys are used only for your configured endpoint and are not put into chat or
 
 The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
 
-Version 0.7.11. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.7.12. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
