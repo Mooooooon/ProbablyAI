@@ -108,4 +108,8 @@ API keys are used only for your configured endpoint and are not put into chat or
 
 The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
 
+## Development
+
+Start with [AGENTS.md](https://github.com/Mooooooon/ProbablyAI/blob/main/AGENTS.md) and the [development map (Chinese)](https://github.com/Mooooooon/ProbablyAI/blob/main/docs/development.md). The map covers module responsibilities, runtime call flow, task-to-code/test lookup, game/config/build/release paths, and steps for extending tools or settings. Run the console tests with `dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release`; both build and tests accept `-p:GameDirectory=...`. The current baseline is 218 checks, with actual output authoritative. Native UI and scene behavior still require in-game testing.
+
 Version 0.7.13. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.

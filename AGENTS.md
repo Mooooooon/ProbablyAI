@@ -7,6 +7,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
+| [docs/development.md](docs/development.md) | 开发导航：目录职责、调用链、按任务找代码 / 测试、配置与产物路径 |
 | `README.md` / `README.en.md` | 功能、安装、构建、发布包说明 |
 | `docs/hands-api.md` | 容器 / 物品 / 客人 / 鉴定工具的协议与行为 |
 | `docs/workshop-publishing.md` | SteamCMD 上传、VDF、公开条目信息 |
@@ -14,6 +15,19 @@
 | `workshop/description.*.bbcode` | 创意工坊商店页文案与更新日志 |
 | `workshop/changenote.*.txt` | Steam 更新备注（按语言） |
 | `scripts/*.ps1` | 构建、安装、打包、校验的实际行为 |
+
+## 开发快速定位
+
+先看 [开发导航](docs/development.md)，再按任务进入对应领域，不必每次通读全仓库：
+
+- 生命周期 / 工具组装：`src/ModEntry.cs` → `src/AssistantController.cs` 的 `OnGameLoaded`。
+- F7 配置：`src/UI/ConnectionWindow.cs` → `src/Services/ConnectionOptions.cs` / `ConnectionSettingsStore.cs`；Mods 齿轮设置在 `src/AssistantSettings.cs`，两套持久化路径不同。
+- 工具执行：`src/Hands/HandsAgent.cs` → `src/Tools/ToolRegistry.cs` → 各领域 Service → GameBackend；参数与 DTO 看 Protocol / Contracts。
+- 通用物品字段 / 耐久：`src/Hands/HandsContracts.cs`、`GameHandsBackend.cs`、`GameItemDurability.cs`；手动详情在 `src/UI/HandsWindow.cs`。
+- 测试入口：`tests/Program.cs`；项目显式链接源码 / 接口桩，新增文件检查 `tests/ProbablyAI.Tests.csproj`，用 `dotnet run` 执行测试。
+- 本机安装包 `dist/ProbablyAI/` 与工坊包 `dist/workshop/<version>/content/` 内容不同；后者中文指南来自 `workshop/README.zh.md`。详见开发导航路径表。
+
+目录、调用入口、配置文件名或测试接线发生变化时，同步维护开发导航。仓库文档不记录个人绝对路径；游戏位置使用 `GameDirectory` 覆盖。
 
 ## 项目事实
 
@@ -45,7 +59,9 @@ dotnet build .\ProbablyAI.csproj -c Release -p:GameDirectory='D:\SteamLibrary\st
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-测试输出是最终依据；当前为 208 项。提交前必须全绿。所有新增逻辑优先补纯逻辑测试；涉及 Unity 原生对象的适配层可以只做编译验证，但要在说明中写清未覆盖的部分。
+测试输出是最终依据；当前基线为 218 项，后续以实际输出为准。提交前必须全绿。所有新增逻辑优先补纯逻辑测试；涉及 Unity 原生对象的适配层可以只做编译验证，但要在说明中写清未覆盖的部分。
+
+测试使用非默认游戏目录时，同样在 `dotnet run` 命令中传入 `-p:GameDirectory=...`。
 
 ### 安装到本机游戏
 
@@ -76,7 +92,8 @@ dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 | 文件 | 内容 |
 | --- | --- |
 | `ProbablyAI.csproj` | `<Version>` |
-| `manifest.xml` | `<ModVersion>` |
+| `manifest.xml` | `<ModVersion>`、功能变化时的 Description（并同步英文翻译） |
+| `src/Branding.cs` | `Version`，须与 manifest 一致 |
 | `README.md` | 顶部“当前版本”、`dist/workshop/<version>` 路径 |
 | `README.en.md` | 底部 `Version ...` |
 | `docs/hands-api.md` | 标题版本 |

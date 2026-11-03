@@ -169,6 +169,8 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 
 ## 扩展入口
 
+开发前先读 [AGENTS.md](https://github.com/Mooooooon/ProbablyAI/blob/main/AGENTS.md)，再用 [开发导航](https://github.com/Mooooooon/ProbablyAI/blob/main/docs/development.md) 定位代码。导航包含模块职责、运行调用链、按任务查找代码与测试、配置 / 游戏 / 构建 / 发布路径，以及新增工具和配置的修改步骤；无需先通读全部源码。下面是常用文件索引，详细开发导航统一在该文档维护。
+
 | 文件 | 用途 |
 | --- | --- |
 | `src/ModEntry.cs` | 原生 IMod 生命周期、持久配置与客户端初始化 |
@@ -192,7 +194,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 | `src/Items/` | 非战斗物品对物品使用和单件使用 / 激活的原生适配工具 |
 | `src/Documents/` | 导师笔记、书籍和指南界面的只读文字读取工具 |
 | `src/Tools/ToolRegistry.cs` | 当前和后续工具的统一注册、Schema 与分发 |
-| `src/Services/ConversationMemory.cs` | 有限聊天历史、完整工具配对与连接变更清理 |
+| `src/Services/ConversationMemory.cs` | 完整历史归档、发送上下文裁剪、工具配对与连接变更清理 |
 | `src/Services/IAssistantService.cs` | AI 异步接口、只读上下文、OpenAI 兼容服务 |
 | `src/Services/OpenAiApiClient.cs` | 模型列表、Chat Completions、超时取消与错误处理 |
 | `src/Services/ConnectionSettingsStore.cs` | 本机连接配置和可选密钥保存 |
@@ -209,7 +211,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 
 已实现 OpenAI 兼容格式的 `GET /models` 和非流式 `POST /chat/completions`；JSON 序列化使用游戏自带的 Newtonsoft.Json，不分发额外运行库。默认配置对应 [DeepSeek 官方入门](https://api-docs.deepseek.com/en/)。协议参考：[模型列表](https://developers.openai.com/api/reference/resources/models/methods/list)、[Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)。
 
-游戏数据仅在 Unity 主线程读取为 `AssistantContext`；异步服务使用这个快照。取消令牌用于切换场景 / 关闭面板。当前不写入游戏存档或改变经济数值。
+游戏工具通过各领域 Service 与原生适配器在 Unity 主线程读取或操作实际物品；HTTP 请求异步执行，取消令牌用于切换场景 / 关闭面板。聊天通过工具结果获得实况，F7 测试对话走独立的 `IAssistantService` 接口。不会直接编辑存档或代办经济结算。
 
 ## 自动验证
 
@@ -218,7 +220,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-208 项测试覆盖连接配置与密钥、模型列表、认证隔离、Chat Completions、工具调用、嵌套容器、同名物品、移动、批量移动与逐件失败隔离、批量报价与合计预算、多样性去重与拒收、锁定限制、食品类别、透明像素命中、立绘呼吸曲线、未来工具注册、多轮历史、取消后工具配对、客人及预算查询、录音机对话记录、到店通缉令与改造体提醒、提醒去重与安保排除、文档阅读、设备供电电池与冰箱未冻好物品过滤、固定物品与固定容器/机器/酒架过滤、赃物与热度过滤和充电标记、液体操作、物品使用、可调聊天上下文与持久化、可编辑提示词及版本一致性，以及双向语言切换、翻译格式参数、工具说明切换、自定义提示词保留和英文模型请求。其中 20 项价格测试覆盖乘区、实时事件与零售波动、多种多样、预算临界值、防止重复加价、嵌套内容继承和只读查询；10 项实况测试覆盖成交后空柜台、客人变化、已售物品所有权、历史查询失效、刷新失败、分页、取消和默认提示词迁移；26 项鉴定测试覆盖原生机械手价格与套装判断、肋明治生产信息与包装缺陷、等离子燃料匣状态与基准价、香烟可见异常及未知外观、食品券面值与防伪标 / 芯片 / 文字异常、注射器破损 / 过期 / 召回 / 外观异常、水质标签与已测试 / 扫描纯度、隐藏标签隔离、解锁和物品 ID 校验、实时刷新及模型调用；12 项液体与提示词测试覆盖工具注册与参数校验、实际倒出 / 接收量、过滤器截留、滴管吸取方向、无液体移动、原生拒绝、成品酒空间、排水口 / 水龙头操作、模型调用和英文说明；10 项物品使用测试覆盖工具注册、通用物品对物品、净水药片结果、无可见变化、激活、战斗 / 锁定规则、原生拒绝、模型调用和英文说明；8 项上下文测试覆盖上限归一化、token 估算、完整归档与发送裁剪、请求前应用、连接隔离、持久化恢复、手动清理和损坏文件。
+当前基线为 218 项测试（以实际输出为准），覆盖连接与密钥隔离、工具循环和取消、物品查询与通用耐久、嵌套容器与批量移动、客人需求与报价、水质与鉴定、液体操作、物品使用、提示词迁移、聊天持久化与上下文裁剪、本地化和立绘逻辑。测试文件与功能的对应关系见开发导航；原生 UI 和场景行为仍需游戏实测。
 
 ## 创意工坊发布包
 
@@ -226,7 +228,7 @@ dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 
 ## 版本管理
 
-项目已初始化本地 Git 仓库，分支为 `main`。源码、文档和立绘纳入版本管理；`.cache`、构建产物、游戏 DLL、日志、`.env` 和 `*.local.json` 连接配置均忽略。不包含 Git 远程仓库或自动上传设置。
+项目使用 Git，分支为 `main`。源码、文档和立绘纳入版本管理；`.cache`、构建产物、游戏 DLL、日志、`.env` 和 `*.local.json` 连接配置均忽略。远端仓库为 [Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。发布和推送由显式命令执行，流程见 `AGENTS.md`；可选的本机上传工具位于被忽略的 `.cache/workshop-publisher/`。
 
 ## 调试
 
