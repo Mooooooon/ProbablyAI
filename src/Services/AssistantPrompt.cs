@@ -199,6 +199,12 @@ namespace ProbablyAI.Services
         private const string EnglishItemUseGuidance =
             "\n\nWhen Master asks to use a purification tablet, nutrient tablet, UV filter or water ration on a liquid container, query both real items first, then call `use_item_on_item`. This tool supports only those safe items and uses the game's native item-on-item action; tablets and water rations are normally consumed, while the UV filter is not. The target must be a water container: tablets and the UV filter require water already inside, while a water ration may also fill an empty container; wine, chemical products and empty containers for tablets/UV are rejected. Purification may take time after a tablet is added, so do not claim the water is already clean; use a test strip, scan or `analyze_water` when a conclusion is needed. Weapons, medical items, surgery, animals, machine startup and UI-opening tools are not supported.";
 
+        private const string ChineseGeneralItemUseGuidance =
+            "\n\n需要让助手使用物品时，先查询真实物品，再调用 `use_item_on_item`（对另一个物品或角色使用）或 `activate_item`（使用 / 激活单个物品，相当于双击）。除武器、弹药、爆炸物、战斗能力、敌人目标和战斗中的操作外，非战斗物品都按游戏原生规则执行；试纸、扫描仪、书籍、医疗、手术、动物、机器和工具等可能会打开原生窗口、消耗物品或改变状态，结果以实际返回为准。助手不代替玩家选择对话、买卖、提交报价或改存档；原生拒绝时说明原因，不绕过所有权、锁定、容量或规则。不要声称未观察到的效果。";
+
+        private const string EnglishGeneralItemUseGuidance =
+            "\n\nWhen Master asks to use an item, query the real item first, then call `use_item_on_item` (use on another item or character) or `activate_item` (use or activate a single item, like double-clicking). Except for weapons, ammunition, explosives, combat abilities, enemy targets and actions during combat, non-combat items follow the game's native rules; test strips, scanners, books, medical items, surgery, animals, machines and tools may open native windows, consume items or change state, so report only what the result shows. The assistant does not choose dialogue, trade, submit quotes or edit saves, and explains native refusals instead of bypassing ownership, locks, capacity or rules. Never claim an effect that was not observed.";
+
         // The released v0.7.8 default, kept recognizable so unedited saves upgrade.
         internal static readonly string PreviousChineseLiquidDefault = PreviousChineseWaterInjectorDefault
             .Replace(LegacyChineseInUseGuidance, CurrentChineseInUseGuidance)
@@ -213,9 +219,14 @@ namespace ProbablyAI.Services
 
         internal static readonly string PreviousEnglishItemUseDefault = PreviousEnglishLiquidDefault + EnglishLiquidGuidance;
 
-        public static readonly string ChineseDefault = PreviousChineseItemUseDefault + ChineseItemUseGuidance;
+        // The released v0.7.10 default with the safe water-item guidance.
+        internal static readonly string PreviousChineseGeneralItemUseDefault = PreviousChineseItemUseDefault + ChineseItemUseGuidance;
 
-        public static readonly string EnglishDefault = PreviousEnglishItemUseDefault + EnglishItemUseGuidance;
+        internal static readonly string PreviousEnglishGeneralItemUseDefault = PreviousEnglishItemUseDefault + EnglishItemUseGuidance;
+
+        public static readonly string ChineseDefault = PreviousChineseGeneralItemUseDefault + ChineseGeneralItemUseGuidance;
+
+        public static readonly string EnglishDefault = PreviousEnglishGeneralItemUseDefault + EnglishGeneralItemUseGuidance;
 
         internal static readonly string PreviousChineseChargingDefault = PreviousChineseBatteryDefault +
             "\n\n给客人挑货时，不要选择充电中的电池：find_items 返回 charging=true 的物品通常位于充电器的电池分区；除非主人明确要求，否则不要搬动或放上柜台。";
@@ -274,6 +285,7 @@ namespace ProbablyAI.Services
                 value == PreviousChineseWaterInjectorDefault || value == PreviousEnglishWaterInjectorDefault ||
                 value == PreviousChineseLiquidDefault || value == PreviousEnglishLiquidDefault ||
                 value == PreviousChineseItemUseDefault || value == PreviousEnglishItemUseDefault ||
+                value == PreviousChineseGeneralItemUseDefault || value == PreviousEnglishGeneralItemUseDefault ||
                 value == ChineseDefault || value == EnglishDefault) return Default;
             if (value.Length > MaxLength) throw new ArgumentException(F("助手提示词不能超过 {0} 字。", MaxLength));
             return value; // Preserve the user's paragraphs, whitespace and wording.

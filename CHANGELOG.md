@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.7.11 — 2026-11-03
+
+### 中文
+
+- 开放全部非战斗物品操作：`use_item_on_item` 不再限制净水药片 / 水配给等白名单，任何非战斗物品都可以对另一个真实物品或角色使用；新增 `activate_item`，相当于玩家在物品栏里双击使用物品。试纸、扫描仪、书籍、医疗、手术、动物、食物、机器和工具等都可以尝试。
+- 所有操作继续走游戏原生 `MayTarget` / `CanTarget` / `Target` 或 `MayActivateSlotItem` / `CanActivateSlotItem` / `ActivateSlotItem`，是否允许、消耗、打开原生窗口和产生效果由游戏决定；不绕过所有权、锁定、容量或界面状态。
+- 按仓库规则仍不开放战斗：武器、弹药、爆炸物、战斗能力和敌人目标会被拒绝，战斗中的物品操作也会被拒绝；不自动买卖、提交报价、选择对话或改存档。试纸、扫描仪、书籍等可能打开的原生窗口需要玩家按界面提示继续，助手不会代替点选。
+
+### English
+
+- Opened all non-combat item actions: `use_item_on_item` no longer whitelists purification tablets or water rations; any non-combat item can be used on another real item or character. Added `activate_item`, equivalent to double-clicking an item in the inventory. Test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted.
+- Every action still uses the native `MayTarget` / `CanTarget` / `Target` or `MayActivateSlotItem` / `CanActivateSlotItem` / `ActivateSlotItem` path; the game decides whether it is allowed, what is consumed, which native windows open and what effect occurs. Ownership, locks, capacity and screen state are never bypassed.
+- Combat remains excluded by the repository policy: weapons, ammunition, explosives, combat abilities and enemy targets are rejected, as are item actions during combat. The assistant still does not trade, submit quotes, choose dialogue or edit saves. Native windows opened by test strips, scanners or books require the player to continue; the assistant does not click them.
+
 ## 0.7.10 — 2026-11-03
 
 ### 中文

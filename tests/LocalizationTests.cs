@@ -68,7 +68,7 @@ internal static partial class Program
                 new DocumentService(new FakeDocument()).Register(registry);
                 var chinese = registry.Definitions();
                 Text.UseLocale("en"); var english = registry.Definitions();
-                Assert(english.Count == 24 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
+                Assert(english.Count == 25 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
                 for (int i = 0; i < english.Count; i++)
                     Assert((string)english[i]["function"]["name"] == (string)chinese[i]["function"]["name"] &&
                         JToken.DeepEquals(english[i]["function"]["parameters"]["required"], chinese[i]["function"]["parameters"]["required"]), "translation changed protocol IDs");

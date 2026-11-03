@@ -213,22 +213,20 @@ internal static partial class Program
             foreach (string previous in new[] { AssistantPrompt.PreviousChineseLiquidDefault, AssistantPrompt.PreviousEnglishLiquidDefault })
                 Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "liquid default did not upgrade");
         });
-        await Check("item-use guidance is built into prompts and old defaults upgrade", () =>
+        await Check("general item-use guidance is built into prompts and old defaults upgrade", () =>
         {
             Assert(AssistantPrompt.ChineseDefault.Contains("use_item_on_item") &&
-                AssistantPrompt.ChineseDefault.Contains("净水药片") &&
-                AssistantPrompt.ChineseDefault.Contains("营养药片") &&
-                AssistantPrompt.ChineseDefault.Contains("UV 过滤器") &&
-                AssistantPrompt.ChineseDefault.Contains("水配给") &&
-                AssistantPrompt.ChineseDefault.Contains("净化反应可能需要时间"), "Chinese item-use guidance missing");
+                AssistantPrompt.ChineseDefault.Contains("activate_item") &&
+                AssistantPrompt.ChineseDefault.Contains("非战斗物品") &&
+                AssistantPrompt.ChineseDefault.Contains("武器") &&
+                AssistantPrompt.ChineseDefault.Contains("不绕过") &&
+                AssistantPrompt.ChineseDefault.Contains("不要声称未观察到的效果"), "Chinese general item-use guidance missing");
             Assert(AssistantPrompt.EnglishDefault.Contains("use_item_on_item") &&
-                AssistantPrompt.EnglishDefault.Contains("purification tablet") &&
-                AssistantPrompt.EnglishDefault.Contains("nutrient tablet") &&
-                AssistantPrompt.EnglishDefault.Contains("UV filter") &&
-                AssistantPrompt.EnglishDefault.Contains("water ration") &&
-                AssistantPrompt.EnglishDefault.Contains("may take time"), "English item-use guidance missing");
-            foreach (string previous in new[] { AssistantPrompt.PreviousChineseItemUseDefault, AssistantPrompt.PreviousEnglishItemUseDefault })
-                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "item-use default did not upgrade");
+                AssistantPrompt.EnglishDefault.Contains("activate_item") &&
+                AssistantPrompt.EnglishDefault.Contains("non-combat") &&
+                AssistantPrompt.EnglishDefault.Contains("Never claim an effect"), "English general item-use guidance missing");
+            foreach (string previous in new[] { AssistantPrompt.PreviousChineseGeneralItemUseDefault, AssistantPrompt.PreviousEnglishGeneralItemUseDefault })
+                Assert(AssistantPrompt.Normalize(previous) == AssistantPrompt.Default, "general item-use default did not upgrade");
         });
         await Check("agent sends exactly the saved editable prompt through all tool rounds", async () =>
         {

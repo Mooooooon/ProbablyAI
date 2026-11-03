@@ -7,6 +7,8 @@ using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Items
 {
+    // Validation and result mapping for the general non-combat item actions. The native
+    // backend performs the actual target/activate action and reports what it observed.
     public sealed class ItemUseService
     {
         private readonly IItemUseBackend backend;
@@ -25,35 +27,42 @@ namespace ProbablyAI.Items
         {
             try
             {
-                if (tool != "use_item_on_item")
-                    return HandsResult.Fail("unknown_tool", T("未知的物品使用工具。"));
-                ValidateKeys(arguments, "item_id", "target_item_id");
-                var sourceId = Id(arguments, "item_id");
-                var targetId = Id(arguments, "target_item_id");
-                if (sourceId == targetId) throw new HandsException("same_item", T("不能对物品自身使用。"));
-                return Result(backend.Use(sourceId, targetId));
+                switch (tool)
+                {
+                    case "use_item_on_item":
+                        ValidateKeys(arguments, "item_id", "target_item_id");
+                        var sourceId = Id(arguments, "item_id");
+                        var targetId = Id(arguments, "target_item_id");
+                        if (sourceId == targetId) throw new HandsException("same_item", T("不能对物品自身使用。"));
+                        return Result(backend.Use(sourceId, targetId), activate: false);
+                    case "activate_item":
+                        ValidateKeys(arguments, "item_id");
+                        return Result(backend.Activate(Id(arguments, "item_id")), activate: true);
+                    default:
+                        return HandsResult.Fail("unknown_tool", T("未知的物品使用工具。"));
+                }
             }
             catch (HandsException error) { return HandsResult.Fail(error.Code, error.Message); }
             catch (Exception) { return HandsResult.Fail("item_use_failed", T("物品使用未完成，请刷新物品后重试。不要重复执行未核实的操作。")); }
         }
 
-        private static HandsResult Result(ItemUseChange change)
+        private static HandsResult Result(ItemUseChange change, bool activate)
         {
-            if (change?.SourceBefore == null || change.TargetBefore == null || change.TargetAfter == null)
-                throw new HandsException("item_use_failed", T("物品使用未完成，请刷新物品后重试。不要重复执行未核实的操作。"));
+            RequireChange(change, hasTarget: !activate);
             bool consumed = change.SourceConsumed ||
                 change.SourceAfter != null && change.SourceAfter.Quantity < change.SourceBefore.Quantity;
-            bool used = consumed || change.LiquidChanged;
+            bool changed = consumed || change.Changed;
             string kind = change.SourceBefore.Kind ?? "";
-            string message = used ? Message(change, kind, consumed) : NotUsed(change);
+            string message = activate ? ActivationMessage(change, consumed) : UseMessage(change, kind, consumed);
+            object target = change.TargetBefore == null ? null : TargetData(change);
             return new HandsResult
             {
-                Success = used,
-                Code = used ? "ok" : "not_used",
+                Success = true,
+                Code = "ok",
                 Message = message,
                 Data = new
                 {
-                    effect = kind,
+                    effect = string.IsNullOrEmpty(kind) ? "item" : kind,
                     source = new
                     {
                         item_id = change.SourceBefore.Item.Id,
@@ -62,47 +71,73 @@ namespace ProbablyAI.Items
                         quantity_after = change.SourceAfter?.Quantity,
                         consumed
                     },
-                    target = new
-                    {
-                        item_id = change.TargetAfter.Item.Id,
-                        name = change.TargetAfter.Item.Name,
-                        path = change.TargetAfter.Item.Path,
-                        volume_before_ml = Ml(change.TargetBefore.VolumeUl),
-                        volume_ml = Ml(change.TargetAfter.VolumeUl),
-                        capacity_ml = Ml(change.TargetAfter.CapacityUl)
-                    }
+                    target,
+                    changed
                 }
             };
         }
 
-        private static string Message(ItemUseChange change, string kind, bool consumed)
+        private static object TargetData(ItemUseChange change)
         {
-            string target = change.TargetAfter.Item.Name;
+            var after = change.TargetAfter;
+            var before = change.TargetBefore;
+            return new
+            {
+                item_id = after?.Item.Id ?? before.Item.Id,
+                name = after?.Item.Name ?? before.Item.Name,
+                path = after?.Item.Path ?? before.Item.Path,
+                volume_before_ml = Ml(before.VolumeUl),
+                volume_ml = after == null ? (double?)null : Ml(after.VolumeUl),
+                capacity_ml = Ml(before.CapacityUl)
+            };
+        }
+
+        private static string UseMessage(ItemUseChange change, string kind, bool consumed)
+        {
+            string target = change.TargetAfter?.Item.Name ?? change.TargetBefore.Item.Name;
             string source = change.SourceBefore.Item.Name;
-            double volume = Ml(change.TargetAfter.VolumeUl);
-            double capacity = Ml(change.TargetAfter.CapacityUl);
+            string status = consumed ? T("已被原生行为消耗") : T("仍保留");
+            var after = change.TargetAfter;
+            bool hasVolume = after != null && after.LiquidContainer;
             switch (kind)
             {
                 case ItemUseRules.WaterRation:
                     return F("已把 {0} 加入 {1}；水配给{2}。容器现有 {3}/{4} ml。",
-                        source, target, consumed ? T("已被原生行为消耗") : T("仍保留"), volume, capacity);
+                        source, target, status, Ml(after?.VolumeUl ?? 0), Ml(after?.CapacityUl ?? 0));
                 case ItemUseRules.UVFilter:
                     return F("已对 {0} 使用 {1}；UV 过滤器{2}。容器现有 {3}/{4} ml。水质请用试纸、扫描或 analyze_water 确认。",
-                        target, source, consumed ? T("已被原生行为消耗") : T("仍保留"), volume, capacity);
+                        target, source, status, Ml(after?.VolumeUl ?? 0), Ml(after?.CapacityUl ?? 0));
                 case ItemUseRules.NutrientTablet:
                     return F("已对 {0} 使用 {1}；营养药片{2}。容器现有 {3}/{4} ml。原生反应可能需要时间，水质 / 养分请用试纸、扫描或 analyze_water 确认。",
-                        target, source, consumed ? T("已被原生行为消耗") : T("仍保留"), volume, capacity);
-                default:
+                        target, source, status, Ml(after?.VolumeUl ?? 0), Ml(after?.CapacityUl ?? 0));
+                case ItemUseRules.WaterTablet:
                     return F("已对 {0} 使用 {1}；净水药片{2}。容器现有 {3}/{4} ml。净化反应可能需要时间，水质请用试纸、扫描或 analyze_water 确认。",
-                        target, source, consumed ? T("已被原生行为消耗") : T("仍保留"), volume, capacity);
+                        target, source, status, Ml(after?.VolumeUl ?? 0), Ml(after?.CapacityUl ?? 0));
+                default:
+                    string volume = hasVolume
+                        ? F(" 目标现有 {0}/{1} ml。", Ml(after.VolumeUl), Ml(after.CapacityUl))
+                        : "";
+                    return F("已对 {0} 使用 {1}；原生操作已执行，源物品{2}。{3}{4}",
+                        target, source, status, volume, T("如果游戏打开了相关界面，请按原生提示继续。"));
             }
         }
 
-        private static string NotUsed(ItemUseChange change)
-            => F("没有发生物品使用：{0} 与 {1} 的当前状态不满足原生使用条件。",
-                change.SourceBefore.Item.Name, change.TargetAfter.Item.Name);
+        private static string ActivationMessage(ItemUseChange change, bool consumed)
+        {
+            string source = change.SourceBefore.Item.Name;
+            string status = consumed ? T("已被原生行为消耗") : T("仍保留");
+            return F("已使用 {0}；原生操作已执行，物品{1}。{2}",
+                source, status, T("如果游戏打开了相关界面，请按原生提示继续。"));
+        }
 
         private static double Ml(int microliters) => Math.Round(microliters / 1000d, 2);
+
+        private static void RequireChange(ItemUseChange change, bool hasTarget)
+        {
+            if (change?.SourceBefore == null || change.SourceBefore.Item == null ||
+                hasTarget && (change.TargetBefore == null || change.TargetBefore.Item == null))
+                throw new HandsException("item_use_failed", T("物品使用未完成，请刷新物品后重试。不要重复执行未核实的操作。"));
+        }
 
         private static void ValidateKeys(JObject arguments, params string[] keys)
         {

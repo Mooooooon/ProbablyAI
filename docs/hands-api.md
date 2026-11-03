@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.10）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.11）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -197,30 +197,24 @@
 
 ## 使用物品
 
-`ItemUseService` / `IItemUseBackend` 提供一个安全的物品对水容器使用工具，聊天和 F7 助手指令均可调用。先用 `find_items` / `list_container` 取得真实物品 ID：
+`ItemUseService` / `IItemUseBackend` 提供两个改变物品状态的非战斗工具，聊天和 F7 助手指令均可调用。先用 `find_items` / `list_container` 取得真实物品 ID：
 
 | 工具 | 参数 | 作用 |
 | --- | --- | --- |
-| `use_item_on_item` | `item_id`、`target_item_id` | 对水容器使用净化 / 施肥药片、UV 过滤器或水配给 |
+| `use_item_on_item` | `item_id`、`target_item_id` | 对一个真实物品或角色使用另一个真实物品，相当于玩家把物品拖到目标上 |
+| `activate_item` | `item_id` | 使用 / 激活单个物品，相当于玩家在物品栏里双击它 |
 
-支持的源物品仅限：
+这两个工具不再有物品白名单。它们使用游戏原生 `GameItem.MayTarget` / `CanTarget` / `Target` 或 `MayActivateSlotItem` / `CanActivateSlotItem` / `ActivateSlotItem`，是否允许、消耗、打开窗口和产生效果完全由游戏判定。助手只执行非战斗操作：
 
-- `water_tablet`（`WATER_PURIFICATION_TABLET`）：净水药片，加入氯并触发原生净化反应，通常被消耗。
-- `nutrient_tablet`（`NUTRIENT_TABLET`）：营养药片，加入矿物质，通常被消耗。
-- `uv_filter`：UV 过滤器，按原生规则处理微生物，不会被消耗。
-- `water_ration` / `water_ration_small`：水配给，加入基础水，被消耗。
-
-规则与限制：
-
-- 使用原生 `GameItem.MayTarget` / `CanTarget` / `Target`；所有权、锁定、目标容器、容量和消耗都由游戏判定。只接受表中参数，拒绝多余参数。
-- 目标必须是水容器。药片和 UV 过滤器要求容器里已有水；水配给也可以倒入空容器。酒类和化学产品容器返回 `wrong_target`；空容器（药片 / UV）返回 `target_empty`；水配给空间不足返回 `target_too_small`；不支持的源物品返回 `unsupported_item`；非自有返回 `not_owned`；锁定返回 `container_locked`；原生 `MayTarget` / `CanTarget` 拒绝返回 `item_use_rejected`。
-- 结果包含源物品是否被消耗、使用前后数量、目标容器容量与液量；没有消耗且液体成分没有变化时返回 `not_used`，不能当作成功。
-- 不读取或公布未测试的纯度、成分，也不打开试纸 / 扫描仪界面。药片加入后净化反应可能需要时间，水质请用试纸、扫描或 `analyze_water` 确认。
-- 不支持武器、医疗、手术、动物、机器启动或其他会打开界面的物品；这些请手动使用，不由助手代劳。
+- 武器、弹药、爆炸物、`ability` 战斗能力不能作为源物品；敌人目标返回 `combat_target`；战斗进行中返回 `in_combat`。**目标是武器 / 防具、机器、动物、医疗目标等非敌人时仍可使用**，因此给枪装模组、修理工具、动物医疗、手术、试纸、扫描仪、书籍、食物、机器和工具都可尝试。
+- 物品或目标所在容器被锁定时返回 `container_locked`；物品 ID 失效返回 `item_not_found`；不能对物品自身使用；只接受表中参数，拒绝多余参数。
+- 原生 `MayTarget` / `CanTarget`、`MayActivateSlotItem` / `CanActivateSlotItem` 拒绝时返回 `item_use_rejected`，不绕过所有权、容量、目标限制或界面状态。客人的物品是否可用由原生的 `CAN_USE_ON_NON_OWNED_TAG` 决定，助手不另外放行。
+- 结果包含源物品是否被消耗、使用前后数量、是否观察到状态变化，以及目标液量（如果目标是液体容器）。原生动作被接受即返回 `ok`；`changed=false` 表示没有观察到可见变化，不代表可以重复执行。试纸、扫描仪、书籍等可能打开原生窗口，结果会提示按原生界面继续；助手不读取未显示的纯度 / 成分，也不代替玩家点选界面。
+- 不代替玩家选择对话、买卖、提交报价或改存档；交易、对话选项和存档仍由玩家操作。
 
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`LiquidService.Register` 注册 3 个液体操作工具，`ItemUseService.Register` 注册 1 个物品使用工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 24 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`LiquidService.Register` 注册 3 个液体操作工具，`ItemUseService.Register` 注册 2 个物品使用工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 25 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 

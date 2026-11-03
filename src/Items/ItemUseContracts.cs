@@ -3,28 +3,23 @@ using ProbablyAI.Hands;
 
 namespace ProbablyAI.Items
 {
-    // A read-only view of the source item and the target container. The native backend fills
-    // these from the shared fresh snapshot; tests build them directly without Unity.
+    // A read-only view of an item resolved from the shared snapshot. The native backend fills
+    // these before and after the action; tests build them directly without Unity.
     public sealed class ItemUseReading
     {
         public ItemInfo Item { get; set; }
-        // One of water_tablet / nutrient_tablet / uv_filter / water_ration, or null.
+        // Optional friendly label for known water-treatment items; null for generic items.
         public string Kind { get; set; }
-        public bool Owned { get; set; }
         public bool Locked { get; set; }
+        public bool Combat { get; set; }
+        public bool Enemy { get; set; }
         public int Quantity { get; set; }
 
         public bool LiquidContainer { get; set; }
         public bool SupportedLiquid { get; set; }
-        public bool Wine { get; set; }
-        public bool ChemicalProduct { get; set; }
         public bool HasWater { get; set; }
         public int VolumeUl { get; set; }
         public int CapacityUl { get; set; }
-        // Water rations natively add a fixed volume; other supported items have no fixed amount.
-        public int RequiredUl { get; set; }
-
-        public int FreeUl => Math.Max(0, CapacityUl - VolumeUl);
     }
 
     public sealed class ItemUseChange
@@ -34,13 +29,14 @@ namespace ProbablyAI.Items
         public ItemUseReading TargetBefore { get; set; }
         public ItemUseReading TargetAfter { get; set; }
         public bool SourceConsumed { get; set; }
-        // True when the liquid parts actually changed, even if the total volume stayed the same.
-        public bool LiquidChanged { get; set; }
+        // True when the native action visibly changed the source, target or liquid state.
+        public bool Changed { get; set; }
     }
 
     public interface IItemUseBackend
     {
         ItemUseChange Use(string sourceItemId, string targetItemId);
+        ItemUseChange Activate(string itemId);
     }
 
     public sealed class ItemUseValidation

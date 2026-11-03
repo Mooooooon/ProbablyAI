@@ -73,12 +73,17 @@ These tools do not create liquid or containers, destroy items, or change ownersh
 
 ## Using items
 
-Master can ask Xiaojing to use a purification tablet, nutrient tablet, UV filter or water ration on a water container, for example “Use a purification tablet on this bottle” or “Add a nutrient tablet to this water tank.” She queries both real items first, then calls `use_item_on_item`:
+Xiaojing can now perform native non-combat item-on-item and use/activate actions like a player. Examples: “Test this bottle with a water test strip,” “Attach this scope to the gun,” “Treat this animal with the medical kit,” “Read this book,” or “Use a purification tablet on this bottle.”
 
-- Supported sources only: purification tablets (`water_tablet`), nutrient tablets (`nutrient_tablet`), the UV filter (`uv_filter`) and water rations (`water_ration` / `water_ration_small`).
-- The game's native item-on-item action decides ownership, locks, target container, capacity and consumption. Tablets and water rations are normally consumed; the UV filter is not. The target must be a water container; tablets and the UV filter require water already inside, while a water ration may also fill an empty container. Wine, chemical-product and empty tablet/UV targets are rejected.
-- It does not open test-strip or scanner UI and never reads or reveals untested purity or contents. Purification may take time after a tablet is added; use a test strip, scan or `analyze_water` for a conclusion.
-- Weapons, medical items, surgery, animals, machine startup and other UI-opening items are not supported and remain manual.
+- `use_item_on_item` applies one real item to another item or character through the native `MayTarget` / `CanTarget` / `Target` path.
+- `activate_item` uses or activates one item, equivalent to double-clicking it in the inventory, through the native `MayActivateSlotItem` / `CanActivateSlotItem` / `ActivateSlotItem` path.
+
+Scope and limits:
+
+- There is no item whitelist. Test strips, scanners, books, medical items, surgery, animals, food, machines and tools can all be attempted; the game's native rules decide whether the action is allowed, what is consumed, which windows open and what effect occurs.
+- Weapons, ammunition, explosives and combat abilities cannot be used as the source; enemy targets and actions during combat are rejected. Target weapons, armor, machines, animals and medical subjects are still allowed.
+- Ownership, locks, capacity and screen state are never bypassed. Customer items are usable only when the native `CAN_USE_ON_NON_OWNED_TAG` allows it. Test strips, scanners and books may open native windows; the assistant does not click those windows or replace `analyze_water` / `read_document` for data.
+- The assistant does not choose dialogue, trade, submit quotes or edit saves; those remain manual. `changed=false` means no visible change was observed, so the same action should not be repeated blindly.
 
 ## Reading notes, books and guides
 
@@ -99,4 +104,4 @@ API keys are used only for your configured endpoint and are not put into chat or
 
 The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
 
-Version 0.7.10. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.7.11. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
