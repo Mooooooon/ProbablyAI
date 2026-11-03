@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.7.12。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.7.13。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -20,8 +20,10 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 - 待机时立绘以脚底为基准轻微改变高度，模拟呼吸；脚部位置保持不变，只有身体向上轻轻舒展。默认幅度 6 像素、周期 3.6 秒（1080p 基准），可单独关闭或调整。
 - F6：本次运行中显示 / 隐藏立绘。F7：打开 / 关闭连接配置窗口（输入框聚焦时也能关闭）。
 - 客人进店时自动小声提醒：符合通缉令特征或改造体时，立即在聊天或屏幕上的小卡片里提醒，不必等到聊天。提醒只触发一次，不向客人透露，也不会自动举报或攻击；治安官、检查员等当值安保访客不会被误报。可在 Mods 设置的“客人提醒”中关闭。
+- 查看道具时可读取通用耐久：当前值 / 上限、剩余百分比、是否耗尽，以及未鉴定显示值或已鉴定值的来源。支持过滤器及其他采用原生耐久系统的道具；F7 手动操作的物品详情也显示。使用或过滤后可重新查询，按“耗尽停止”的指令判断。
 - 可按自然语言指令倒水、倒酒、倒掉液体和在水龙头接水，使用游戏原生的物品对物品操作，并由游戏判定所有权、锁定、容量、过滤器和水龙头解锁状态。
 - 可像玩家一样对非战斗物品执行原生物品对物品和使用 / 激活操作：试纸、扫描仪、书籍、医疗、手术、动物、食物、机器和工具等都可以尝试；武器可用于屠宰动物，但不会对顾客、敌人使用或代操作霰弹枪射击模式，交易和改存档仍不开放。
+- 工具调用上限可调：F7 的“工具调用上限”可设置每条消息处理轮数（1–1000，默认 16）和工具调用次数（1–10000，默认 48）。复杂重复任务可同时调高，保存后下次发送生效，重启后保留；执行中仍可停止。调高可能增加耗时和 API 费用。
 - 聊天上下文上限可调：F7 可设置发送给模型的对话轮次（1–50）和历史 token 估算上限（1,000–200,000），超限时从最旧的完整轮次开始省略；完整聊天记录按存档槽保存在本机，重启后恢复，手动清空聊天才删除。
 - 主菜单 → Mods → 深空AI：可能是DeepSeek 的齿轮中，可保存高度、左右位置、底部位置、透明度、呼吸动画及快捷键设置。
 
@@ -220,7 +222,7 @@ dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.12/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.13/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

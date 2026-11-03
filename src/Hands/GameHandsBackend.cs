@@ -148,6 +148,7 @@ namespace ProbablyAI.Hands
                     Heat = stolen ? heat : (int?)null,
                     Charging = charging ? true : (bool?)null,
                     InUse = charging || installed || cooling ? true : (bool?)null,
+                    Durability = GameItemDurability.Read(item),
                     Description = Plain(item.shortDescription), Types = item.itemTypes?.ToList() ?? new List<string>()
                 };
                 world.Items.Add(itemInfo);

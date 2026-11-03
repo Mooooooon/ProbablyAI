@@ -175,7 +175,11 @@ namespace ProbablyAI.UI
         {
             var item = SelectedItem;
             window.Get("details").SetText(item == null ? T("请选择物品；嵌套物品会显示完整路径。") :
-                F("{0}\n数量：{1}    {2}    {3}\n{4}", item.Path, item.Quantity, (item.Owned ? T("自有") : T("非自有")), (item.Removable ? T("可尝试移动") : T("当前禁止移动")), item.Description));
+                F("{0}\n数量：{1}    {2}    {3}\n{4}", item.Path, item.Quantity, (item.Owned ? T("自有") : T("非自有")), (item.Removable ? T("可尝试移动") : T("当前禁止移动")), item.Description) +
+                (item.Durability == null ? "" : F("\n耐久度：{0}/{1}（{2}%） · {3}{4}",
+                    item.Durability.Current, item.Durability.Maximum, item.Durability.RemainingPercent,
+                    item.Durability.AssessmentSource == "tested" ? T("已鉴定") : T("显示值，未鉴定"),
+                    item.Durability.Depleted ? T(" · 已耗尽") : "")));
         }
 
         private void Transfer(bool preview)

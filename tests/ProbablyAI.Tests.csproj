@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="HandsTests.cs" />
+    <Compile Include="DurabilityTests.cs" />
     <Compile Include="ChatTests.cs" />
     <Compile Include="ContextTests.cs" />
     <Compile Include="FreshnessTests.cs" />
@@ -50,6 +51,7 @@
     <Compile Include="..\src\Services\ConversationStore.cs" Link="ConversationStore.cs" />
     <Compile Include="..\src\Services\TokenEstimator.cs" Link="TokenEstimator.cs" />
     <Compile Include="..\src\Hands\HandsContracts.cs" Link="HandsContracts.cs" />
+    <Compile Include="..\src\Hands\GameItemDurability.cs" Link="GameItemDurability.cs" />
     <Compile Include="..\src\Hands\HandsService.cs" Link="HandsService.cs" />
     <Compile Include="..\src\Hands\HandsProtocol.cs" Link="HandsProtocol.cs" />
     <Compile Include="..\src\Hands\HandsAgent.cs" Link="HandsAgent.cs" />

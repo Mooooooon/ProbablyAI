@@ -38,6 +38,7 @@ namespace ProbablyAI.Hands
             var exchange = new JArray { new JObject { ["role"] = "user", ["content"] = instruction } };
             var outstanding = new List<ChatToolCall>();
             var callIds = new HashSet<string>();
+            int modelToolCalls = 0;
             IsRunning = true;
             try
             {
@@ -50,7 +51,7 @@ namespace ProbablyAI.Hands
                     var observation = ReadShopContext(result, cancellationToken);
                     if (observation != null) prefix.Add(observation);
                 }
-                for (int round = 0; round < 16; round++)
+                for (int round = 0; round < connection.MaxToolRounds; round++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Invoke(T("正在思考…"));
@@ -66,8 +67,8 @@ namespace ProbablyAI.Hands
                         memory?.Commit(exchange);
                         return result;
                     }
-                    if (result.ToolCalls + turn.ToolCalls.Count > 48)
-                        throw new ApiRequestException(T("工具调用达到上限或出现重复调用 ID，已停止。请查看操作记录后继续。"));
+                    if (turn.ToolCalls.Count > connection.MaxToolCalls - modelToolCalls)
+                        throw new ApiRequestException(T("工具调用达到本次消息的次数上限，已停止。可在 F7 调高上限；请查看操作记录后继续。"));
                     foreach (var call in turn.ToolCalls)
                         if (!callIds.Add(call.Id)) throw new ApiRequestException(T("模型重复了调用 ID，已停止。请检查操作记录。"));
                     exchange.Add(turn.Message.DeepClone());
@@ -76,6 +77,7 @@ namespace ProbablyAI.Hands
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         result.ToolCalls++;
+                        modelToolCalls++;
                         HandsResult outcome;
                         try { outcome = registry.Execute(call.Name, JObject.Parse(call.Arguments)); }
                         catch (JsonException) { outcome = HandsResult.Fail("invalid_arguments", T("工具参数不是有效的 JSON 对象，请修正参数。")); }
@@ -86,7 +88,7 @@ namespace ProbablyAI.Hands
                         await Task.Yield();
                     }
                 }
-                result.Reply = T("已达到本次消息的处理轮数上限。请查看操作记录，必要时继续。");
+                result.Reply = T("已达到本次消息的处理轮数上限。可在 F7 调高上限；请查看操作记录，必要时继续。");
                 exchange.Add(new JObject { ["role"] = "assistant", ["content"] = result.Reply });
                 memory?.Commit(exchange);
                 return result;

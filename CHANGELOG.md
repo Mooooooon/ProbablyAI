@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 0.7.13 — 2026-11-03
+
+### 中文
+
+- F7 新增每条消息的处理轮数与工具调用次数设置，复杂重复任务可自行调高上限；默认 16 轮 / 48 次，可分别设置到 1000 轮 / 10000 次，保存后重启仍保留。
+- 查看道具时新增通用耐久显示：当前值、上限、剩余百分比和是否耗尽；适用于过滤器及其他采用原生耐久系统的道具。区分未鉴定显示值与已鉴定值，F7 手动物品详情同步显示，使用或过滤后可重新查询。
+
+### English
+
+- F7 now lets you set model rounds and tool calls per message for complex repeated tasks. Defaults remain 16 rounds / 48 calls, adjustable up to 1000 rounds / 10000 calls; saved limits survive restarts.
+- Item queries now show generic visible durability: current/maximum values, remaining percentage and exhaustion, for filters and all items using native durability. Displayed and tested readings are distinguished. F7 manual details show it too; requery after using an item or filtering water.
+
 ## 0.7.12 — 2026-11-03
 
 ### 中文

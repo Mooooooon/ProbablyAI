@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.12）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.13）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -130,6 +130,20 @@
 
 `stolen` 表示物品是赃物，`heat` 是 0–100 的热度（治安检查时被发现的概率百分比，越高越容易被发现）。挑货时默认不使用赃物：`find_items` 默认不返回 `stolen=true` 的物品；主人明确要求查看或挑选赃物时传 `include_stolen=true`，并提醒热度风险。`list_container` 和 `inspect_item` 始终返回赃物标记与热度，方便核对；助手不得自动举报、没收或改变所有权。
 
+### 通用道具耐久
+
+`inspect_item`、`find_items` 和 `list_container` 的物品数据统一包含可选的 `durability`，适用于所有采用游戏原生耐久系统的道具，不限制物品名称或类型。F7 手动操作面板的物品详情也显示耐久；原生对象数据只在主线程采集，每次工具查询重新读取。
+
+```json
+{"durability":{"current":75,"maximum":200,"remaining_percent":37.5,"depleted":false,"assessment_source":"displayed"}}
+```
+
+- `current` / `maximum`：当前可见耐久与耐久上限；`remaining_percent`：剩余百分比，保留最多两位小数；`depleted`：当前值是否为零。
+- `assessment_source=displayed`：游戏未鉴定时的公开显示值，可能与真实值不同；`tested`：游戏已经鉴定或揭露的值。不自动鉴定、不读取未揭露的真实耐久。
+- 无原生耐久、耐久特性不可见 / 已禁用、上限非正数或读数不合法时省略整个 `durability`。缺少字段表示无耐久或当前未知，不能当成零耐久，也不能保证仍可用。
+
+例如接水过滤后，重新 `inspect_item` 查询过滤器本身（而非水壶）的耐久，再决定是否投药或继续下一批。主人要求耗尽停止时，`depleted=true` 应停止并汇报；读取失败或耐久未知时不能猜测。未鉴定的显示值不能当作已核实的真实耐久。过滤器装在壶里时，通过水壶的 `content_container_id` 查询内部物品；固定 / 在用物品的默认搜索过滤仍然保留，可按明确请求使用相应的 include 参数或直接查看已知容器。
+
 ## 操作
 
 | 工具 | 参数 | 作用 |
@@ -216,7 +230,7 @@
 
 `HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`LiquidService.Register` 注册 3 个液体操作工具，`ItemUseService.Register` 注册 2 个物品使用工具，`DocumentService.Register` 注册 1 个文档阅读工具，共 25 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
-模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；最多 16 轮 / 48 次调用。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
+模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；默认每条消息最多 16 轮 / 48 次模型工具调用；F7 可设置处理轮数（1–1000，含最终回复的模型请求）与调用次数（1–10000），保存后下条消息生效。调用次数不含消息开始时自动刷新的客人 / 柜台实况。若模型一轮返回的整批调用会超出剩余次数，该批全部不执行。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 
 ## 注册未来工具
 

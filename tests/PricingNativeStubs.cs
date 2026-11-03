@@ -108,6 +108,7 @@ internal sealed class ItemFeature
     public FeatureType featureType;
     public ValueStage Stage;
     public bool isDisabled, Hidden, Exposed, Discovered;
+    public bool InitiallyShown = true;
     public int Current, Actual = 999;
     public ItemCondition fakeCondition, realCondition;
     public ValueStage GetValueStage() => Stage;
@@ -115,7 +116,7 @@ internal sealed class ItemFeature
     public bool IsExposed() => Exposed;
     public bool IsFeatureDiscovered() => Discovered;
     public ItemCondition GetCurrentItemCondition() => Exposed ? realCondition : fakeCondition;
-    public bool IsInitiallyShown() => true;
+    public bool IsInitiallyShown() => InitiallyShown;
     public bool GetPublicHidden() => Hidden;
     public string GetBaseCurrentDisplay() => Display;
     public static ItemFeature CreateFeatureFromNegociationData(NegociationData data)

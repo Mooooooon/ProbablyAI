@@ -9,6 +9,30 @@ internal static partial class Program
 {
     private static async Task RunContextTests()
     {
+        await Check("tool limits default on old configs, normalize, copy and persist", () =>
+        {
+            var old = new ConnectionSettingsStore(() => "{}", _ => { }).Current;
+            Assert(old.MaxToolRounds == 16 && old.MaxToolCalls == 48, "legacy defaults changed");
+            foreach (int invalid in new[] { -1, 0, int.MaxValue })
+            {
+                var normalized = new ConnectionOptions { MaxToolRounds = invalid, MaxToolCalls = invalid }.Normalized();
+                Assert(normalized.MaxToolRounds == 16 && normalized.MaxToolCalls == 48, "invalid limits kept");
+            }
+            foreach (var values in new[] { (1, 1), (1000, 10000), (80, 300) })
+            {
+                string persisted = null;
+                var store = new ConnectionSettingsStore(() => null, value => persisted = value);
+                var options = new ConnectionOptions { MaxToolRounds = values.Item1, MaxToolCalls = values.Item2 };
+                store.Save(options.Copy());
+                var restored = new ConnectionSettingsStore(() => persisted, _ => { }).Current;
+                Assert(restored.MaxToolRounds == values.Item1 && restored.MaxToolCalls == values.Item2, "limits not persisted");
+            }
+            var memory = new ConversationMemory();
+            memory.BindConnection(old);
+            memory.Commit(Exchange("hello", "hi"));
+            old.MaxToolRounds = 80; old.MaxToolCalls = 300;
+            Assert(!memory.BindConnection(old) && memory.TurnCount == 1, "tool limits cleared history");
+        });
         await Check("history limits have safe defaults, normalize invalid values and persist", () =>
         {
             var defaults = new ConnectionOptions();

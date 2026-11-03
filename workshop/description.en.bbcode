@@ -17,11 +17,19 @@ This mod is currently in [b]early active development[/b]. Xiaojing is still lear
 [*]💧 [b]Liquid Handling[/b]: Pour water or wine, dump a container at the drain, or fill bottles at the faucet in plain language. Uses the native item-on-item logic and respects ownership, locks, capacity, filters and faucet unlocks, reporting actual volumes and remaining levels.
 [*]💊 [b]Item Use[/b]: Perform native non-combat item-on-item and use/activate actions like a player: test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted. Weapons can slaughter animals (such as rats), but are never used on customers or enemies, and the shotgun shooting mode is not automated; trading and save editing remain excluded.
 [*]💾 [b]Persistent Chat & Adjustable Context[/b]: The complete transcript is saved per save slot locally and restored after a restart or reload; only Clear chat removes it. F7 sets conversation turns (1–50) and a history token limit (1,000–200,000, estimated) for what is sent to the model; excess turns are omitted without deleting the transcript or splitting tool pairs.
+[*]🔧 [b]Generic Item Durability[/b]: Query current/maximum durability, percentage and exhaustion for filters and all items using native durability. Displayed and tested values are distinguished; F7 manual details show it too.
+[*]🔁 [b]Adjustable Tool Limits[/b]: F7 sets rounds per message (1–1000, default 16) and tool calls (1–10000, default 48). Saved limits survive restarts. Raise both for repeated tasks; this may increase time and API costs. Running tasks can still be stopped.
 [*]⚙️ [b]Flexible API & Customizable Persona (F7)[/b]: Press [b]F7[/b] for settings. Supports any OpenAI-compatible endpoint (DeepSeek, OpenAI, or local models via Ollama/vLLM); includes thinking level configuration and editable system prompts.
 [*]🌐 [b]Automatic Bilingual Support[/b]: Mod UI and prompts automatically switch with the game's Chinese/English locale.
 [/list]
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.13[/b]
+[list]
+[*]F7 now lets you set model rounds and tool calls per message for complex repeated tasks. Defaults remain 16 rounds / 48 calls, adjustable up to 1000 rounds / 10000 calls; saved limits survive restarts.
+[*]Item queries now show generic visible durability: current/maximum values, remaining percentage and exhaustion, for filters and all items using native durability. Displayed and tested readings are distinguished. F7 manual details show it too; requery after using an item or filtering water.
+[/list]
+
 [b]v0.7.12[/b]
 [list]
 [*]Corrected the game-mechanics description: this is not a traditional combat game; weapons are mainly used to slaughter animals (such as rats) for meat, and the only combat-like action is the special shotgun shooting mode against augmented customers.

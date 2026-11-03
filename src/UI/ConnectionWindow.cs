@@ -67,6 +67,13 @@ namespace ProbablyAI.UI
                     .AddInput("32000", draft.MaxHistoryTokens.ToString(), id: "max_tokens")
                     .AddLabel(T("这两个上限只决定发送给模型的历史；完整聊天记录保存在本机，直到手动清空。超限时从最旧的完整轮次开始省略，不会截断工具调用与结果配对。token 数量为估算。"))
                     .AddSeparator(verticalPadding: 10)
+                    .AddHeader(T("工具调用上限"))
+                    .AddLabel(T("每条消息处理轮数（1–1000）"))
+                    .AddInput("16", draft.MaxToolRounds.ToString(), id: "max_tool_rounds")
+                    .AddLabel(T("每条消息工具调用次数（1–10000）"))
+                    .AddInput("48", draft.MaxToolCalls.ToString(), id: "max_tool_calls")
+                    .AddLabel(T("一轮是一次模型请求，一轮可调用多个工具；消息开始时的自动实况查询不计入次数。复杂重复操作可调高这两个上限，可能增加耗时和 API 费用。保存后下次发送生效，执行中仍可停止。"))
+                    .AddSeparator(verticalPadding: 10)
                     .AddHeader(T("助手提示词"))
                     .AddLabel(T("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。"))
                     .AddInput(T("留空使用默认女仆助手提示词"), "", id: "system_prompt", onTyping: value => draft.SystemPrompt = value)
@@ -92,6 +99,8 @@ namespace ProbablyAI.UI
             ConfigureInput("model", 256);
             ConfigureNumberInput("max_turns", 3);
             ConfigureNumberInput("max_tokens", 7);
+            ConfigureNumberInput("max_tool_rounds", 4);
+            ConfigureNumberInput("max_tool_calls", 5);
             ConfigureInput("system_prompt", AssistantPrompt.MaxLength, multiline: true);
             // Configure multiline before assigning text so TMP does not strip paragraph breaks.
             window.Get("system_prompt").SetString(draft.SystemPrompt);
@@ -244,6 +253,10 @@ namespace ProbablyAI.UI
             draft.MaxHistoryTokens = ReadLimit("max_tokens", ConnectionOptions.HistoryTokensMin,
                 ConnectionOptions.HistoryTokensMax, T("历史 token 上限应为 1000–200000。"));
             draft.RememberApiKey = window.Get("remember_key").GetBool();
+            draft.MaxToolRounds = ReadLimit("max_tool_rounds", ConnectionOptions.ToolRoundsMin,
+                ConnectionOptions.ToolRoundsMax, T("每条消息处理轮数应为 1–1000。"));
+            draft.MaxToolCalls = ReadLimit("max_tool_calls", ConnectionOptions.ToolCallsMin,
+                ConnectionOptions.ToolCallsMax, T("每条消息工具调用次数应为 1–10000。"));
             return draft.Copy();
         }
 
@@ -266,12 +279,16 @@ namespace ProbablyAI.UI
                 window.Get("system_prompt").SetString(saved.SystemPrompt);
                 window.Get("max_turns").SetString(saved.MaxHistoryTurns.ToString());
                 window.Get("max_tokens").SetString(saved.MaxHistoryTokens.ToString());
+                window.Get("max_tool_rounds").SetString(saved.MaxToolRounds.ToString());
+                window.Get("max_tool_calls").SetString(saved.MaxToolCalls.ToString());
                 draft.BaseUrl = saved.BaseUrl;
                 draft.Model = saved.Model;
                 draft.ThinkingLevel = saved.ThinkingLevel;
                 draft.SystemPrompt = saved.SystemPrompt;
                 draft.MaxHistoryTurns = saved.MaxHistoryTurns;
                 draft.MaxHistoryTokens = saved.MaxHistoryTokens;
+                draft.MaxToolRounds = saved.MaxToolRounds;
+                draft.MaxToolCalls = saved.MaxToolCalls;
                 Status(saved.RememberApiKey
                     ? T("配置、提示词与上下文上限已保存，下次发送生效；API Key 保存在本机。")
                     : T("配置、提示词与上下文上限已保存，下次发送生效；API Key 仅本次运行有效。"));
@@ -303,7 +320,7 @@ namespace ProbablyAI.UI
         private void SetBusy(bool value)
         {
             busy = value;
-            foreach (var id in new[] { "base_url", "api_key", "model", "thinking", "remember_key", "max_turns", "max_tokens", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
+            foreach (var id in new[] { "base_url", "api_key", "model", "thinking", "remember_key", "max_turns", "max_tokens", "max_tool_rounds", "max_tool_calls", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
                 window.Get(id)?.SetInteractable(!value);
             window.Get("models")?.SetInteractable(!value && models.Count > 0);
             window.Get("cancel")?.SetInteractable(value);

@@ -63,9 +63,9 @@ namespace ProbablyAI.Hands
             return new JArray
             {
                 Tool("list_containers", "获取当前当铺的容器树，包括关闭的自有容器、嵌套文件夹和机器各分区。返回 ID、完整路径、父级、角色及锁定状态；不读取锁定容器内容。", list),
-                Tool("list_container", "列出一个容器的直接物品和直接子容器。多分区机器需继续查询具体分区。", contents, "container_id"),
-                Tool("find_items", "按名称、嵌套路径或游戏物品类型递归查找，返回唯一 ID、数量、类型、位置、赃物标记和热度。找所有食物应设 item_type=FOOD，无需名称含食物。默认不返回在用物品（in_use=true，含供电/充电电池及冰箱内未冻好物品）、受固定限制的物品（pinned=true 的物品本身，以及固定非储藏、非机器容器内或固定机器非售卖分区的物品）以及赃物（stolen=true）。", search),
-                Tool("inspect_item", "查看某个真实物品的描述、数量、所有权、位置、内容容器 ID、赃物标记与热度。", new JObject { ["item_id"] = Text("物品 ID。") }, "item_id"),
+                Tool("list_container", "列出一个容器的直接物品和直接子容器。多分区机器需继续查询具体分区。物品含可见耐久 durability（如有），以当前查询结果为准。", contents, "container_id"),
+                Tool("find_items", "按名称、嵌套路径或游戏物品类型递归查找，返回唯一 ID、数量、类型、位置、赃物标记、热度和可见耐久 durability（如有）。找所有食物应设 item_type=FOOD，无需名称含食物。默认不返回在用物品（in_use=true，含供电/充电电池及冰箱内未冻好物品）、受固定限制的物品（pinned=true 的物品本身，以及固定非储藏、非机器容器内或固定机器非售卖分区的物品）以及赃物（stolen=true）。", search),
+                Tool("inspect_item", "查看某个真实物品的描述、数量、所有权、位置、内容容器 ID、赃物标记与热度，以及可见耐久 durability（current、maximum、remaining_percent、depleted、assessment_source）。适用于所有采用原生耐久系统的道具。displayed 仅为未鉴定显示值，tested 为已鉴定或揭露的值；缺少 durability 表示无耐久或当前未知，不能当作耐久为零或仍可用。过滤、使用等操作后应重新查询实际耐久；主人要求耗尽停止时，depleted=true 应停止并汇报。", new JObject { ["item_id"] = Text("物品 ID。") }, "item_id"),
                 Tool("can_move_item", "预检单个物品堆是否能放入目标容器，不移动。执行时可能因容量或状态变化只移动一部分。", move, "item_id", "source_container_id", "destination_container_id", "quantity"),
                 Tool("move_item", "按游戏原生规则移动一个物品堆，支持上柜台、客人窗口到柜台、入库、归档、放入垃圾桶和机器投料。一次只移动一件：挑货或批量上柜台时改用 move_items，一次摆放多件。返回实际 moved 和 remaining；partial 不等于全部完成。不买卖、不改变所有权、不清空垃圾桶。", move, "item_id", "source_container_id", "destination_container_id", "quantity"),
                 Tool("move_items", "按游戏原生规则依次移动 1–20 个物品堆，一次调用完成多件摆放；挑货、整理和批量上柜台优先用它，而不是连续调用 move_item。每件独立检查原生所有权、锁定、容量和当前位置，已完成的移动不会回滚。返回每件结果及合计 moved；partial 不等于全部完成。所有移动使用同一个目标容器；不买卖、不改变所有权、不清空垃圾桶。", batch, "destination_container_id", "moves"),

@@ -12,6 +12,7 @@ internal static partial class Program
 {
     private static async Task RunHandsTests()
     {
+        await RunDurabilityTests();
         await Check("nested archive search distinguishes identical note names by path and ID", () =>
         {
             var backend = new FakeHands();
@@ -540,6 +541,62 @@ internal static partial class Program
             var transport = new FakeTransport((messages, token) => Call("loop-" + (++round), "list_containers", new JObject()));
             var result = await new HandsAgent(transport, new HandsService(backend)).RunAsync(new ConnectionOptions(), "查看容器", null, default);
             Assert(round == 16 && backend.Moves == 0 && result.Reply.Contains("上限"), "unbounded tool loop");
+        });
+        await Check("configured limits allow more than 16 rounds and 48 calls with a final reply", async () =>
+        {
+            int round = 0;
+            var transport = new FakeTransport((messages, token) => ++round <= 60
+                ? Call("repeat-" + round, "list_containers", new JObject()) : new ChatTurn { Text = "完成" });
+            var result = await new HandsAgent(transport, new HandsService(new FakeHands())).RunAsync(
+                new ConnectionOptions { MaxToolRounds = 61, MaxToolCalls = 60 }, "重复查询", null, default);
+            Assert(result.ToolCalls == 60 && result.Reply == "完成" && round == 61, "custom limits ignored or boundary rejected");
+        });
+        await Check("automatic observations do not consume the configured model tool budget", async () =>
+        {
+            int round = 0;
+            var transport = new FakeTransport((messages, token) => ++round == 1
+                ? Call("query", "list_containers", new JObject()) : new ChatTurn { Text = "完成" });
+            var registry = ProbablyAI.Tools.ToolRegistry.ForHands(new HandsService(new FakeHands()));
+            var result = await new HandsAgent(transport, registry, refreshShopContext: true).RunAsync(
+                new ConnectionOptions { MaxToolCalls = 1 }, "查询", null, default);
+            Assert(result.ToolCalls == 2 && result.Reply == "完成", "automatic read consumed model call budget");
+        });
+        await Check("call budget accumulates across rounds and resets for each message", async () =>
+        {
+            int round = 0;
+            var agent = new HandsAgent(new FakeTransport((messages, token) =>
+                Call("query-" + ++round, "list_containers", new JObject())), new HandsService(new FakeHands()));
+            var options = new ConnectionOptions { MaxToolCalls = 1 };
+            for (int i = 0; i < 2; i++)
+            {
+                int executed = 0;
+                await ExpectAsync<ApiRequestException>(() => agent.RunAsync(options, "查询", progress =>
+                { if (progress.StartsWith("list_containers")) executed++; }, default));
+                Assert(executed == 1 && !agent.IsRunning, "call cap failed or leaked to next message");
+            }
+            Assert(round == 4, "call budget did not stop second tool round");
+        });
+        await Check("configured round cap stops the loop and resets running state", async () =>
+        {
+            int round = 0;
+            var agent = new HandsAgent(new FakeTransport((messages, token) =>
+                Call("round-" + ++round, "list_containers", new JObject())), new HandsService(new FakeHands()));
+            var result = await agent.RunAsync(new ConnectionOptions { MaxToolRounds = 2 }, "查询", null, default);
+            Assert(round == 2 && result.ToolCalls == 2 && result.Reply.Contains("F7") && !agent.IsRunning, "round cap ignored");
+        });
+        await Check("over-budget batches execute no actions and retain valid history", async () =>
+        {
+            var backend = new FakeHands();
+            var first = Call("batch-a", "move_item", Move("note-a", "mentor", "counter", 1));
+            var second = Call("batch-b", "move_item", Move("note-b", "mentor", "trash", 1));
+            first.ToolCalls = first.ToolCalls.Concat(second.ToolCalls).ToArray();
+            ((JArray)first.Message["tool_calls"]).Add(second.Message["tool_calls"][0].DeepClone());
+            var memory = new ConversationMemory();
+            var agent = new HandsAgent(new FakeTransport((messages, token) => first), new HandsService(backend));
+            var error = await ExpectAsync<ApiRequestException>(() => agent.RunAsync(
+                new ConnectionOptions { MaxToolCalls = 1 }, "移动", null, default, memory));
+            Assert(backend.Moves == 0 && !agent.IsRunning && error.Message.Contains("F7"), "partial over-budget batch ran");
+            Assert(memory.Messages().All(m => m["tool_calls"] == null), "unpaired tool calls recorded");
         });
     }
 

@@ -38,8 +38,19 @@ namespace ProbablyAI.Hands
         public int? Heat { get; set; }
         public bool? Charging { get; set; }
         public bool? InUse { get; set; }
+        public ItemDurability Durability { get; set; }
         public string Description { get; set; }
         public List<string> Types { get; set; } = new List<string>();
+    }
+
+    public sealed class ItemDurability
+    {
+        public int Current { get; set; }
+        public int Maximum { get; set; }
+        public double RemainingPercent => Math.Round(100d * Current / Maximum, 2);
+        public bool Depleted => Current == 0;
+        // displayed is the public claim; tested is already discovered/exposed in game.
+        public string AssessmentSource { get; set; }
     }
 
     public sealed class WorldSnapshot

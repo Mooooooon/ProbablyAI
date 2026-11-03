@@ -1,1 +1,3 @@
-v0.7.12: corrected the game-mechanics description. This is not a traditional combat game; weapons are mainly used to slaughter animals (such as rats) for meat, and the only combat-like action is the special shotgun shooting mode against augmented customers. The assistant may use weapons on animals, but never on customers, enemies or other characters, and never automates the shotgun kill.
+v0.7.13:
+- F7 now lets you set model rounds and tool calls per message for complex repeated tasks. Defaults remain 16 rounds / 48 calls, adjustable up to 1000 rounds / 10000 calls; saved limits survive restarts.
+- Item queries now show generic visible durability: current/maximum values, remaining percentage and exhaustion, for filters and all items using native durability. Displayed and tested readings are distinguished. F7 manual details show it too; requery after using an item or filtering water.
