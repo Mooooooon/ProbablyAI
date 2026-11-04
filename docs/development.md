@@ -26,7 +26,7 @@
 | [src/Customers](../src/Customers) | 当前客人、预算、需求与价格；`GameCustomerPricing` 原生报价适配、`CustomerPriceCalculator` 价格计算、`RecorderHistory` 对话记录、`VisitorRisk` 提醒判断 |
 | [src/Inspection](../src/Inspection) | 目视检查与水质分析；原生读取和纯判断逻辑分离，如 `WaterAssessment`、`InjectorAssessment` |
 | [src/Liquids](../src/Liquids) | 倒取、倒掉液体、接水；`LiquidRules` 纯规则，`GameLiquidBackend` 执行原生操作 |
-| [src/Items](../src/Items) | 通用物品对物品使用、使用 / 激活；`ItemUseRules` 与 `GameItemUseBackend` |
+| [src/Items](../src/Items) | 通用物品对物品使用、使用 / 激活；`ItemUseRules` 与 `GameItemUseBackend`；`BottlePrinterService` 与 `GameBottlePrinter` 操作水瓶打印机 |
 | [src/Documents](../src/Documents) | 笔记、书籍、指南等原生可见文字的只读读取 |
 | [src/Labels](../src/Labels) | 普通标签机的选项查询 / 标签编辑、蓝色标签机改名 / 清除名称；通过原生窗口回调执行 |
 | [src/Localization](../src/Localization) | `Text` 语言选择与 `T` / `F`；`EnglishTranslations` 英文文本与工具说明 |
@@ -66,6 +66,7 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 | 物品字段、耐久、容器树 | `Hands/HandsContracts.cs`、`GameHandsBackend.cs`、`GameItemDurability.cs`、`HandsProtocol.cs`；F7 详情在 `UI/HandsWindow.cs` | `HandsTests.cs`、`DurabilityTests.cs` |
 | 查询 / 移动物品、批量移动 | `Hands/HandsProtocol.cs` → `HandsService.cs` → `GameHandsBackend.cs` | `HandsTests.cs` |
 | 接水、倒水、物品使用 | `Liquids/` 或 `Items/` 中的 Protocol、Contracts、Service、Rules、GameBackend | `LiquidTests.cs`、`ItemUseTests.cs` |
+| 打印空水瓶 | `Items/BottlePrinterService.cs` → `GameBottlePrinter.cs`；组装在 `AssistantController.OnGameLoaded` | `ItemUseTests.cs`、`LocalizationTests.cs`；原生按钮、耗电和成品放置需游戏实测 |
 | 改标签、改名、清除自定义名称 | `Labels/LabelProtocol.cs`、`LabelService.cs`、`GameLabelBackend.cs`；组装在 `AssistantController.OnGameLoaded` | `LabelTests.cs`、`LocalizationTests.cs`；实际窗口回调与同帧连续编辑需游戏实测 |
 | 客人需求、预算和价格 | `Customers/CustomerProtocol.cs`、`CustomerService.cs`、`GameCustomerBackend.cs`、价格相关文件 | `CustomerTests.cs`、`PricingTests.cs` |
 | 到店提醒 / 录音机记录 | `AssistantController.cs`、`Customers/VisitorRisk.cs`、`RecorderHistory.cs`、`UI/VisitNoticeView.cs` | `ChatTests.cs`、`CustomerTests.cs` |
@@ -130,7 +131,7 @@ dotnet build .\ProbablyAI.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\st
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\steamapps\common\Probably Stolen'
 ```
 
-主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **227 项**，以后以实际输出为准。
+主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **229 项**，以后以实际输出为准。
 
 测试覆盖纯逻辑、模拟 HTTP、工具循环及部分用原生接口桩执行的生产适配逻辑；并不等于完整 Unity 集成测试。`GameHandsBackend` 的实际场景遍历、窗口显示和物品原生回调仍需游戏实测。新增逻辑优先补可模拟测试，不为单纯文档修改新增运行时测试。
 

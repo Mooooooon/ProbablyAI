@@ -89,6 +89,10 @@ Scope and limits:
 - Ownership, locks, capacity and screen state are never bypassed. Customer items are usable only when the native `CAN_USE_ON_NON_OWNED_TAG` allows it. Test strips, scanners and books may open native windows; the assistant does not click those windows or replace `analyze_water` / `read_document` for data.
 - The assistant does not choose dialogue, trade, submit quotes or edit saves; those remain manual. `changed=false` means no visible change was observed, so the same action should not be repeated blindly.
 
+## Bottle printer
+
+Try “Use the bottle printer to print a small empty bottle.” The assistant uses the player's printer and an unlocked size, with the game's normal power costs. The empty bottle stays in the printer output.
+
 ## Labels and custom names
 
 The assistant can use a real standard label printer to change item labels, or a blue labeler to set or clear a custom name. Try “Label this bottle as base water,” “Rename this box to Medicine,” or “Clear this box's custom name.” It queries native choices, edits through the native UI callbacks and verifies the result. Ownership, locks, allowed targets and native input limits still apply. Changing a label does not change real water quality or item properties and does not complete a trade. Close any label editor already in use before asking the assistant to edit.
@@ -116,4 +120,4 @@ The Workshop upload contains only this mod's compiled DLL, manifest, player guid
 
 Start with [AGENTS.md](https://github.com/Mooooooon/ProbablyAI/blob/main/AGENTS.md) and the [development map (Chinese)](https://github.com/Mooooooon/ProbablyAI/blob/main/docs/development.md). The map covers module responsibilities, runtime call flow, task-to-code/test lookup, game/config/build/release paths, and steps for extending tools or settings. Run the console tests with `dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release`; both build and tests accept `-p:GameDirectory=...`. The current baseline is 227 checks, with actual output authoritative. Native UI and scene behavior still require in-game testing.
 
-Version 0.7.14. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.7.15. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.

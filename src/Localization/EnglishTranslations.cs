@@ -8,6 +8,18 @@ namespace ProbablyAI.Localization
     {
         internal static readonly Dictionary<string, string> Values = new Dictionary<string, string>
         {
+            [BottlePrinterService.Description] = "Use a player-owned bottle printer (bottle_printer) to print one empty water bottle. First search for bottle_printer with find_items (set include_pinned=true for pinned machines), then pass its actual item ID and size: small, normal or large. The game enforces size unlocks, power and output capacity. The bottle stays in the printer output, and the result includes the actual item and container IDs.",
+            [BottlePrinterService.PrinterIdDescription] = "Actual bottle printer item ID from an item query.",
+            [BottlePrinterService.SizeDescription] = "Empty water bottle size: small, normal or large.",
+            ["已打印一个空水瓶（{0}），放在打印机成品区。"] = "Printed one empty water bottle ({0}) and left it in the printer output.",
+            ["请提供水瓶打印机物品 ID 和规格 small、normal 或 large。"] = "Provide a bottle printer item ID and a size of small, normal or large.",
+            ["请选择一台水瓶打印机。"] = "Select a bottle printer.",
+            ["只能使用玩家拥有的水瓶打印机。"] = "You can only use a player-owned bottle printer.",
+            ["当前无法访问水瓶打印机的原生控制或成品区。"] = "The bottle printer controls or output are currently unavailable.",
+            ["这台水瓶打印机还没解锁该规格。"] = "This bottle printer has not unlocked that size.",
+            ["水瓶打印机没有可用的电源，或电量不足。"] = "The bottle printer has no usable power source or insufficient power.",
+            ["未能核实打印结果。请检查成品区和电量，再决定是否重试。"] = "The print result could not be verified. Check the output and power before retrying.",
+            ["成品区没有新增水瓶。请检查成品区是否有足够空间。"] = "No new bottle appeared in the output. Check that the output has enough space.",
             ["标签机或目标已不在当前容器树中，请重新查询。"] = "The labeler or target is no longer in the current container tree. Query the items again.",
             ["需要真实的普通标签打印机或蓝色标签机。"] = "A real standard label printer or blue labeler is required.",
             ["原生蓝色标签机不能重命名档案架。"] = "The native blue labeler cannot rename the dossier rack.",
@@ -33,7 +45,7 @@ namespace ProbablyAI.Localization
             ["自定义名称已设置并核实。"] = "The custom name was set and verified.",
             ["标签操作未完成，请重新查询物品与标签状态，不要盲目重复执行。"] = "The label action did not complete. Query the item and labels again; do not repeat blindly.",
             ["请提供有效的标签机、目标和选项 ID；名称最多 200 字且不能包含换行或控制字符，不接受多余参数。"] = "Provide valid labeler, target and choice IDs. Names must be at most 200 characters without line breaks or control characters. Extra parameters are not accepted.",
-            ["点击女仆助手立绘聊天，查询客人预算与需求，用自然语言整理当铺、倒取液体、使用物品和鉴定物品，查看道具可见耐久、修改标签和自定义名称。F7 可编辑提示词、配置连接、思考级别、上下文及每条消息的处理轮数 / 工具调用次数上限；聊天记录按存档槽保存在本机。F6 显隐立绘。支持嵌套容器、机器投料和手动操作。"] = "Click the maid portrait to chat, check customer budgets and needs, organize the pawnshop, handle liquids, use and inspect items, read visible durability, and edit labels and custom names. F7 configures prompts, connections, thinking, context and per-message model-round/tool-call limits. Chat history is saved locally per save slot. F6 toggles the portrait. Supports nested containers, machine inputs and manual controls.",
+            ["点击女仆助手立绘聊天，查询客人预算与需求，用自然语言整理当铺、倒取液体、使用物品和鉴定物品，查看道具可见耐久、修改标签和自定义名称，并用水瓶打印机打印空瓶。F7 可编辑提示词、配置连接、思考级别、上下文及每条消息的处理轮数 / 工具调用次数上限；聊天记录按存档槽保存在本机。F6 显隐立绘。支持嵌套容器、机器投料和手动操作。"] = "Click the maid portrait to chat, check customer budgets and needs, organize the pawnshop, handle liquids, use and inspect items, read visible durability, edit labels and custom names, and print empty bottles. F7 configures prompts, connections, thinking, context and per-message model-round/tool-call limits. Chat history is saved locally per save slot. F6 toggles the portrait. Supports nested containers, machine inputs and manual controls.",
             [" · 已耗尽"] = " · Depleted",
             ["显示值，未鉴定"] = "Displayed value, untested",
             ["已鉴定"] = "Tested",

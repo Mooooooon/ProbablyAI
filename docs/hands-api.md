@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.14）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.15）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -225,6 +225,18 @@
 - 原生 `MayTarget` / `CanTarget`、`MayActivateSlotItem` / `CanActivateSlotItem` 拒绝时返回 `item_use_rejected`，不绕过所有权、容量、目标限制或界面状态。客人的物品是否可用由原生的 `CAN_USE_ON_NON_OWNED_TAG` 决定，助手不另外放行。
 - 结果包含源物品是否被消耗、使用前后数量、是否观察到状态变化，以及目标液量（如果目标是液体容器）。原生动作被接受即返回 `ok`；`changed=false` 表示没有观察到可见变化，不代表可以重复执行。试纸、扫描仪、书籍等可能打开原生窗口，结果会提示按原生界面继续；助手不读取未显示的纯度 / 成分，也不代替玩家点选界面。
 - 不代替玩家选择对话、买卖、提交报价或改存档；交易、对话选项和存档仍由玩家操作。
+
+## 水瓶打印机
+
+聊天和 F7 助手指令可调用 `print_bottle`。先用 `find_items` 搜索 `bottle_printer`，查询固定的机器时加 `include_pinned=true`。参数 `item_id` 是查询返回的打印机物品 ID，`size` 必填，每次打印一个空瓶。
+
+| `size` | 空瓶容量 | 电量 | 解锁条件 |
+| --- | --- | --- | --- |
+| `small` | 450 ml | 4 | 默认可用 |
+| `normal` | 750 ml | 6 | 累计升级 3 次 |
+| `large` | 2000 ml | 11 | 累计升级 9 次 |
+
+工具在主线程使用玩家拥有的打印机，调用原生按钮处理放置与耗电。打印成功后，空瓶留在机器的 `output` 分区，结果返回成品的 `item_id`、`identifier`、`name`、`container_id`、`path` 和本次新增的 `quantity`。缺少可用电源时返回 `printer_no_power`，规格未解锁时返回 `bottle_size_locked`。成品区没有新增水瓶时返回 `print_no_output`。收到 `print_unverified` 时，先查询成品区并核对电量。
 
 ## 标签打印机与改名
 

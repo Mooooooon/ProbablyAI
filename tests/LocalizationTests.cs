@@ -65,11 +65,12 @@ internal static partial class Program
                 new InspectionService(new GameInspectionBackend(InspectionWorld())).Register(registry);
                 new LiquidService(new FakeLiquid()).Register(registry);
                 new ItemUseService(new FakeItemUse()).Register(registry);
+                new BottlePrinterService((_, _) => throw new InvalidOperationException()).Register(registry);
                 new DocumentService(new FakeDocument()).Register(registry);
                 new ProbablyAI.Labels.LabelService(new FakeLabels()).Register(registry);
                 var chinese = registry.Definitions();
                 Text.UseLocale("en"); var english = registry.Definitions();
-                Assert(english.Count == 28 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
+                Assert(english.Count == 29 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
                 for (int i = 0; i < english.Count; i++)
                     Assert((string)english[i]["function"]["name"] == (string)chinese[i]["function"]["name"] &&
                         JToken.DeepEquals(english[i]["function"]["parameters"]["required"], chinese[i]["function"]["parameters"]["required"]), "translation changed protocol IDs");

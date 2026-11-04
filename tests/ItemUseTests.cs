@@ -25,6 +25,55 @@ internal static partial class Program
             var use = registry.Definitions().Single(d => (string)d["function"]["name"] == "use_item_on_item");
             Assert(JToken.DeepEquals(use["function"]["parameters"]["required"], new JArray("item_id", "target_item_id")), "use schema changed");
         });
+        await Check("bottle printer maps each size to a native request and returns the observed output", () =>
+        {
+            var registry = new ToolRegistry();
+            var expectedSize = BottleSize.Small;
+            int calls = 0;
+            new BottlePrinterService((itemId, size) =>
+            {
+                Assert(itemId == "printer-id" && size == expectedSize, "wrong printer or size");
+                calls++;
+                return new ItemInfo { Id = "bottle-id", ContainerId = "output-id", Quantity = 3 };
+            }).Register(registry);
+            const string name = "print_bottle";
+            var parameters = registry.Definitions().Single()["function"]["parameters"];
+            Assert(registry.ChangesState(name) && !(bool)parameters["additionalProperties"] &&
+                JToken.DeepEquals(parameters["required"], new JArray("item_id", "size")) &&
+                JToken.DeepEquals(parameters["properties"]["size"]["enum"], new JArray("small", "normal", "large")), "printer schema is incomplete");
+            foreach (var (input, size) in new[] { ("small", BottleSize.Small), ("normal", BottleSize.Normal), ("large", BottleSize.Large) })
+            {
+                expectedSize = size;
+                var result = registry.Execute(name, new JObject { ["item_id"] = "printer-id", ["size"] = input });
+                var data = Doc(result)["data"];
+                Assert(result.Success && (string)data["item_id"] == "bottle-id" && (string)data["container_id"] == "output-id" &&
+                    (int)data["quantity"] == 1, "printer did not report the one newly produced bottle");
+            }
+            Assert(calls == 3, "printer did not execute exactly once per request");
+        });
+        await Check("bottle printer rejects invalid arguments without printing and preserves native refusals", () =>
+        {
+            var registry = new ToolRegistry();
+            int calls = 0;
+            new BottlePrinterService((_, _) =>
+            {
+                calls++;
+                throw new HandsException("printer_no_power", "no power");
+            }).Register(registry);
+            const string name = "print_bottle";
+            foreach (var arguments in new[]
+            {
+                new JObject { ["item_id"] = "printer" },
+                new JObject { ["item_id"] = " ", ["size"] = "small" },
+                new JObject { ["item_id"] = "printer", ["size"] = 0 },
+                new JObject { ["item_id"] = "printer", ["size"] = "medium" },
+                new JObject { ["item_id"] = "printer", ["size"] = "small", ["quantity"] = 2 }
+            })
+                Assert(registry.Execute(name, arguments).Code == "invalid_arguments", "invalid print request accepted");
+            Assert(calls == 0, "invalid request reached the printer");
+            var result = registry.Execute(name, new JObject { ["item_id"] = "printer", ["size"] = "large" });
+            Assert(!result.Success && result.Code == "printer_no_power" && calls == 1, "native refusal was lost or retried");
+        });
         await Check("item-use rejects malformed, extra and self-targeted requests before touching game state", () =>
         {
             var backend = new FakeItemUse(); var service = new ItemUseService(backend);

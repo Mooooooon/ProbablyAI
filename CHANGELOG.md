@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 0.7.15 — 2026-11-04
+
+### 中文
+
+- 小鲸可以使用水瓶打印机打印已解锁的小号、普通或大号空瓶。打印消耗电量，空瓶留在打印机成品区。
+- 工坊简介新增分批净水示例，展示如何按耐久读数决定是否更换过滤器，再进行紫外线处理、投药和转存。
+
+### English
+
+- Xiaojing can use the bottle printer to make small, standard or large empty bottles as each size is unlocked. Printing uses power and leaves the bottles in the printer output.
+- The Workshop description now shows how to purify water in batches, using the durability reading to decide whether to replace the filter before UV treatment, tablets and transfer to storage.
+
 ## 0.7.14 — 2026-11-03
 
 ### 中文

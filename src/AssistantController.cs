@@ -108,6 +108,7 @@ namespace ProbablyAI
             new InspectionService(new GameInspectionBackend(handsBackend)).Register(Tools);
             new LiquidService(new GameLiquidBackend(handsBackend)).Register(Tools);
             new ItemUseService(new GameItemUseBackend(handsBackend)).Register(Tools);
+            new BottlePrinterService(new GameBottlePrinter(handsBackend).Print).Register(Tools);
             new DocumentService(new GameDocumentBackend(handsBackend)).Register(Tools);
             new LabelService(new GameLabelBackend(handsBackend)).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);

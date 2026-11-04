@@ -40,6 +40,7 @@
     <Compile Include="..\src\Items\ItemUseRules.cs" Link="Items\ItemUseRules.cs" />
     <Compile Include="..\src\Items\ItemUseProtocol.cs" Link="Items\ItemUseProtocol.cs" />
     <Compile Include="..\src\Items\ItemUseService.cs" Link="Items\ItemUseService.cs" />
+    <Compile Include="..\src\Items\BottlePrinterService.cs" Link="Items\BottlePrinterService.cs" />
     <Compile Include="..\src\Localization\*.cs" Link="Localization\%(Filename)%(Extension)" />
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
     <Compile Include="..\src\Customers\CustomerProtocol.cs" Link="CustomerProtocol.cs" />

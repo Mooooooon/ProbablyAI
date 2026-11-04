@@ -24,7 +24,7 @@ namespace ProbablyAI.Items
         };
 
         private static JObject Text(string description) => new JObject { ["type"] = "string", ["description"] = description };
-        private static JObject Tool(string name, string description, JObject properties, params string[] required)
+        internal static JObject Tool(string name, string description, JObject properties, params string[] required)
             => new JObject
             {
                 ["type"] = "function",
