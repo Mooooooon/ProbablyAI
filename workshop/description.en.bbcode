@@ -1,68 +1,35 @@
 [h1]Deep Space AI: Probably DeepSeek — Pawnshop Maid Assistant "Xiaojing"[/h1]
-Chat with Xiaojing, an AI maid inspired by the DeepSeek mascot. Ask her to organize stock, move items or check a customer's budget and preferences.
+Xiaojing is your AI maid in the pawnshop. Click her portrait to ask for help picking goods, organizing stock, or carrying out jobs that take several checks and actions.
 
-[h2]💡 A Note on Early Development[/h2]
-The mod is in [b]early development[/b]. Suggestions and bug reports are welcome in the comments.
-
-[h2]✨ Key Features[/h2]
+[h2]What Xiaojing can do[/h2]
 [list]
-[*]💬 [b]Interactive Portrait & Natural Language Chat[/b]: Xiaojing stays on the left side of your shop (press [b]F6[/b] to toggle). Naturally breathes without floating feet. Click her portrait to chat freely.
-[*]📦 [b]Stock Handling[/b]: Ask her to move food from your bag to the counter or put scrap metal into the furnace. Supports nested storage, tabs and machine compartments.
-[*]🏭 [b]Machine Production Chains[/b]. Ask Xiaojing to load and operate machines, wait for products or drying, and move materials to the next device.
-[*]👥 [b]Customer & Budget Inquiries[/b]: Ask about current visitor intent, remaining budget, refusal rules, and special barter/procurement/gunsmith orders; can also read recorder dialogue from the current visit.
-[*]🔍 [b]Item Visual Inspection[/b]: After unlocking inspection, Xiaojing assists in reading visible details on mechanical hands, Ribwiches, Plasma Cartridges, cigarettes, food stamps, injectors, and water containers to detect defects and counterfeits (read-only; does not submit quotes).
-[*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Edit up to five shortcuts in F7. Defaults include picking goods, appraising items, and purifying two batches of water. Alerts flag wanted or augmented visitors, excluding on-duty security.
-[*]📖 [b]Read Notes, Books & Guides[/b]: Read-only access to mentor notes, intel slips, book pages, and visible text on guide cards and wanted posters.
-[*]💧 [b]Liquid Handling[/b]: Pour water or wine, dump a container at the drain, or fill bottles at the faucet in plain language. Uses the native item-on-item logic and respects ownership, locks, capacity, filters and faucet unlocks, reporting actual volumes and remaining levels.
-[*]💊 [b]Item Use[/b]: Perform native non-combat item-on-item and use/activate actions like a player: test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted. Weapons can slaughter animals (such as rats), but are never used on customers or enemies, and the shotgun shooting mode is not automated; trading and save editing remain excluded.
-[*]💾 [b]Persistent Chat & Adjustable Context[/b]: Chat history is saved with the game. Loading an earlier save also restores the chat and assistant context from that checkpoint. F7 sets how much the model receives (1–50 turns and 1,000–200,000 estimated tokens). Older turns stay in the saved transcript.
-[*]🏷️ [b]Labels & Custom Names[/b]: Use a standard label printer to edit allowed labels, or a blue labeler to set/clear custom names. Queries choices and verifies results through native rules. Labels do not change real properties or water quality.
-[*]🔧 [b]Generic Item Durability[/b]: Query current/maximum durability, percentage and exhaustion for filters and all items using native durability. Displayed and tested values are distinguished; F7 manual details show it too.
-[*]🔁 [b]Adjustable Tool Limits[/b]: F7 sets rounds per message (1–1000, default 16) and tool calls (1–10000, default 48). Higher limits may increase time and API costs. You can stop a running task.
-[*]⚙️ [b]API & Persona Settings (F7)[/b]: Set an OpenAI-compatible endpoint and thinking level, edit the system prompt, and append your own game tips. Supports hosted services such as DeepSeek and local models via Ollama/vLLM.
-[*]🌐 [b]Automatic Bilingual Support[/b]: Mod UI and prompts automatically switch with the game's Chinese/English locale.
+[*][b]Run errands[/b]: move and sort stock, fill and pour liquids, print bottles, operate machines, and transfer finished products.
+[*][b]Check the details[/b]: look up customer budgets and preferences, inspect items and durability, read notes and guides, and flag certain visitors when they arrive.
+[*][b]Work the way you like[/b]: chat travels with your game save. Use F7 to set up your model, prompt, game tips, and quick replies.
 [/list]
 
-[h2]Multi-step command example: purify water in batches[/h2]
-Try giving Xiaojing the following instructions. Unlock the faucet first and have a 3,000 mL water canister, an empty canister large enough to hold the batch, a filter with durability left, a UV lamp and purification tablets ready.
+[h2]Quick replies: send a whole procedure in one click[/h2]
+F7 → Quick replies lets you save five buttons. A message can include several steps, conditions, and reasons to stop. Unlock the faucet and gather supplies to try “Purify water (2 batches).” Xiaojing fits a filter into a 3,000 mL pitcher and fills it, rechecks durability, and temporarily stores the water if the filter needs replacing. She treats it with UV and two purification tablets, then checks how much the purifier's storage tank actually received from each batch. The job stops if durability is unknown or if supplies or tank space run out.
 
-[olist]
-[*]Fit a filter with durability left into the 3,000 mL water canister and fill it at the faucet.
-[*]Check the filter's durability again. If it has durability left, continue. If it has reached zero, pour the water into the empty canister for temporary storage, install a filter with durability left, then pour the water back into the original canister.
-[*]Use the UV lamp on the water in the original canister, then add two purification tablets, one at a time.
-[*]Pour the pretreated water into the large storage tank inside the water purifier in the machine area. Check how much actually went into the tank and repeat for the number of batches I requested. Stop and tell me if supplies run out, filter durability is unavailable, or the tank cannot hold the batch.
-[/olist]
+Clicking a quick reply sends the entire instruction to Xiaojing. She works out the next step from current stock and tool results, so it's handy when the job needs a fresh judgment each time.
 
-The tablets may take time to react. Ask Xiaojing to use a test strip or scanner if you want to check the final water quality. For several batches, you can raise the round and tool-call limits in F7.
+[h2]Macros: save a routine and run it in the game[/h2]
+[list]
+[*]Ask Xiaojing to draft a macro. For example, “Make a water treatment macro that asks for a batch count and stops if supplies run out.” You can also edit the JSON directly in Manage macros.
+[*]Review and approve the draft, then click its button in chat. If the macro takes inputs, such as a batch count, the game asks for them before running it.
+[*]Macros support branches, loops, and checks, and look up items in the current save at run time. Built-in game tools run locally without model requests between steps. If a run stops, the result shows where it stopped and what was completed.
+[/list]
+Your local macro library is shared across saves. Use quick replies for jobs you want Xiaojing to reason through and macros for procedures you want to repeat. See the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/docs/hands-api.md]tool guide[/url] for the macro format and a starter example.
 
 [h2]📝 Changelog[/h2]
-[b]v0.7.17[/b]
+[b]v0.7.18[/b]
 [list]
-[*]Chat history now travels with each game save. Loading a checkpoint restores both the chat window and the assistant's context from that save.
-[*]Save your own game tips in the F7 Assistant prompt tab. The assistant appends them to its system prompt.
-[*]Edit five one-click chat shortcuts in F7. The new default water purification example runs two 3,000 mL batches.
+[*]Create, review, and run local macros from chat. Macros support conditions, loops, and inputs.
+[*]Ask the assistant to draft a macro, then approve it to run it in one click. Approved macros are available across local saves.
+[*]Pouring routines can check that the full amount will fit and record how much actually reached the target.
 [/list]
 
-[b]v0.7.16[/b]
-[list]
-[*]Xiaojing can inspect machine compartments and state and use native controls for blending, heating, recipe selection, output and feed processing.
-[*]Chain machines together and wait for a target output quantity or for materials to dry before transferring them. If a machine step fails, later operations in that batch are skipped.
-[/list]
-
-[b]v0.7.15[/b]
-[list]
-[*]Xiaojing can use the bottle printer to make small, standard or large empty bottles as each size is unlocked. The game handles power consumption and output capacity.
-[*]The Workshop description now includes a batch water purification example with faucet filling, durability checks, conditional filter replacement, UV treatment, tablets and transfer to a storage tank.
-[/list]
-
-[b]v0.7.14[/b]
-[list]
-[*]Added label editing: the assistant queries native choices, uses a real standard label printer and verifies the result. Changing a label does not change real properties or water quality.
-[*]Added blue-labeler naming: set or clear custom item names through the native editor and verify the result. Ownership, locks, target and input limits apply; an editor already in use is left untouched.
-[/list]
-
-[i]Older versions are listed in the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url].[/i]
-
+[i]See the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url] for the full release history.[/i]
 [h2]🛠️ Quick Start & Notes[/h2]
 [list]
 [*]1. When enabling the mod in Mods menu, confirm the network permission prompt, then restart the game.

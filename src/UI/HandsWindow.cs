@@ -185,6 +185,7 @@ namespace ProbablyAI.UI
         private void Transfer(bool preview)
         {
             if (busy) return;
+            if (!preview && agent.IsRunning) { Status(T("助手正在处理另一个窗口的请求，请等待完成或先停止。")); return; }
             var item = SelectedItem;
             var target = Destination;
             if (item == null || target == null) { Status(T("请先选择物品和目标容器。")); return; }
@@ -203,6 +204,7 @@ namespace ProbablyAI.UI
         private void SetSourceOpen(bool open)
         {
             if (busy || Source == null) return;
+            if (agent.IsRunning) { Status(T("助手正在处理另一个窗口的请求，请等待完成或先停止。")); return; }
             var result = hands.Execute(open ? "open_container" : "close_container", new JObject { ["container_id"] = Source.Id });
             Append(result.Message); Status(result.Message);
         }
@@ -210,6 +212,7 @@ namespace ProbablyAI.UI
         private async void RunInstruction()
         {
             if (busy) return;
+            if (agent.IsRunning) { Status(T("助手正在处理另一个窗口的请求，请等待完成或先停止。")); return; }
             var instruction = window.Get("instruction").GetString();
             if (string.IsNullOrWhiteSpace(instruction)) { Status(T("请先输入要执行的指令。")); return; }
             var request = new CancellationTokenSource();

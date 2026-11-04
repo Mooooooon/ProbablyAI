@@ -24,6 +24,9 @@
     <Compile Include="MachineTests.cs" />
     <Compile Include="DocumentTests.cs" />
     <Compile Include="LabelTests.cs" />
+    <Compile Include="MacroTests.cs" />
+    <Compile Include="WaterMacroTests.cs" />
+    <Compile Include="..\src\Macros\*.cs" Link="Macros\%(Filename)%(Extension)" />
     <Compile Include="..\src\Labels\LabelContracts.cs" Link="Labels\LabelContracts.cs" />
     <Compile Include="..\src\Labels\LabelProtocol.cs" Link="Labels\LabelProtocol.cs" />
     <Compile Include="..\src\Labels\LabelService.cs" Link="Labels\LabelService.cs" />

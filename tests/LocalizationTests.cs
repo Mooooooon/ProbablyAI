@@ -70,9 +70,14 @@ internal static partial class Program
                 new MachineService(_ => null, (_, _, _, _) => null, (_, _) => null).Register(registry);
                 new DocumentService(new FakeDocument()).Register(registry);
                 new ProbablyAI.Labels.LabelService(new FakeLabels()).Register(registry);
+                TestMacros(registry);
                 var chinese = registry.Definitions();
                 Text.UseLocale("en"); var english = registry.Definitions();
-                Assert(english.Count == 32 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
+                Assert(english.Count == 37 && !Regex.IsMatch(english.ToString(), "[一-鿿]"), "English tool schemas contain untranslated descriptions");
+                var authoring = Doc(registry.Execute("get_macro", new JObject()))["data"];
+                Assert(JToken.DeepEquals(authoring["tools"], new JArray(english.Where(tool =>
+                    registry.IsGameplay((string)tool["function"]["name"])))) &&
+                    !Regex.IsMatch((string)authoring["guide"], "[一-鿿]"), "macro guide or shared tool catalog diverged");
                 for (int i = 0; i < english.Count; i++)
                     Assert((string)english[i]["function"]["name"] == (string)chinese[i]["function"]["name"] &&
                         JToken.DeepEquals(english[i]["function"]["parameters"]["required"], chinese[i]["function"]["parameters"]["required"]), "translation changed protocol IDs");

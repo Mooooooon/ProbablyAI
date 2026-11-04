@@ -22,6 +22,7 @@
 | [src/UI](../src/UI) | `ChatWindow` 聊天；`ConnectionWindow` F7 配置；`HandsWindow` 手动操作；立绘与到店提醒 |
 | [src/Services](../src/Services) | HTTP、连接选项与持久化、提示词升级、聊天历史存储与发送上下文裁剪 |
 | [src/Tools/ToolRegistry.cs](../src/Tools/ToolRegistry.cs) | 工具注册、Schema 生成与翻译、工具分发、是否改变状态的标记 |
+| [src/Macros](../src/Macros) | 宏 JSON 校验、批准版和草稿的原子存储、按注册表执行的本地解释器 |
 | [src/Hands](../src/Hands) | 容器树、物品查询、移动与开关窗口；`HandsAgent` 工具循环；`GameItemDurability` 通用可见耐久读取 |
 | [src/Customers](../src/Customers) | 当前客人、预算、需求与价格；`GameCustomerPricing` 原生报价适配、`CustomerPriceCalculator` 价格计算、`RecorderHistory` 对话记录、`VisitorRisk` 提醒判断 |
 | [src/Inspection](../src/Inspection) | 目视检查与水质分析；原生读取和纯判断逻辑分离，如 `WaterAssessment`、`InjectorAssessment` |
@@ -54,6 +55,8 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 
 `HandsAgent` 位于 `Hands/`，但负责全部已注册工具，不只负责搬运。`AssistantController.OnGameLoaded` 是内置工具的组装入口；对外扩展入口是 `ModEntry.ToolsReady`。`changesState` 决定操作记录与历史投影，新增修改游戏状态的工具需要正确标记。
 
+聊天快捷按钮经 `ChatWindow` 和 `HandsAgent.RunLocalMacroAsync` 使用同一个 `MacroService`。AI 通过 `run_macro` 进入该服务。宏步骤和普通助手调用都走当前场景的 `ToolRegistry.ExecuteAsync`。扩展注册完成后，宏编写指引即时读取游戏工具定义。`MacroWindow` 负责 JSON 编辑、审批和参数填写。
+
 立绘聊天传入 `ConversationMemory` 保留多轮历史；F7 手动操作页的助手指令不传记忆，是独立请求。F7 的测试对话经 `IAssistantService` / `OpenAiAssistantService` 调用普通聊天接口，不走游戏工具循环。不要把这三个入口混为一处修改。
 
 原生物品 / 容器 / 客人访问在 Unity 主线程执行。`HandsAgent` 保留 Unity 同步上下文；不要把工具分发放进 `Task.Run`。读档开始或场景卸载时，控制器解除旧会话的持久化绑定、取消请求、关闭窗口并使旧适配器失效。物品 ID 只在当前载入中有效。
@@ -67,6 +70,7 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 | 物品字段、耐久、容器树 | `Hands/HandsContracts.cs`、`GameHandsBackend.cs`、`GameItemDurability.cs`、`HandsProtocol.cs`；F7 详情在 `UI/HandsWindow.cs` | `HandsTests.cs`、`DurabilityTests.cs` |
 | 查询 / 移动物品、批量移动 | `Hands/HandsProtocol.cs` → `HandsService.cs` → `GameHandsBackend.cs` | `HandsTests.cs` |
 | 接水、倒水、物品使用 | `Liquids/` 或 `Items/` 中的 Protocol、Contracts、Service、Rules、GameBackend | `LiquidTests.cs`、`ItemUseTests.cs` |
+| 宏定义、审批、快捷按钮和执行结果 | `Macros/`、`UI/MacroWindow.cs`、`UI/ChatWindow.cs`；工具注册在 `AssistantController.OnGameLoaded` | `MacroTests.cs`、`WaterMacroTests.cs` |
 | 打印空水瓶 | `Items/BottlePrinterService.cs` → `GameBottlePrinter.cs`；组装在 `AssistantController.OnGameLoaded` | `ItemUseTests.cs`、`LocalizationTests.cs`；原生按钮、耗电和成品放置需游戏实测 |
 | 机器控制、生产状态与等待 | `Machines/MachineService.cs` → `GameMachineBackend.cs`；异步等待经 `Tools/ToolRegistry.cs`、`Hands/HandsAgent.cs` | `MachineTests.cs`、`LocalizationTests.cs`；原生按钮、配方窗口和生产周期需游戏实测 |
 | 改标签、改名、清除自定义名称 | `Labels/LabelProtocol.cs`、`LabelService.cs`、`GameLabelBackend.cs`；组装在 `AssistantController.OnGameLoaded` | `LabelTests.cs`、`LocalizationTests.cs`；实际窗口回调与同帧连续编辑需游戏实测 |
@@ -97,6 +101,7 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 | `<data>/ModData/probably_ai/connection.local.json` | F7 连接、可选密钥、提示词、玩家技巧、快捷发言、思考级别、历史及工具限制。入口 `ModEntry` / `ConnectionSettingsStore` |
 | 存档内的原生 Mod 数据键 `probably_ai:chat-history` | 已完成的聊天轮次，随游戏保存并随对应存档恢复。入口 `AssistantController.OnGameLoaded` |
 | `<data>/ModData/probably_ai/chat-window.local.json` | 聊天窗口位置；入口 `UI/ChatWindow.cs` |
+| `<data>/ModData/probably_ai/macros.local.json` | 所有存档共享的批准宏和待审草稿；入口 `Macros/MacroStore.cs` |
 | `<data>/Player.log` | 游戏运行日志，Mod 日志带品牌名称前缀 |
 | `.cache/workshop-publisher/` | 本机可选 Steamworks 上传工具；不在 Git 中，缺失时按发布文档使用 SteamCMD |
 
@@ -133,7 +138,7 @@ dotnet build .\ProbablyAI.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\st
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\steamapps\common\Probably Stolen'
 ```
 
-主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **237 项**，以后以实际输出为准。
+主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **250 项**，以后以实际输出为准。
 
 测试覆盖纯逻辑、模拟 HTTP、工具循环及部分用原生接口桩执行的生产适配逻辑；并不等于完整 Unity 集成测试。`GameHandsBackend` 的实际场景遍历、窗口显示和物品原生回调仍需游戏实测。新增逻辑优先补可模拟测试，不为单纯文档修改新增运行时测试。
 

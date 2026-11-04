@@ -8,7 +8,7 @@ namespace ProbablyAI.Liquids
     {
         private const int WinePourVolumeUl = 750000;
 
-        public static LiquidValidation ValidatePour(LiquidReading source, LiquidReading target)
+        public static LiquidValidation ValidatePour(LiquidReading source, LiquidReading target, bool requireFullTransfer = false)
         {
             var sourceError = ValidateContainer(source);
             if (sourceError != null) return sourceError;
@@ -21,6 +21,8 @@ namespace ProbablyAI.Liquids
             // Finished wine is not transferred proportionally: the game pours a fixed 750 ml.
             if (source.WineReady && target.FreeUl < WinePourVolumeUl)
                 return Error("target_too_small", T("成品酒一次需要 750 ml 空间，目标容器的剩余空间不足。"));
+            if (requireFullTransfer && target.FreeUl < source.VolumeUl)
+                return Error("target_too_small", T("目标容器的剩余空间不足以接收全部液体。"));
             return null;
         }
 
@@ -40,7 +42,7 @@ namespace ProbablyAI.Liquids
             return null;
         }
 
-        private static LiquidValidation ValidateContainer(LiquidReading reading)
+        internal static LiquidValidation ValidateContainer(LiquidReading reading)
         {
             if (reading?.Item == null)
                 return Error("item_not_found", T("物品已不在当前容器树中。"));

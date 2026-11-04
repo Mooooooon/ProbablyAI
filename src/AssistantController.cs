@@ -10,6 +10,7 @@ using ProbablyAI.Items;
 using ProbablyAI.Liquids;
 using ProbablyAI.Labels;
 using ProbablyAI.Machines;
+using ProbablyAI.Macros;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
@@ -34,6 +35,8 @@ namespace ProbablyAI
         private IChatTransport transport;
         private ChatWindow chatPanel;
         private ConversationMemory conversation;
+        private MacroStore macroStore;
+        private MacroService macros;
         public ToolRegistry Tools { get; private set; }
         private bool subscribed;
         private bool languageSubscribed;
@@ -52,6 +55,7 @@ namespace ProbablyAI
             this.service = service;
             this.connection = connection;
             this.transport = transport;
+            macroStore = MacroStore.Open(() => ModHelper.GetModDataFolder(ModEntry.ModId));
             ModHook.OnGameLoadedInit += OnGameLoadStarting;
             ModHook.OnGameLoadedLate += OnGameLoaded;
             ModHook.OnNewGameStarted += OnNewGameStarted;
@@ -123,6 +127,8 @@ namespace ProbablyAI
             new MachineService(machines.Inspect, machines.Operate, machines.Observe).Register(Tools);
             new DocumentService(new GameDocumentBackend(handsBackend)).Register(Tools);
             new LabelService(new GameLabelBackend(handsBackend)).Register(Tools);
+            macros = new MacroService(macroStore, Tools);
+            macros.Register();
             ModEntry.NotifyToolsReady(Tools);
             agent = new HandsAgent(transport, Tools, refreshShopContext: true);
             var store = new ConversationStore(
@@ -228,7 +234,7 @@ namespace ProbablyAI
             if (!CanShow() || agent == null) return;
             if (chatPanel != null && chatPanel.IsOpen) { chatPanel.Focus(); return; }
             chatPanel?.Dispose();
-            chatPanel = new ChatWindow(agent, Tools, connection, conversation, OpenSettings, OpenHands);
+            chatPanel = new ChatWindow(agent, Tools, connection, conversation, OpenSettings, OpenHands, macros);
             chatPanel.Show();
         }
 

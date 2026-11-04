@@ -11,7 +11,13 @@ namespace ProbablyAI.Liquids
         private readonly GameHandsBackend hands;
         public GameLiquidBackend(GameHandsBackend hands) => this.hands = hands;
 
-        public LiquidChange Pour(string sourceItemId, string targetItemId)
+        public LiquidReading Inspect(string itemId)
+        {
+            var info = Find(hands.Capture(), itemId);
+            return Read(info, hands.ResolveCurrentItem(itemId));
+        }
+
+        public LiquidChange Pour(string sourceItemId, string targetItemId, bool requireFullTransfer = false)
         {
             var world = hands.Capture();
             var sourceInfo = Find(world, sourceItemId);
@@ -20,8 +26,14 @@ namespace ProbablyAI.Liquids
             var target = hands.ResolveCurrentItem(targetItemId);
             var sourceBefore = Read(sourceInfo, source);
             var targetBefore = Read(targetInfo, target);
-            Reject(LiquidRules.ValidatePour(sourceBefore, targetBefore));
-            UseOn(source, target);
+            Reject(LiquidRules.ValidatePour(sourceBefore, targetBefore, requireFullTransfer));
+            void RecheckFullTransfer()
+            {
+                sourceBefore = Read(sourceInfo, source);
+                targetBefore = Read(targetInfo, target);
+                Reject(LiquidRules.ValidatePour(sourceBefore, targetBefore, true));
+            }
+            UseOn(source, target, requireFullTransfer ? (System.Action)RecheckFullTransfer : null);
             return LiquidChange.MeasurePour(sourceBefore, Read(sourceInfo, source), targetBefore, Read(targetInfo, target));
         }
 
@@ -87,7 +99,7 @@ namespace ProbablyAI.Liquids
             if (validation != null) throw new HandsException(validation.Code, validation.Message);
         }
 
-        private static void UseOn(GameItem source, GameItem target)
+        private static void UseOn(GameItem source, GameItem target, System.Action beforeTarget = null)
         {
             if (!source.MayTarget(target) || !source.CanTarget(target))
                 throw new HandsException("liquid_action_rejected", T("游戏不允许这次液体操作：请检查所有权、锁定、容器状态或当前界面。"));
@@ -97,6 +109,7 @@ namespace ProbablyAI.Liquids
                 ItemBehaviourManager.current.Target(source, target);
             if (!source.MayTarget(target) || !source.CanTarget(target))
                 throw new HandsException("liquid_action_rejected", T("游戏不允许这次液体操作：请检查所有权、锁定、容器状态或当前界面。"));
+            beforeTarget?.Invoke();
             source.Target(target);
         }
     }

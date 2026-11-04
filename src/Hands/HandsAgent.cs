@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProbablyAI.Machines;
+using ProbablyAI.Macros;
 using ProbablyAI.Services;
 using ProbablyAI.Tools;
 using static ProbablyAI.Localization.Text;
@@ -29,6 +31,15 @@ namespace ProbablyAI.Hands
         public HandsAgent(IChatTransport transport, ToolRegistry registry, bool refreshShopContext = false)
         { this.transport = transport; this.registry = registry; this.refreshShopContext = refreshShopContext; }
 
+        internal async Task<HandsResult> RunLocalMacroAsync(MacroService macros, string id, long revision, JObject inputs,
+            Action<string> progress, CancellationToken cancellationToken)
+        {
+            if (IsRunning) throw new InvalidOperationException(T("助手正在处理上一条消息，请等待完成或先停止。"));
+            IsRunning = true;
+            try { return await macros.RunAsync(id, inputs, cancellationToken, progress, revision); }
+            finally { IsRunning = false; }
+        }
+
         public async Task<HandsRunResult> RunAsync(ConnectionOptions options, string instruction, Action<string> progress, CancellationToken cancellationToken, ConversationMemory memory = null)
         {
             if (IsRunning) throw new InvalidOperationException(T("助手正在处理上一条消息，请等待完成或先停止。"));
@@ -40,6 +51,7 @@ namespace ProbablyAI.Hands
             var outstanding = new List<ChatToolCall>();
             var callIds = new HashSet<string>();
             int modelToolCalls = 0;
+            bool macroFailed = false;
             IsRunning = true;
             try
             {
@@ -81,16 +93,20 @@ namespace ProbablyAI.Hands
                         result.ToolCalls++;
                         modelToolCalls++;
                         HandsResult outcome;
-                        if (machineStepFailed && registry.ChangesState(call.Name))
+                        if (macroFailed && (registry.ChangesState(call.Name) || call.Name == MacroService.SaveDraftTool))
+                            outcome = HandsResult.Fail("not_executed", T("宏已停止，本次请求的后续写操作已跳过。"));
+                        else if (machineStepFailed && registry.ChangesState(call.Name))
                             outcome = HandsResult.Fail("not_executed", "前面的机器步骤未成功，已跳过本批后续操作。请先核对机器状态。");
                         else
                         {
                             if (call.Name == MachineService.WaitTool) progress?.Invoke(T("正在等待机器…"));
-                            try { outcome = await registry.ExecuteAsync(call.Name, JObject.Parse(call.Arguments), cancellationToken); }
+                            if (call.Name == MacroService.RunTool) progress?.Invoke(T("正在本地运行宏…"));
+                            try { outcome = await registry.ExecuteAsync(call.Name, ParseArguments(call.Arguments), cancellationToken); }
                             catch (JsonException) { outcome = HandsResult.Fail("invalid_arguments", T("工具参数不是有效的 JSON 对象，请修正参数。")); }
                         }
                         if (!outcome.Success && (call.Name == MachineService.WaitTool || call.Name == MachineService.OperateTool))
                             machineStepFailed = true;
+                        if (!outcome.Success && call.Name == MacroService.RunTool) macroFailed = true;
                         exchange.Add(ToolReply(call.Id, outcome));
                         outstanding.Remove(call);
                         if (registry.ChangesState(call.Name)) result.Operations.Add(outcome.Message);
@@ -142,5 +158,13 @@ namespace ProbablyAI.Hands
 
         private static JObject ToolReply(string id, HandsResult outcome)
             => new JObject { ["role"] = "tool", ["tool_call_id"] = id, ["content"] = HandsProtocol.Json(outcome) };
+
+        private static JObject ParseArguments(string json)
+        {
+            using var reader = new JsonTextReader(new StringReader(json ?? "")) { DateParseHandling = DateParseHandling.None };
+            var arguments = JObject.Load(reader);
+            if (reader.Read()) throw new JsonReaderException();
+            return arguments;
+        }
     }
 }

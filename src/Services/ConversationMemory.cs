@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ProbablyAI.Macros;
 using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Services
@@ -152,7 +153,21 @@ namespace ProbablyAI.Services
                     var clone = (JObject)message.DeepClone();
                     if (clone["tool_calls"] is JArray calls)
                         foreach (var call in calls)
-                            names[(string)call["id"]] = (string)call["function"]?["name"];
+                        {
+                            string name = (string)call["function"]?["name"];
+                            names[(string)call["id"]] = name;
+                            if (name == MacroService.SaveDraftTool && call["function"] is JObject function)
+                            {
+                                // The persisted turn keeps the original call. Future requests only need its identity.
+                                JObject arguments;
+                                try { arguments = JObject.Parse((string)function["arguments"] ?? "{}"); }
+                                catch (JsonException) { arguments = new JObject(); }
+                                var compact = new JObject { ["historical_definition_omitted"] = true };
+                                foreach (string key in new[] { "macro_id", "revision" })
+                                    if (arguments[key] is JValue value) compact[key] = value.DeepClone();
+                                function["arguments"] = compact.ToString(Formatting.None);
+                            }
+                        }
                     if ((string)clone["role"] == "tool")
                     {
                         names.TryGetValue((string)clone["tool_call_id"], out var name);

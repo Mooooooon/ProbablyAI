@@ -1,4 +1,4 @@
-v0.7.17
-- Chat history now travels with each game save. Loading a checkpoint restores both the chat window and the assistant's context from that save.
-- Save your own game tips in the F7 Assistant prompt tab. The assistant appends them to its system prompt.
-- Edit five one-click chat shortcuts in F7. The new default water purification example runs two 3,000 mL batches.
+v0.7.18
+- Create, review, and run local macros from chat. Macros support conditions, loops, and inputs.
+- Ask the assistant to draft a macro, then approve it to run it in one click. Approved macros are available across local saves.
+- Pouring routines can check that the full amount will fit and record how much actually reached the target.

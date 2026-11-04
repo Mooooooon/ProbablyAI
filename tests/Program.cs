@@ -249,6 +249,7 @@ internal static partial class Program
         await RunMachineTests();
         await RunDocumentTests();
         await RunLabelTests();
+        await RunMacroTests();
         await RunPromptTests();
         await RunLocalizationTests();
         await RunPortraitTests();

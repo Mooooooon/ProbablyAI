@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.17）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.18）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -191,7 +191,8 @@
 
 | 工具 | 参数 | 作用 |
 | --- | --- | --- |
-| `pour_liquid` | `source_item_id`、`target_item_id` | 把源容器中的液体倒入另一个液体容器 |
+| `inspect_liquid` | `item_id` | 读取自有液体容器的容量、当前液量和余量，`*_ul` 为精确微升 |
+| `pour_liquid` | `source_item_id`、`target_item_id`，可选 `require_full_transfer` | 把源容器中的液体倒入另一个液体容器 |
 | `dump_liquid` | `item_id` | 把液体倒进当铺排水口，保留容器本身 |
 | `fill_liquid` | `item_id` | 在当铺水龙头接水，受解锁与容量限制 |
 
@@ -202,6 +203,7 @@
 这些工具走游戏原生的物品对物品操作（`GameItem.MayTarget` / `CanTarget` / `Target`），不是直接改液体标签；所有权、锁定、容量、温度、过滤器以及酒类 / 滴管等原生回调都由游戏判定。具体规则：
 
 - 一次倒出源容器能倒入的全部液体，不能指定毫升数。目标容器有过滤器时可能截留部分杂质；结果中的 `moved_ml` 是源减少量，`received_ml` 是目标增加量，二者不同时返回 `filtered_ml`。
+- `require_full_transfer: true` 会在原生倒水动作前检查目标能容纳全部源液体，并在动作后核实源已倒空。空间不足返回 `target_full` 或 `target_too_small`。发生移动但未核实全部倒出时返回 `partial` 和实际变化。精确结果用 `moved_ul`、`received_ul` 和 `filtered_ul`。
 - 普通倒水 `direction=source_to_target`。空滴管对容器使用时会按原生行为改为吸取液体，返回 `direction=target_to_source`，不能当作“倒出”。
 - 成品酒按原生规则一次倒入 750 ml；目标剩余空间不足时提前返回 `target_too_small`。
 - `dump_liquid` 使用当铺固定排水口；`fill_liquid` 使用当铺固定水龙头，需要对应水龙头升级已解锁，否则返回 `tap_locked`。接到的水按当天原生纯度生成，不指定水质。
@@ -296,15 +298,51 @@
 
 编辑结果返回 `before`、`after` 和 `changed`。只有实际重新读取的标签 / 名称与请求一致才返回 `ok`；已符合请求时可返回 `changed=false`。不能核实时返回 `not_applied`，异常时返回 `label_failed`；操作可能已有部分原生效果，应先查询而非盲目重试。道具失效、选项失效、错误标签机、名称过长和原生拒绝均返回对应错误。当前原生窗口显示、事件回调与同帧连续编辑仅通过真实游戏程序集编译验证，仍需游戏实测；模拟测试覆盖协议、参数、结果核实、错误及完整模型工具循环。
 
+## 本地条件宏
+
+聊天面板的「管理宏」支持编辑 JSON、查看当前批准版和审批 AI 草稿。玩家可保存并启用自己的定义。已批准的宏出现在聊天快捷按钮区。按钮直接在游戏内运行，使用内置游戏工具的宏无需 API。宏库保存在本机，所有存档共享。定义里的物品和分区应在每次运行时重新查询。
+
+| 助手工具 | 参数 | 用途 |
+| --- | --- | --- |
+| `list_macros` | `{}` | 列出名称、`macro_id`、`revision`、批准及待审状态和输入摘要 |
+| `get_macro` | 可选 `macro_id` | 读取批准版和草稿。省略 ID 时返回语法和当前注册的游戏工具定义 |
+| `save_macro_draft` | `definition`，更新时另传 `macro_id` 和 `revision` | 保存待玩家审核的草稿。原批准版在审核期间仍可运行 |
+| `run_macro` | `macro_id`，可选 `inputs` 对象 | 运行启动时取得的批准版，返回汇总、停止位置和实际结果 |
+
+游戏工具与助手共用同一个注册表和调用入口，包括通过 `ModEntry.ToolsReady` 注册的扩展工具。宏管理工具由助手使用，宏步骤可调用的是游戏工具。工具按原生规则校验参数、所有权、锁定和容量。
+
+下面的宏查询一个 3000 mL 水罐并记录精确余量。可在「管理宏」中粘贴并启用。
+
+```json
+{
+  "version": 1,
+  "name": "查看水罐余量",
+  "inputs": { "query": { "type": "string", "default": "water_pitcher" } },
+  "steps": [
+    { "op": "call", "tool": "find_items", "args": { "query": { "ref": "inputs.query" }, "owned_only": true }, "as": "found" },
+    { "op": "select", "from": { "ref": "found.page.entries" }, "mode": "one", "as": "pitcher" },
+    { "op": "call", "tool": "inspect_liquid", "args": { "item_id": { "ref": "pitcher.id" } }, "as": "liquid" },
+    { "op": "assert", "test": { "op": "eq", "left": { "ref": "liquid.capacity_ul" }, "right": 3000000 }, "message": "请选择 3000 mL 水罐。" },
+    { "op": "report", "name": "余量（µL）", "value": { "ref": "liquid.free_ul" } }
+  ]
+}
+```
+
+- `inputs` 按名称声明 `integer`、`boolean` 或 `string`。省略 `default` 时必须在运行时提供。整数可指定 `min` / `max`。
+- `call` 的 `as` 绑定工具结果的 `data`。默认在查询结果还有下一页时停止，可用 `allow_paged: true` 明确处理单页并按原工具的 `offset` / `limit` 继续。原生容器树被截断时停止。
+- `select` 从数组选取 `one`（唯一）、`optional_one`（零或一个）或 `first`（首个），可在 `where` 条件中使用 `item` 访问候选。`if` 用 `test`、`then`、可选 `else`。`repeat` 用 `times`、`steps`、可选 `as` 绑定从 1 开始的轮次。分支和循环每轮的变量是局部的。
+- `assert` 用 `test` 和 `message` 检查状态。条件支持 `exists`（`value`）、`eq` / `ne` / `lt` / `le` / `gt` / `ge`（`left`、`right`）、`all` / `any`（`tests`）和 `not`（`test`）。缺失值应先用 `exists` 检查。整数表达式可用 `{"add":[a,b]}` 或 `{"multiply":[a,b]}`。`report` 用 `name` 和 `value` 记录实测数据。
+- 宏库最多 32 项。单层循环最多 20 轮，一次运行最多 600 个工具调用和 5 分钟。工具失败、部分完成或取消时，已完成操作保留。结果包含最近的操作、记录和停止位置，可据此检查现场。
+
 ## 模型工具调用
 
-`HandsProtocol.Tools()` 定义 9 个容器工具，由 `ToolRegistry.ForHands` 注册；`CustomerService.Register` 再注册 3 个客人只读工具，`InspectionService.Register` 注册 7 个鉴定只读工具，`LiquidService.Register` 注册 3 个液体操作工具，`ItemUseService.Register` 注册 2 个物品使用工具，`DocumentService.Register` 注册 1 个文档阅读工具，`LabelService.Register` 注册 3 个标签工具，共 28 个。`HandsAgent` 从注册表获取当前可用的 OpenAI Chat Completions function tools，按顺序执行返回的调用，再将结果以 `role=tool` 与对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）让一次调用完成多件操作，减少模型往返次数；单件工具仍可用于单独操作。原始 assistant 消息中的 `reasoning_content` 也会保留，以兼容 DeepSeek 思考模式。参考：[OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
+`HandsAgent` 从注册表读取游戏工具和宏管理工具，按顺序执行模型返回的调用，再将结果以 `role=tool` 和对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）可在一次调用中处理多件物品。`run_macro` 计作一次模型工具调用，内部步骤受独立的宏执行上限约束。原始 assistant 消息中的 `reasoning_content` 会保留，以兼容 DeepSeek 思考模式。历史投影会省去已提交的宏草稿正文。参考 [OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
 模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；默认每条消息最多 16 轮 / 48 次模型工具调用；F7 可设置处理轮数（1–1000，含最终回复的模型请求）与调用次数（1–10000），保存后下条消息生效。调用次数不含消息开始时自动刷新的客人 / 柜台实况。若模型一轮返回的整批调用会超出剩余次数，该批全部不执行。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
 
 ## 注册未来工具
 
-`ModEntry.Tools` 返回当前载入的注册表。新场景会创建新注册表并触发 `ModEntry.ToolsReady`，可在该事件中注册扩展工具。聊天每次请求自动读取当前注册表，无需把新工具名称添加到聊天窗口的 switch 中。
+`ModEntry.Tools` 返回当前载入的注册表。新场景会创建新注册表并触发 `ModEntry.ToolsReady`，可在该事件中注册扩展工具。聊天和宏自动读取当前注册表，扩展工具注册一次即可。存档环境变化导致某个工具不可用时，引用它的宏会在运行前报告具体步骤。
 
 ```csharp
 using Newtonsoft.Json.Linq;

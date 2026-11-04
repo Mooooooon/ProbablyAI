@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProbablyAI.Hands;
+using ProbablyAI.Macros;
 using ProbablyAI.Services;
 using ProbablyAI.Tools;
 using TMPro;
@@ -19,7 +20,7 @@ namespace ProbablyAI.UI
     public sealed class ChatWindow : IDisposable
     {
         private const string PositionFile = "chat-window.local.json";
-        private const int QuickRepliesPerRow = 2;
+        private const int ShortcutsPerRow = 2;
         private static Vector2? savedScreenPosition;
         private static bool positionLoaded;
         private readonly HandsAgent agent;
@@ -31,6 +32,12 @@ namespace ProbablyAI.UI
         private readonly List<string> currentActions = new List<string>();
         private readonly QuickReply[] quickReplies = new QuickReply[QuickReply.SlotCount];
         private readonly List<GameObject> quickReplyRows = new List<GameObject>();
+        private readonly List<GameObject> macroRows = new List<GameObject>();
+        private readonly MacroService macros;
+        private readonly MacroWindow macroWindow;
+        private IReadOnlyList<MacroStore.Entry> shortcuts = Array.Empty<MacroStore.Entry>();
+        private GameObject macroScroll;
+        private int macroChangeVersion = -1;
         private CustomUIWindow window;
         private ScrollRect scroll;
         private CancellationTokenSource pending;
@@ -38,11 +45,12 @@ namespace ProbablyAI.UI
         private bool busy;
         public bool IsOpen => window != null && window.IsAlive && window.IsVisible;
 
-        public ChatWindow(HandsAgent agent, ToolRegistry registry, ConnectionSettingsStore connection,
-            ConversationMemory memory, Action openSettings, Action openHands)
+        internal ChatWindow(HandsAgent agent, ToolRegistry registry, ConnectionSettingsStore connection,
+            ConversationMemory memory, Action openSettings, Action openHands, MacroService macros)
         {
             this.agent = agent; this.registry = registry; this.connection = connection;
             this.memory = memory; this.openSettings = openSettings; this.openHands = openHands;
+            this.macros = macros; macroWindow = new MacroWindow(macros);
         }
 
         public void Show()
@@ -57,23 +65,44 @@ namespace ProbablyAI.UI
                 .AddInput(T("说点什么，比如：帮我把食物放到柜台上"), "", id: "message")
                 .AddLabel(T("Enter 发送 · Shift+Enter 换行"))
                 .AddLabel(T("快捷发言"), "quick_replies");
+            var options = connection.Current;
+            shortcuts = macros.Store.List().Where(entry => entry.Approved != null).ToArray();
             quickReplyRows.Clear();
-            for (int first = 0; first < QuickReply.SlotCount; first += QuickRepliesPerRow)
+            for (int first = 0; first < QuickReply.SlotCount; first += ShortcutsPerRow)
             {
                 b.BeginRow();
                 quickReplyRows.Add(b.CurrentContainer.gameObject);
-                for (int slot = first; slot < Math.Min(first + QuickRepliesPerRow, QuickReply.SlotCount); slot++)
+                for (int slot = first; slot < Math.Min(first + ShortcutsPerRow, QuickReply.SlotCount); slot++)
                 {
                     int index = slot;
-                    b.AddButton("", () => QuickSend(quickReplies[index].Message), "quick_" + slot);
-                    var label = window.Get("quick_" + slot).text;
-                    label.richText = false;
-                    label.enableWordWrapping = false;
-                    label.overflowMode = TextOverflowModes.Ellipsis;
+                    var reply = quickReplies[slot] = options.GetQuickReply(slot);
+                    b.AddButton(reply.Label, () => QuickSend(quickReplies[index].Message), "quick_" + slot);
+                    b.Last.text.richText = false;
                 }
                 b.End();
             }
             b.BeginRow()
+                .AddLabel(T("宏"))
+                .AddButton(T("管理宏"), macroWindow.Manage, "manage_macros")
+                .End()
+                .BeginColumn();
+            macroScroll = b.CurrentContainer.gameObject;
+            b.BeginScroll(82f);
+            macroRows.Clear();
+            for (int first = 0; first < MacroStore.MaxEntries; first += ShortcutsPerRow)
+            {
+                b.BeginRow();
+                macroRows.Add(b.CurrentContainer.gameObject);
+                for (int slot = first; slot < Math.Min(first + ShortcutsPerRow, MacroStore.MaxEntries); slot++)
+                {
+                    int index = slot;
+                    var name = slot < shortcuts.Count ? shortcuts[slot].Name : "";
+                    b.AddButton(name, () => OpenMacro(index), "macro_" + slot);
+                    b.Last.text.richText = false;
+                }
+                b.End();
+            }
+            b.End().End().BeginRow()
                     .AddButton(T("发送"), Send, "send")
                     .AddButton(T("停止"), Cancel, "stop")
                     .AddButton(T("连接设置"), () => openSettings?.Invoke())
@@ -95,6 +124,7 @@ namespace ProbablyAI.UI
             SetBusy(false);
             b.Show();
             RefreshQuickReplies();
+            RefreshMacros();
             Render();
             RestorePosition();
             input.input.ActivateInputField();
@@ -111,8 +141,8 @@ namespace ProbablyAI.UI
             }
             for (int row = 0; row < quickReplyRows.Count; row++)
             {
-                int first = row * QuickRepliesPerRow;
-                quickReplyRows[row].SetActive(quickReplies.Skip(first).Take(QuickRepliesPerRow).Any(reply => reply.IsEnabled));
+                int first = row * ShortcutsPerRow;
+                quickReplyRows[row].SetActive(quickReplies.Skip(first).Take(ShortcutsPerRow).Any(reply => reply.IsEnabled));
             }
             window.Get("quick_replies").SetVisible(quickReplies.Any(reply => reply.IsEnabled));
             CustomUIBuilder.RebuildLayout(window.ContentRoot);
@@ -189,6 +219,7 @@ namespace ProbablyAI.UI
         public void PollInput()
         {
             if (!IsOpen) return;
+            if (macroChangeVersion != macros.Store.ChangeVersion) RefreshMacros();
             CapturePosition();
             if (!window.Get("message").input.isFocused) return;
             if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) &&
@@ -209,6 +240,72 @@ namespace ProbablyAI.UI
         {
             if (!CanSend()) return;
             await Run(message);
+        }
+
+        private void RefreshMacros()
+        {
+            var entries = macros.Store.List();
+            macroChangeVersion = macros.Store.ChangeVersion;
+            shortcuts = entries.Where(entry => entry.Approved != null).ToArray();
+            for (int slot = 0; slot < MacroStore.MaxEntries; slot++)
+            {
+                var button = window.Get("macro_" + slot);
+                if (slot < shortcuts.Count) button.SetText(shortcuts[slot].Name);
+                button.SetVisible(slot < shortcuts.Count);
+            }
+            for (int row = 0; row < macroRows.Count; row++)
+                macroRows[row].SetActive(row * ShortcutsPerRow < shortcuts.Count);
+            macroScroll.SetActive(shortcuts.Count > 0);
+            int drafts = entries.Count(entry => entry.Draft != null);
+            window.Get("manage_macros").SetText(drafts > 0 ? F("管理宏（{0} 待审）", drafts) : T("管理宏"));
+            CustomUIBuilder.RebuildLayout(window.ContentRoot);
+        }
+
+        private void OpenMacro(int index)
+        {
+            if (!CanSend() || index >= shortcuts.Count) return;
+            var entry = shortcuts[index];
+            if (entry.Approved["inputs"] is JObject inputs && inputs.Count > 0)
+                macroWindow.Inputs(entry, values => RunMacro(entry, values));
+            else RunMacro(entry, new JObject());
+        }
+
+        private async void RunMacro(MacroStore.Entry entry, JObject inputs)
+        {
+            if (!CanSend()) return;
+            var request = new CancellationTokenSource();
+            pending = request;
+            currentUser = F("运行宏「{0}」", entry.Name);
+            SetBusy(true);
+            Render();
+            try
+            {
+                var outcome = await agent.RunLocalMacroAsync(macros, entry.Id, entry.Revision, inputs, Status, request.Token);
+                var details = JObject.Parse(HandsProtocol.Json(outcome))["data"] as JObject;
+                var report = new StringBuilder(outcome.Message);
+                if (details?["completed_iterations"] is JObject batches && batches.Count > 1)
+                    foreach (var batch in batches.Properties())
+                        report.AppendLine().Append(F("{0} · 已完成 {1} 轮", batch.Name, batch.Value));
+                if (details?["reports"] is JArray reports)
+                    foreach (var record in reports.OfType<JObject>())
+                        report.AppendLine().Append(F("{0} · {1} = {2}", record["step"], record["name"], record["value"]));
+                if (!outcome.Success && details?["recent_operations"] is JArray actions)
+                    foreach (var action in actions)
+                        report.AppendLine().Append(action);
+                if (details?["failed_tool_data"]?["received_ul"]?.Type == JTokenType.Integer)
+                    report.AppendLine().Append(F("停止时实际接收 {0} µL。", details["failed_tool_data"]["received_ul"]));
+                memory.PostNotice(report.ToString());
+                Finished(outcome.Success ? T("宏执行完成。") : outcome.Message);
+            }
+            catch (HandsException error) { Finished(error.Message); }
+            catch (InvalidOperationException error) { Finished(error.Message); }
+            catch (Exception) { Finished(T("宏执行未完成，请核对当前状态。")); }
+            finally
+            {
+                if (pending == request) pending = null;
+                request.Dispose();
+                if (IsOpen) SetBusy(false);
+            }
         }
 
         private bool CanSend()
@@ -339,10 +436,13 @@ namespace ProbablyAI.UI
             window.Get("stop").SetInteractable(value);
             for (int slot = 0; slot < quickReplies.Length; slot++)
                 window.Get("quick_" + slot).SetInteractable(!value);
+            for (int slot = 0; slot < MacroStore.MaxEntries; slot++)
+                window.Get("macro_" + slot).SetInteractable(!value);
+            window.Get("manage_macros").SetInteractable(!value);
         }
         private void Status(string text) { if (IsOpen) window.Get("status").SetText(text); }
         private void Cancel() => pending?.Cancel();
-        private void OnClosed() { if (window != null) RememberPosition(); Cancel(); window = null; }
-        public void Dispose() { if (window != null) RememberPosition(); Cancel(); var closing = window; window = null; closing?.Close(); }
+        private void OnClosed() { if (window != null) RememberPosition(); Cancel(); macroWindow.Dispose(); window = null; }
+        public void Dispose() { if (window != null) RememberPosition(); Cancel(); macroWindow.Dispose(); var closing = window; window = null; closing?.Close(); }
     }
 }

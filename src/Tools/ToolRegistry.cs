@@ -18,17 +18,22 @@ namespace ProbablyAI.Tools
             public Func<JObject, HandsResult> Execute;
             public Func<JObject, CancellationToken, Task<HandsResult>> ExecuteAsync;
             public bool ChangesState;
+            public bool Orchestration;
         }
         private readonly Dictionary<string, Entry> entries = new Dictionary<string, Entry>(StringComparer.Ordinal);
 
         public void Register(JObject definition, Func<JObject, HandsResult> execute, bool changesState = false)
             => Add(definition, execute, null, changesState);
 
-        internal void RegisterAsync(JObject definition, Func<JObject, CancellationToken, Task<HandsResult>> execute)
-            => Add(definition, null, execute, false);
+        internal void RegisterAsync(JObject definition, Func<JObject, CancellationToken, Task<HandsResult>> execute,
+            bool changesState = false, bool orchestration = false)
+            => Add(definition, null, execute, changesState, orchestration);
+
+        internal void RegisterOrchestration(JObject definition, Func<JObject, HandsResult> execute)
+            => Add(definition, execute, null, false, true);
 
         private void Add(JObject definition, Func<JObject, HandsResult> execute,
-            Func<JObject, CancellationToken, Task<HandsResult>> executeAsync, bool changesState)
+            Func<JObject, CancellationToken, Task<HandsResult>> executeAsync, bool changesState, bool orchestration = false)
         {
             var name = (string)definition?["function"]?["name"];
             if (string.IsNullOrEmpty(name) || !Regex.IsMatch(name, "^[a-zA-Z0-9_-]{1,64}$") ||
@@ -37,17 +42,23 @@ namespace ProbablyAI.Tools
                 throw new ArgumentException(T("工具必须提供有效的 function 名称、参数 Schema 和处理函数。"));
             if (entries.ContainsKey(name)) throw new ArgumentException(T("工具名称重复：") + name);
             entries.Add(name, new Entry { Definition = (JObject)definition.DeepClone(), Execute = execute,
-                ExecuteAsync = executeAsync, ChangesState = changesState });
+                ExecuteAsync = executeAsync, ChangesState = changesState, Orchestration = orchestration });
         }
 
-        public JArray Definitions()
+        public JArray Definitions() => Definitions(gameplayOnly: false);
+
+        internal JArray GameplayDefinitions() => Definitions(gameplayOnly: true);
+
+        private JArray Definitions(bool gameplayOnly)
         {
-            var definitions = new JArray(entries.Values.Select(e => e.Definition.DeepClone()));
+            var definitions = new JArray(entries.Values.Where(e => !gameplayOnly || !e.Orchestration)
+                .Select(e => e.Definition.DeepClone()));
             TranslateToolDescriptions(definitions);
             return definitions;
         }
         public bool ChangesState(string name) => name != null && entries.TryGetValue(name, out var entry) && entry.ChangesState;
         public bool Contains(string name) => name != null && entries.ContainsKey(name);
+        internal bool IsGameplay(string name) => name != null && entries.TryGetValue(name, out var entry) && !entry.Orchestration;
 
         public HandsResult Execute(string name, JObject arguments)
         {

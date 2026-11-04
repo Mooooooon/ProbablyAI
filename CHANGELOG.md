@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.7.18 — 2026-11-04
+
+### 中文
+
+- 在聊天面板创建、审核和运行本地宏。宏支持条件、循环和输入参数。
+- 助手可以起草宏，玩家批准后即可一键执行。已批准的宏可在本机各存档使用。
+- 倒水流程可在动手前检查全部液体是否装得下，并记录目标实际收到的量。
+
+### English
+
+- Create, review, and run local macros from chat. Macros support conditions, loops, and inputs.
+- Ask the assistant to draft a macro, then approve it to run it in one click. Approved macros are available across local saves.
+- Pouring routines can check that the full amount will fit and record how much actually reached the target.
+
 ## 0.7.17 — 2026-11-04
 
 ### 中文

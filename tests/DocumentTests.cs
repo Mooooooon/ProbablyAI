@@ -23,7 +23,7 @@ internal static partial class Program
             new LiquidService(new FakeLiquid()).Register(registry);
             new ItemUseService(new FakeItemUse()).Register(registry);
             new DocumentService(new FakeDocument()).Register(registry);
-            Assert(registry.Definitions().Count == 25, "document tool missing");
+            Assert(registry.Definitions().Count == 26, "document tool missing");
             Assert(!registry.ChangesState("read_document"), "document read marked as mutation");
             var definition = registry.Definitions().First(d => (string)d["function"]["name"] == "read_document");
             Assert(!(bool)definition["function"]["parameters"]["additionalProperties"] &&

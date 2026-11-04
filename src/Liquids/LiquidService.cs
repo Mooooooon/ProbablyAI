@@ -19,7 +19,7 @@ namespace ProbablyAI.Liquids
             foreach (JObject definition in LiquidProtocol.Tools())
             {
                 string name = (string)definition["function"]["name"];
-                registry.Register(definition, arguments => Execute(name, arguments), changesState: true);
+                registry.Register(definition, arguments => Execute(name, arguments), changesState: name != "inspect_liquid");
             }
         }
 
@@ -29,12 +29,21 @@ namespace ProbablyAI.Liquids
             {
                 switch (tool)
                 {
+                    case "inspect_liquid":
+                        ValidateKeys(arguments, "item_id");
+                        var reading = backend.Inspect(Id(arguments, "item_id"));
+                        var error = LiquidRules.ValidateContainer(reading);
+                        return error == null ? HandsResult.Ok(Describe(reading)) : HandsResult.Fail(error.Code, error.Message);
                     case "pour_liquid":
-                        ValidateKeys(arguments, "source_item_id", "target_item_id");
+                        ValidateKeys(arguments, "source_item_id", "target_item_id", "require_full_transfer");
                         var sourceId = Id(arguments, "source_item_id");
                         var targetId = Id(arguments, "target_item_id");
                         if (sourceId == targetId) throw new HandsException("same_item", T("不能把容器倒进它自己。"));
-                        return Pour(backend.Pour(sourceId, targetId));
+                        var strict = arguments["require_full_transfer"];
+                        if (strict != null && strict.Type != JTokenType.Boolean)
+                            throw new HandsException("invalid_arguments", T("require_full_transfer 必须为布尔值。"));
+                        bool requireFullTransfer = (bool?)strict ?? false;
+                        return Pour(backend.Pour(sourceId, targetId, requireFullTransfer), requireFullTransfer);
                     case "dump_liquid":
                         ValidateKeys(arguments, "item_id");
                         return Dump(backend.Dump(Id(arguments, "item_id")));
@@ -49,18 +58,20 @@ namespace ProbablyAI.Liquids
             catch (Exception) { return HandsResult.Fail("liquid_failed", T("液体操作未完成，请刷新容器后重试。不要重复执行未核实的操作。")); }
         }
 
-        private static HandsResult Pour(LiquidChange change)
+        private static HandsResult Pour(LiquidChange change, bool requireFullTransfer)
         {
             RequireChange(change, hasTarget: true);
             int available = change.Direction == LiquidChange.TargetToSource
                 ? change.TargetBefore.VolumeUl : change.SourceBefore.VolumeUl;
             RequireMoved(change.MovedUl, available);
             bool moved = change.MovedUl > 0;
+            bool partial = requireFullTransfer && moved &&
+                (change.Direction != LiquidChange.SourceToTarget || change.MovedUl != change.SourceBefore.VolumeUl || !change.SourceAfter.Empty);
             return new HandsResult
             {
-                Success = moved,
-                Code = moved ? "ok" : "not_poured",
-                Message = PourMessage(change),
+                Success = moved && !partial,
+                Code = partial ? "partial" : moved ? "ok" : "not_poured",
+                Message = partial ? T("未能核实全部倒出。") + " " + PourMessage(change) : PourMessage(change),
                 Data = new
                 {
                     source = Describe(change.SourceAfter),
@@ -68,6 +79,9 @@ namespace ProbablyAI.Liquids
                     direction = change.Direction,
                     moved_ml = Ml(change.MovedUl),
                     received_ml = Ml(change.ReceivedUl),
+                    moved_ul = change.MovedUl,
+                    received_ul = change.ReceivedUl,
+                    filtered_ul = change.FilteredUl,
                     filtered_ml = change.FilteredUl > 0 ? (double?)Ml(change.FilteredUl) : null
                 }
             };
@@ -149,7 +163,10 @@ namespace ProbablyAI.Liquids
             path = reading.Item.Path,
             volume_ml = Ml(reading.VolumeUl),
             capacity_ml = Ml(reading.CapacityUl),
-            free_ml = Ml(reading.FreeUl)
+            free_ml = Ml(reading.FreeUl),
+            volume_ul = reading.VolumeUl,
+            capacity_ul = reading.CapacityUl,
+            free_ul = reading.FreeUl
         };
 
         private static void RequireChange(LiquidChange change, bool hasTarget)

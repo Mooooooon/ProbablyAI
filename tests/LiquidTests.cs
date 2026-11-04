@@ -214,7 +214,9 @@ internal static partial class Program
         public HandsException Failure;
         public int Pours, Dumps, Fills;
 
-        public LiquidChange Pour(string sourceItemId, string targetItemId)
+        public LiquidReading Inspect(string itemId) => PourResult?.SourceBefore;
+
+        public LiquidChange Pour(string sourceItemId, string targetItemId, bool requireFullTransfer = false)
         {
             Pours++;
             if (Failure != null) throw Failure;

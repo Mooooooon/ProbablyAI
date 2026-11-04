@@ -4,6 +4,8 @@ namespace ProbablyAI.Liquids
 {
     public static class LiquidProtocol
     {
+        internal const string InspectDescription = "读取自有液体容器的当前液量、容量和余量。ul 字段使用精确微升，不读取隐藏成分。";
+        internal const string FullTransferDescription = "可选。true 要求目标在倒水前有足够空间，倒水后核对源已倒空。过滤截留计入源减少量，实收量单独报告。";
         internal const string PourDescription =
             "把真实液体容器里的液体倒入另一个液体容器（水、酒等），使用游戏原生的物品对物品操作，遵守所有权、锁定、容量、过滤器和温度规则。一次倒出源容器能倒入的全部液体，不能指定毫升数；目标有过滤器时可能截留部分杂质。空滴管对容器使用时会改为吸取液体，direction 会标明 source_to_target / target_to_source。返回实际移动、接收的毫升数及两边余量；moved_ml=0 表示没有液体移动。不生成液体、不销毁容器、不改变物品特性、所有权或价格。需先查询两件真实物品 ID。";
 
@@ -15,10 +17,15 @@ namespace ProbablyAI.Liquids
 
         public static JArray Tools() => new JArray
         {
+            Tool("inspect_liquid", InspectDescription, new JObject
+            {
+                ["item_id"] = Text("先查询获得的液体容器物品 ID；不能使用物品名称代替。")
+            }, "item_id"),
             Tool("pour_liquid", PourDescription, new JObject
             {
                 ["source_item_id"] = Text("先查询获得的源液体容器物品 ID；不能使用物品名称代替。"),
-                ["target_item_id"] = Text("先查询获得的目标液体容器物品 ID；不能与源相同。")
+                ["target_item_id"] = Text("先查询获得的目标液体容器物品 ID；不能与源相同。"),
+                ["require_full_transfer"] = new JObject { ["type"] = "boolean", ["description"] = FullTransferDescription }
             }, "source_item_id", "target_item_id"),
             Tool("dump_liquid", DumpDescription, new JObject
             {

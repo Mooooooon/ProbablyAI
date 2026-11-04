@@ -93,7 +93,8 @@ namespace ProbablyAI.Liquids
 
     public interface ILiquidBackend
     {
-        LiquidChange Pour(string sourceItemId, string targetItemId);
+        LiquidReading Inspect(string itemId);
+        LiquidChange Pour(string sourceItemId, string targetItemId, bool requireFullTransfer = false);
         LiquidChange Dump(string itemId);
         LiquidChange Fill(string itemId);
     }
