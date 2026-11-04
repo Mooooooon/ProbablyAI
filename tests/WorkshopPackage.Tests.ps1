@@ -13,6 +13,21 @@ function Expect-Blocked {
     if (!$blocked) { throw 'Package verifier failed to block an unsafe fixture.' }
 }
 & $verify -ContentFolder $fixtureRoot | Out-Null
+$manifestFile = Join-Path $fixtureRoot 'manifest.xml'
+$originalManifest = Get-Content -LiteralPath $manifestFile -Raw
+[xml]$manifest = $originalManifest
+$capabilities = $manifest.Manifest.Capabilities
+$filesCapability = $capabilities.SelectSingleNode("Capability[text()='files']")
+$null = $capabilities.RemoveChild($filesCapability)
+$manifest.Save($manifestFile)
+Expect-Blocked
+$null = $capabilities.AppendChild($filesCapability)
+$unexpectedCapability = $manifest.CreateElement('Capability')
+$unexpectedCapability.InnerText = 'process'
+$null = $capabilities.AppendChild($unexpectedCapability)
+$manifest.Save($manifestFile)
+Expect-Blocked
+Set-Content -LiteralPath $manifestFile -Value $originalManifest -Encoding utf8 -NoNewline
 $extraFile = Join-Path $fixtureRoot 'connection.local.json'
 Set-Content -LiteralPath $extraFile -Value '{"ApiKey":"test-only"}'
 Expect-Blocked
@@ -22,4 +37,4 @@ Set-Content -LiteralPath $readmeFile -Value ('sk-' + ('X' * 32))
 Expect-Blocked
 Set-Content -LiteralPath $readmeFile -Value 'C:\Users\Example\private\settings.json'
 Expect-Blocked
-Write-Output 'Package verification: clean package accepted; extra config, synthetic key and private path blocked.'
+Write-Output 'Package verification: clean package accepted; missing or extra capabilities, extra config, synthetic key and private path blocked.'

@@ -22,6 +22,12 @@ Clicking a quick reply sends the entire instruction to Xiaojing. She works out t
 Your local macro library is shared across saves. Use quick replies for jobs you want Xiaojing to reason through and macros for procedures you want to repeat. See the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/docs/hands-api.md]tool guide[/url] for the macro format and a starter example.
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.19[/b]
+[list]
+[*]Declared the file capability used to save local macros, resolving the game's undeclared permission warning.
+[*]Removed fixed chat tool round, call, and response time limits. You can still stop a task manually. Service errors appear in chat history.
+[/list]
+
 [b]v0.7.18[/b]
 [list]
 [*]Create, review, and run local macros from chat. Macros support conditions, loops, and inputs.
@@ -32,7 +38,7 @@ Your local macro library is shared across saves. Use quick replies for jobs you 
 [i]See the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url] for the full release history.[/i]
 [h2]🛠️ Quick Start & Notes[/h2]
 [list]
-[*]1. When enabling the mod in Mods menu, confirm the network permission prompt, then restart the game.
+[*]1. Review network and file permissions in the Mods menu, enable the mod, and restart the game. File access is used to save local macros in the mod's data folder. If prompted after updating, select Review and enable.
 [*]2. In the pawnshop, press [b]F7[/b] to configure your API endpoint and API Key (DeepSeek API recommended; stored locally).
 [*]3. Xiaojing strictly follows native game mechanics and will not spawn items or auto-complete transactions.
 [/list]

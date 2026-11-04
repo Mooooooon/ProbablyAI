@@ -1,4 +1,3 @@
-v0.7.18
-- Create, review, and run local macros from chat. Macros support conditions, loops, and inputs.
-- Ask the assistant to draft a macro, then approve it to run it in one click. Approved macros are available across local saves.
-- Pouring routines can check that the full amount will fit and record how much actually reached the target.
+v0.7.19
+- Declared the file capability used to save local macros, resolving the game's undeclared permission warning.
+- Removed fixed chat tool round, call, and response time limits. You can still stop a task manually. Service errors appear in chat history.

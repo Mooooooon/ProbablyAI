@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.7.18。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.7.19。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -23,7 +23,7 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 - 查看道具时可读取通用耐久：当前值 / 上限、剩余百分比、是否耗尽，以及未鉴定显示值或已鉴定值的来源。支持过滤器及其他采用原生耐久系统的道具；F7 手动操作的物品详情也显示。使用或过滤后可重新查询，按“耗尽停止”的指令判断。
 - 可按自然语言指令倒水、倒酒、倒掉液体和在水龙头接水，使用游戏原生的物品对物品操作，并由游戏判定所有权、锁定、容量、过滤器和水龙头解锁状态。
 - 可像玩家一样对非战斗物品执行原生物品对物品和使用 / 激活操作：试纸、扫描仪、书籍、医疗、手术、动物、食物、机器和工具等都可以尝试；武器可用于屠宰动物，但不会对顾客、敌人使用或代操作霰弹枪射击模式，交易和改存档仍不开放。
-- 工具调用上限可调：F7 的“工具调用上限”可设置每条消息处理轮数（1–1000，默认 16）和工具调用次数（1–10000，默认 48）。复杂重复任务可同时调高，保存后下次发送生效，重启后保留；执行中仍可停止。调高可能增加耗时和 API 费用。
+- 聊天工具可连续执行多轮，Mod 不再限制轮数、调用次数或模型回复等待时间。执行中可点“停止”，已完成的操作会保留；如果服务报错，聊天记录会显示错误。
 - 聊天上下文上限可调：F7 可设置发送给模型的对话轮次（1–50）和历史 token 估算上限（1,000–200,000），超限时从最旧的完整轮次开始省略；聊天记录随游戏存档保存，回档时恢复该存档保存时的聊天。
 - 主菜单 → Mods → 深空AI：可能是DeepSeek 的齿轮中，可保存高度、左右位置、底部位置、透明度、呼吸动画及快捷键设置。
 
@@ -140,7 +140,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 %USERPROFILE%\AppData\LocalLow\Questing Goose Studio\Probably Stolen\ModData\probably_ai\connection.local.json
 ```
 
-打开窗口、保存配置均不会发送网络请求；“获取模型列表”“发送测试消息”、聊天发送及“执行助手指令”会联网。每条聊天消息及助手指令会附带新读取的当前客人与柜台实况；模型另外调用工具时，相应物品、容器或客人信息也会发给配置的服务。自动观察不写入聊天历史或可见记录。请求超时为 60 秒，支持取消；关闭窗口、离店或切换场景时也会取消。当前未实现自动买卖。
+打开窗口、保存配置均不会发送网络请求；“获取模型列表”“发送测试消息”、聊天发送及“执行助手指令”会联网。每条聊天消息及助手指令会附带新读取的当前客人与柜台实况；模型另外调用工具时，相应物品、容器或客人信息也会发给配置的服务。自动观察不写入聊天历史或可见记录。获取模型列表的等待上限为 60 秒。聊天和助手指令可手动停止，关闭窗口、离店或切换场景时也会取消。当前未实现自动买卖。
 
 ## 助手的“手”：物品与容器
 
@@ -177,7 +177,7 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 
 启动游戏 → Mods → 选择“深空AI：可能是DeepSeek” → 激活 → 重启游戏 → 载入当铺。关闭游戏后重新安装更新。停用请在 Mods 中取消激活并重启。
 
-从 0.1.x 更新到 0.2.0 时，因为新增 `network` 能力，游戏可能暂不加载此 Mod。请在 Mods 中选择 **重新审核并启用 / Review and enable**，确认联网能力后重启。无需修改开发者模式或信任记录。
+更新到 0.7.19 后，若游戏要求重新审核，请在 Mods 中选择 **重新审核并启用 / Review and enable**，查看联网和文件权限后重启。文件权限用于在模组的数据目录原子保存本地宏，供各存档共用。
 
 ## 扩展入口
 
@@ -233,11 +233,11 @@ API Key 只用于用户填写的服务地址，不进入日志、模型列表或
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 ```
 
-当前基线为 237 项测试（以实际输出为准），覆盖连接与密钥隔离、工具循环和取消、物品查询与通用耐久、嵌套容器与批量移动、客人需求与报价、水质与鉴定、液体操作、物品使用、提示词迁移、聊天持久化与上下文裁剪、本地化和立绘逻辑。测试文件与功能的对应关系见开发导航；原生 UI 和场景行为仍需游戏实测。
+当前基线为 248 项测试（以实际输出为准），覆盖连接与密钥隔离、工具循环和取消、物品查询与通用耐久、嵌套容器与批量移动、客人需求与报价、水质与鉴定、液体操作、物品使用、提示词迁移、聊天持久化与上下文裁剪、本地化和立绘逻辑。测试文件与功能的对应关系见开发导航；原生 UI 和场景行为仍需游戏实测。
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.18/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.19/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 

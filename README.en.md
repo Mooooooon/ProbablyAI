@@ -6,14 +6,14 @@ GitHub: [https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/P
 
 ## Getting started
 
-1. Subscribe in Steam Workshop, enable the mod in the game's Mods menu, review its **network** capability and restart the game.
+1. Subscribe in Steam Workshop, enable the mod in the game's Mods menu, review its **network** and **files** capabilities, and restart the game. If an update prompts you to review again, select **Review and enable** in the Mods menu.
 2. Enter your pawnshop. Click Xiaojing's portrait to chat; while idle she gently breathes by changing height from planted feet, so her feet never float. **F6** toggles the portrait; **F7** opens assistant settings, and the mod's settings page adjusts height, position, opacity and the breathing motion. Xiaojing also warns you locally as soon as a wanted or augmented customer arrives, once per visit, without showing it to the customer and without flagging on-duty security staff; turn it off under **Visitor notices**.
 3. Enter an OpenAI-compatible base URL, API key and model. Defaults: `https://api.deepseek.com`, `deepseek-flash`. You can fetch the provider's model list or enter a model ID manually.
 4. Choose a **Thinking level**: follow model default, thinking off, low, high or max. Low/High/Max send `thinking: {"type":"enabled"}` with `reasoning_effort`; thinking off sends `thinking: {"type":"disabled"}` only. Keep the default if your service rejects these fields.
 5. View or edit the full system prompt in F7. The default maid persona addresses you as **Master**, speaks warmly, and avoids emoji and emoticons unless requested. Save settings to apply changes to future messages, or preview the current draft with a test message.
 6. Under **Chat context**, set the maximum conversation turns (1–50) and the history token limit (1,000–200,000, estimated). When either limit is exceeded, the oldest complete turns are dropped without splitting tool calls from their results; changing these limits alone keeps the current conversation.
 
-7. Under **Tool limits** in F7, set model rounds per message (1–1000, default 16) and tool calls per message (1–10000, default 48). Raise both for complex repeated tasks. Save to apply to future messages, including after restarting; running tasks can still be stopped. Higher limits may increase time and API costs.
+7. Chat tools can continue across model replies without a fixed round count, call count, or response deadline imposed by the mod. Click **Stop** to end a running task and keep completed operations. Service errors appear in the chat history.
 
 You need your own compatible API service and credentials. Provider charges are handled by your chosen provider. The mod contains no shared API key or included API credits.
 
@@ -120,10 +120,10 @@ Opening settings or saving them does not contact the provider. Fetching models, 
 
 API keys are used only for your configured endpoint and are not put into chat or logs. With **Remember API key** enabled, the key is stored in plain text in the game's per-mod data folder (`ModData/probably_ai/connection.local.json`). Disable it and save for a session-only key. Do not share your local settings file.
 
-The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. Only the existing **network** capability is declared.
+The Workshop upload contains only this mod's compiled DLL, manifest, player guides, portrait and cover. It includes no personal connection settings, save files, account data, source cache, game DLLs or debug symbols. The manifest declares **network** for API requests and **files** for saving the local macro library atomically in the mod's own data folder.
 
 ## Development
 
 Start with [AGENTS.md](https://github.com/Mooooooon/ProbablyAI/blob/main/AGENTS.md) and the [development map (Chinese)](https://github.com/Mooooooon/ProbablyAI/blob/main/docs/development.md). The map covers module responsibilities, runtime call flow, task-to-code/test lookup, game/config/build/release paths, and steps for extending tools or settings. Run the console tests with `dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release`; both build and tests accept `-p:GameDirectory=...`. The current baseline is 227 checks, with actual output authoritative. Native UI and scene behavior still require in-game testing.
 
-Version 0.7.18. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.
+Version 0.7.19. Built against the installed native mod API (application version 0.46D / VERSION 100-Rev3). Automated checks use simulated game state and HTTP; in-game behavior and provider compatibility still need player testing. Character and cover artwork were generated with AI from the supplied character reference. This is an independent fan mod, not an official DeepSeek product.

@@ -65,7 +65,8 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 
 | 任务 | 先看 / 通常需要一起修改 | 验证入口 |
 | --- | --- | --- |
-| F7 设置、新配置或工具调用上限 | `UI/ConnectionWindow.cs`、`Services/ConnectionOptions.cs`、`ConnectionSettingsStore.cs`；循环限制在 `Hands/HandsAgent.cs` | `Program.cs`、`ContextTests.cs`、`HandsTests.cs` |
+| F7 设置或新增配置 | `UI/ConnectionWindow.cs`、`Services/ConnectionOptions.cs`、`ConnectionSettingsStore.cs` | `Program.cs`、`ContextTests.cs` |
+| 聊天工具循环、取消与失败记录 | `Hands/HandsAgent.cs`、`Services/OpenAiApiClient.cs`、`UI/ChatWindow.cs` | `HandsTests.cs`、`ChatTests.cs`、`Program.cs` |
 | 立绘设置或快捷键 | `AssistantSettings.cs`、`AssistantController.cs`、`UI/Portrait*.cs` | `PortraitTests.cs`；原生 UI 编译与游戏实测 |
 | 物品字段、耐久、容器树 | `Hands/HandsContracts.cs`、`GameHandsBackend.cs`、`GameItemDurability.cs`、`HandsProtocol.cs`；F7 详情在 `UI/HandsWindow.cs` | `HandsTests.cs`、`DurabilityTests.cs` |
 | 查询 / 移动物品、批量移动 | `Hands/HandsProtocol.cs` → `HandsService.cs` → `GameHandsBackend.cs` | `HandsTests.cs` |
@@ -98,7 +99,7 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 | `dist/workshop/<version>/` | `preview.jpg`、`workshop.vdf`、`package-inventory.json` 位于 content 之外 |
 | `workshop/release-<version>.inventory.json` | 纳入 Git 的发布哈希快照；必须对应实际上传包 |
 | `<data>/ModConfigs/probably_ai.json` | 原生 `ModConfig` 设置：立绘、快捷键和提醒；入口 `AssistantSettings` |
-| `<data>/ModData/probably_ai/connection.local.json` | F7 连接、可选密钥、提示词、玩家技巧、快捷发言、思考级别、历史及工具限制。入口 `ModEntry` / `ConnectionSettingsStore` |
+| `<data>/ModData/probably_ai/connection.local.json` | F7 连接、可选密钥、提示词、玩家技巧、快捷发言、思考级别及历史限制。入口 `ModEntry` / `ConnectionSettingsStore` |
 | 存档内的原生 Mod 数据键 `probably_ai:chat-history` | 已完成的聊天轮次，随游戏保存并随对应存档恢复。入口 `AssistantController.OnGameLoaded` |
 | `<data>/ModData/probably_ai/chat-window.local.json` | 聊天窗口位置；入口 `UI/ChatWindow.cs` |
 | `<data>/ModData/probably_ai/macros.local.json` | 所有存档共享的批准宏和待审草稿；入口 `Macros/MacroStore.cs` |
@@ -138,7 +139,7 @@ dotnet build .\ProbablyAI.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\st
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\steamapps\common\Probably Stolen'
 ```
 
-主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **250 项**，以后以实际输出为准。
+主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **248 项**，以后以实际输出为准。
 
 测试覆盖纯逻辑、模拟 HTTP、工具循环及部分用原生接口桩执行的生产适配逻辑；并不等于完整 Unity 集成测试。`GameHandsBackend` 的实际场景遍历、窗口显示和物品原生回调仍需游戏实测。新增逻辑优先补可模拟测试，不为单纯文档修改新增运行时测试。
 
@@ -147,7 +148,7 @@ dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release '-p:GameDirector
 ```powershell
 rg --files src tests docs scripts workshop
 rg -n 'inspect_item|durability' src/Hands tests/DurabilityTests.cs docs/hands-api.md
-rg -n 'MaxToolRounds|MaxToolCalls' src tests
+rg -n 'CompleteTurnAsync|ThrowIfCancellationRequested' src/Hands src/Services
 rg -n 'Register\(|OnGameLoaded|ToolsReady' src
 rg -n 'connection.local|chat-history|chat-window' src
 ```

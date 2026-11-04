@@ -213,7 +213,7 @@ internal static partial class Program
             var error = await ExpectAsync<ApiRequestException>(() => client.ListModelsAsync(new ConnectionOptions(), default));
             Assert(!error.ToString().Contains("test-only-secret"), "network exception leak");
         });
-        await Check("cancel interrupts an in-flight request", async () =>
+        await Check("cancel interrupts an in-flight chat completion", async () =>
         {
             using var http = new HttpClient(new FakeHandler(async (request, token) =>
             {
@@ -222,7 +222,7 @@ internal static partial class Program
             }));
             using var client = new OpenAiApiClient(http);
             using var cancellation = new CancellationTokenSource();
-            var pending = client.ListModelsAsync(new ConnectionOptions(), cancellation.Token);
+            var pending = client.CompleteAsync(new ConnectionOptions(), "hello", "system", cancellation.Token);
             cancellation.Cancel();
             await ExpectAsync<OperationCanceledException>(() => pending);
         });

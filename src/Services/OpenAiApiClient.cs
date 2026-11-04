@@ -21,7 +21,7 @@ namespace ProbablyAI.Services
     {
         private readonly HttpClient http;
         private readonly bool ownsHttp;
-        private readonly TimeSpan timeout;
+        private readonly TimeSpan? timeout;
 
         public OpenAiApiClient(HttpClient http = null, TimeSpan? timeout = null)
         {
@@ -31,13 +31,14 @@ namespace ProbablyAI.Services
                 Timeout = Timeout.InfiniteTimeSpan,
                 MaxResponseContentBufferSize = 2 * 1024 * 1024
             };
-            this.timeout = timeout ?? TimeSpan.FromSeconds(60);
+            this.timeout = timeout;
         }
 
         public async Task<IReadOnlyList<string>> ListModelsAsync(ConnectionOptions options, CancellationToken cancellationToken)
         {
             var connection = options.Normalized(false);
-            var body = await SendAsync(connection, HttpMethod.Get, "models", null, cancellationToken).ConfigureAwait(false);
+            var body = await SendAsync(connection, HttpMethod.Get, "models", null,
+                timeout ?? TimeSpan.FromSeconds(60), cancellationToken).ConfigureAwait(false);
             var document = ParseObject(body);
             if (!(document["data"] is JArray data))
                 throw new ApiRequestException(T("模型列表格式不兼容：响应中缺少 data 数组。仍可手动输入模型 ID。"));
@@ -69,7 +70,8 @@ namespace ProbablyAI.Services
             var payload = new JObject { ["model"] = connection.Model, ["messages"] = messages.DeepClone(), ["stream"] = false };
             if (tools != null) { payload["tools"] = tools.DeepClone(); payload["tool_choice"] = "auto"; }
             ThinkingLevels.Apply(payload, connection.ThinkingLevel);
-            var body = await SendAsync(connection, HttpMethod.Post, "chat/completions", payload.ToString(Formatting.None), cancellationToken).ConfigureAwait(false);
+            var body = await SendAsync(connection, HttpMethod.Post, "chat/completions", payload.ToString(Formatting.None),
+                timeout ?? Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
             var choices = ParseObject(body)["choices"] as JArray;
             var raw = (choices?.FirstOrDefault() as JObject)?["message"] as JObject;
             if (raw == null) throw new ApiRequestException(T("服务未返回有效的助手消息。"));
@@ -86,7 +88,6 @@ namespace ProbablyAI.Services
                 throw new ApiRequestException(T("模型返回了无效的工具调用列表，已停止。"));
             if (raw["tool_calls"] is JArray toolCalls)
             {
-                if (toolCalls.Count > 16) throw new ApiRequestException(T("模型单次请求的工具操作过多，已停止。"));
                 foreach (var token in toolCalls)
                 {
                     var call = token as JObject;
@@ -110,13 +111,14 @@ namespace ProbablyAI.Services
             return new ChatTurn { Message = message, Text = reply, ToolCalls = calls };
         }
 
-        private async Task<string> SendAsync(ConnectionOptions options, HttpMethod method, string route, string body, CancellationToken cancellationToken)
+        private async Task<string> SendAsync(ConnectionOptions options, HttpMethod method, string route, string body,
+            TimeSpan requestTimeout, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             using (var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             using (var request = new HttpRequestMessage(method, options.Endpoint(route)))
             {
-                timeoutSource.CancelAfter(timeout);
+                if (requestTimeout != Timeout.InfiniteTimeSpan) timeoutSource.CancelAfter(requestTimeout);
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 if (!string.IsNullOrEmpty(options.ApiKey))
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.ApiKey);

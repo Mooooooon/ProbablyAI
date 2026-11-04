@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.18）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.19）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -338,7 +338,7 @@
 
 `HandsAgent` 从注册表读取游戏工具和宏管理工具，按顺序执行模型返回的调用，再将结果以 `role=tool` 和对应 `tool_call_id` 传回模型。批量工具（`move_items`、`check_customer_items`）可在一次调用中处理多件物品。`run_macro` 计作一次模型工具调用，内部步骤受独立的宏执行上限约束。原始 assistant 消息中的 `reasoning_content` 会保留，以兼容 DeepSeek 思考模式。历史投影会省去已提交的宏草稿正文。参考 [OpenAI Function calling](https://developers.openai.com/api/docs/guides/function-calling)、[DeepSeek Tool Calls](https://api-docs.deepseek.com/guides/tool_calls/)。
 
-模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行；默认每条消息最多 16 轮 / 48 次模型工具调用；F7 可设置处理轮数（1–1000，含最终回复的模型请求）与调用次数（1–10000），保存后下条消息生效。调用次数不含消息开始时自动刷新的客人 / 柜台实况。若模型一轮返回的整批调用会超出剩余次数，该批全部不执行。取消令牌会在每次调用前检查，已完成的移动不会自动回滚。
+模型返回的参数仍由本地代码严格校验。重复调用 ID、超长参数、未知操作和多余参数不会执行。聊天工具循环没有固定的处理轮数或调用次数上限，聊天请求也没有 Mod 设置的固定等待时间。服务商仍可拒绝或中断请求，API 错误会记入聊天记录。取消令牌会在等待模型和执行工具时检查，已完成的移动不会自动回滚。
 
 ## 注册未来工具
 

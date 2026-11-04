@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 0.7.19 — 2026-11-05
+
+### 中文
+
+- 补齐保存本地宏所需的文件权限声明，修复游戏提示权限未声明的问题。
+- 移除聊天的工具轮数、调用次数和固定等待时间限制。仍可手动停止，服务错误会显示在聊天记录中。
+
+### English
+
+- Declared the file capability used to save local macros, resolving the game's undeclared permission warning.
+- Removed the chat tool round and call limits and the fixed response deadline. You can still stop a task manually, and service errors appear in the chat history.
+
 ## 0.7.18 — 2026-11-04
 
 ### 中文

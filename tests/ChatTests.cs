@@ -118,7 +118,8 @@ internal static partial class Program
             var history = memory.Messages();
             var results = history.OfType<JObject>().Where(m => (string)m["role"] == "tool").ToArray();
             Assert(results.Length == 2 && (string)JObject.Parse((string)results[1]["content"])["code"] == "not_executed", "dangling tool call in history");
-            Assert(backend.Moves == 1 && !agent.IsRunning && (string)history.Last["role"] == "assistant", "cancellation cleanup");
+            Assert(backend.Moves == 1 && !agent.IsRunning && (string)history.Last["role"] == "assistant" &&
+                ((string)history.Last["content"]).StartsWith("本轮已停止。"), "cancellation cleanup");
         });
         await Check("history keeps complete exchanges while the sent context is trimmed and clear removes them", () =>
         {

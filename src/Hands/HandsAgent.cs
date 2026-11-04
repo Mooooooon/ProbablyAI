@@ -50,7 +50,6 @@ namespace ProbablyAI.Hands
             var exchange = new JArray { new JObject { ["role"] = "user", ["content"] = instruction } };
             var outstanding = new List<ChatToolCall>();
             var callIds = new HashSet<string>();
-            int modelToolCalls = 0;
             bool macroFailed = false;
             IsRunning = true;
             try
@@ -64,7 +63,7 @@ namespace ProbablyAI.Hands
                     var observation = ReadShopContext(result, cancellationToken);
                     if (observation != null) prefix.Add(observation);
                 }
-                for (int round = 0; round < connection.MaxToolRounds; round++)
+                while (true)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Invoke(T("正在思考…"));
@@ -80,8 +79,6 @@ namespace ProbablyAI.Hands
                         memory?.Commit(exchange);
                         return result;
                     }
-                    if (turn.ToolCalls.Count > connection.MaxToolCalls - modelToolCalls)
-                        throw new ApiRequestException(T("工具调用达到本次消息的次数上限，已停止。可在 F7 调高上限；请查看操作记录后继续。"));
                     foreach (var call in turn.ToolCalls)
                         if (!callIds.Add(call.Id)) throw new ApiRequestException(T("模型重复了调用 ID，已停止。请检查操作记录。"));
                     exchange.Add(turn.Message.DeepClone());
@@ -91,7 +88,6 @@ namespace ProbablyAI.Hands
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         result.ToolCalls++;
-                        modelToolCalls++;
                         HandsResult outcome;
                         if (macroFailed && (registry.ChangesState(call.Name) || call.Name == MacroService.SaveDraftTool))
                             outcome = HandsResult.Fail("not_executed", T("宏已停止，本次请求的后续写操作已跳过。"));
@@ -114,16 +110,16 @@ namespace ProbablyAI.Hands
                         await Task.Yield();
                     }
                 }
-                result.Reply = T("已达到本次消息的处理轮数上限。可在 F7 调高上限；请查看操作记录，必要时继续。");
-                exchange.Add(new JObject { ["role"] = "assistant", ["content"] = result.Reply });
-                memory?.Commit(exchange);
-                return result;
             }
-            catch
+            catch (Exception error)
             {
                 foreach (var call in outstanding)
                     exchange.Add(ToolReply(call.Id, HandsResult.Fail("not_executed", T("本轮在此操作执行前停止，没有执行这个调用。"))));
-                exchange.Add(new JObject { ["role"] = "assistant", ["content"] = T("本轮未完成或已停止。已完成的工具操作保留，请根据本轮工具结果重新查询实际状态后继续。") });
+                var reason = error is OperationCanceledException && cancellationToken.IsCancellationRequested
+                    ? T("本轮已停止。")
+                    : error is ApiRequestException ? error.Message : T("本轮未完成。");
+                exchange.Add(new JObject { ["role"] = "assistant", ["content"] =
+                    reason + "\n" + T("已完成的工具操作保留，请根据本轮工具结果重新查询实际状态后继续。") });
                 memory?.Commit(exchange);
                 throw;
             }

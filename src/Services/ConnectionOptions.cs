@@ -92,12 +92,6 @@ namespace ProbablyAI.Services
         public const int DefaultHistoryTokens = 32000;
         public const int HistoryTokensMin = 1000;
         public const int HistoryTokensMax = 200000;
-        public const int DefaultToolRounds = 16;
-        public const int ToolRoundsMin = 1;
-        public const int ToolRoundsMax = 1000;
-        public const int DefaultToolCalls = 48;
-        public const int ToolCallsMin = 1;
-        public const int ToolCallsMax = 10000;
 
         public string BaseUrl { get; set; } = DefaultBaseUrl;
         public string ApiKey { get; set; } = "";
@@ -110,8 +104,6 @@ namespace ProbablyAI.Services
         public bool RememberApiKey { get; set; } = true;
         public int MaxHistoryTurns { get; set; } = DefaultHistoryTurns;
         public int MaxHistoryTokens { get; set; } = DefaultHistoryTokens;
-        public int MaxToolRounds { get; set; } = DefaultToolRounds;
-        public int MaxToolCalls { get; set; } = DefaultToolCalls;
 
         public ConnectionOptions Copy() => new ConnectionOptions
         {
@@ -124,9 +116,7 @@ namespace ProbablyAI.Services
             QuickReplies = (QuickReply[])QuickReplies?.Clone(),
             RememberApiKey = RememberApiKey,
             MaxHistoryTurns = MaxHistoryTurns,
-            MaxHistoryTokens = MaxHistoryTokens,
-            MaxToolRounds = MaxToolRounds,
-            MaxToolCalls = MaxToolCalls
+            MaxHistoryTokens = MaxHistoryTokens
         };
 
         public ConnectionOptions Normalized(bool requireModel = true)
@@ -157,10 +147,6 @@ namespace ProbablyAI.Services
                 copy.MaxHistoryTurns = DefaultHistoryTurns;
             if (copy.MaxHistoryTokens < HistoryTokensMin || copy.MaxHistoryTokens > HistoryTokensMax)
                 copy.MaxHistoryTokens = DefaultHistoryTokens;
-            if (copy.MaxToolRounds < ToolRoundsMin || copy.MaxToolRounds > ToolRoundsMax)
-                copy.MaxToolRounds = DefaultToolRounds;
-            if (copy.MaxToolCalls < ToolCallsMin || copy.MaxToolCalls > ToolCallsMax)
-                copy.MaxToolCalls = DefaultToolCalls;
             if (!Uri.TryCreate(copy.BaseUrl, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp) ||
                 string.IsNullOrEmpty(uri.Host))

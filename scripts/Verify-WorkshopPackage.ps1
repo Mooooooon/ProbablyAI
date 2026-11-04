@@ -21,5 +21,6 @@ $inventory = foreach ($file in $files) {
 }
 [xml]$manifest = Get-Content -LiteralPath (Join-Path $packageRoot 'manifest.xml') -Raw
 if ($manifest.Manifest.ID -ne 'probably_ai' -or @($manifest.Manifest.Assemblies.Assembly).Count -ne 1 -or $manifest.Manifest.Assemblies.Assembly -ne 'ProbablyAI.dll') { throw 'Unexpected Workshop manifest assembly list.' }
-if (@($manifest.Manifest.Capabilities.Capability).Count -ne 1 -or $manifest.Manifest.Capabilities.Capability -ne 'network') { throw 'Unexpected Workshop capability list.' }
+$capabilities = @($manifest.Manifest.Capabilities.Capability)
+if ($capabilities.Count -ne 2 -or 'network' -cnotin $capabilities -or 'files' -cnotin $capabilities) { throw 'Unexpected Workshop capability list.' }
 $inventory
