@@ -19,6 +19,7 @@ namespace ProbablyAI.UI
     public sealed class ChatWindow : IDisposable
     {
         private const string PositionFile = "chat-window.local.json";
+        private const int QuickRepliesPerRow = 2;
         private static Vector2? savedScreenPosition;
         private static bool positionLoaded;
         private readonly HandsAgent agent;
@@ -28,6 +29,8 @@ namespace ProbablyAI.UI
         private readonly Action openSettings;
         private readonly Action openHands;
         private readonly List<string> currentActions = new List<string>();
+        private readonly QuickReply[] quickReplies = new QuickReply[QuickReply.SlotCount];
+        private readonly List<GameObject> quickReplyRows = new List<GameObject>();
         private CustomUIWindow window;
         private ScrollRect scroll;
         private CancellationTokenSource pending;
@@ -53,12 +56,24 @@ namespace ProbablyAI.UI
             b.AddLabel("", "conversation").End()
                 .AddInput(T("说点什么，比如：帮我把食物放到柜台上"), "", id: "message")
                 .AddLabel(T("Enter 发送 · Shift+Enter 换行"))
-                .AddLabel(T("快捷发言"))
-                .BeginRow()
-                    .AddButton(T("按照客户需求挑选商品"), () => QuickSend(T("按照客户需求挑选商品，直接摆到柜台上。")), "quick-pick")
-                    .AddButton(T("帮我鉴定对方带来的东西"), () => QuickSend(T("帮我鉴定对方带来的东西，逐件告诉我结果。")), "quick-appraise")
-                .End()
-                .BeginRow()
+                .AddLabel(T("快捷发言"), "quick_replies");
+            quickReplyRows.Clear();
+            for (int first = 0; first < QuickReply.SlotCount; first += QuickRepliesPerRow)
+            {
+                b.BeginRow();
+                quickReplyRows.Add(b.CurrentContainer.gameObject);
+                for (int slot = first; slot < Math.Min(first + QuickRepliesPerRow, QuickReply.SlotCount); slot++)
+                {
+                    int index = slot;
+                    b.AddButton("", () => QuickSend(quickReplies[index].Message), "quick_" + slot);
+                    var label = window.Get("quick_" + slot).text;
+                    label.richText = false;
+                    label.enableWordWrapping = false;
+                    label.overflowMode = TextOverflowModes.Ellipsis;
+                }
+                b.End();
+            }
+            b.BeginRow()
                     .AddButton(T("发送"), Send, "send")
                     .AddButton(T("停止"), Cancel, "stop")
                     .AddButton(T("连接设置"), () => openSettings?.Invoke())
@@ -68,7 +83,7 @@ namespace ProbablyAI.UI
                 .AddLabel(T("准备就绪。"), "status");
             var input = window.Get("message");
             input.input.lineType = TMP_InputField.LineType.MultiLineNewline;
-            input.input.characterLimit = 6000;
+            input.input.characterLimit = QuickReply.MaxMessageLength;
             input.input.richText = false;
             input.input.textComponent.richText = false;
             input.SetPreferredSize(-1f, 90f);
@@ -78,9 +93,29 @@ namespace ProbablyAI.UI
                 label.richText = false; label.enableWordWrapping = true;
             }
             SetBusy(false);
-            b.Show(); Render();
+            b.Show();
+            RefreshQuickReplies();
+            Render();
             RestorePosition();
             input.input.ActivateInputField();
+        }
+
+        public void RefreshQuickReplies()
+        {
+            if (!IsOpen) return;
+            var options = connection.Current;
+            for (int slot = 0; slot < quickReplies.Length; slot++)
+            {
+                var reply = quickReplies[slot] = options.GetQuickReply(slot);
+                window.Get("quick_" + slot).SetText(reply.Label).SetVisible(reply.IsEnabled);
+            }
+            for (int row = 0; row < quickReplyRows.Count; row++)
+            {
+                int first = row * QuickRepliesPerRow;
+                quickReplyRows[row].SetActive(quickReplies.Skip(first).Take(QuickRepliesPerRow).Any(reply => reply.IsEnabled));
+            }
+            window.Get("quick_replies").SetVisible(quickReplies.Any(reply => reply.IsEnabled));
+            CustomUIBuilder.RebuildLayout(window.ContentRoot);
         }
 
         private static Camera UICamera(RectTransform rect)
@@ -194,7 +229,13 @@ namespace ProbablyAI.UI
             try
             {
                 await agent.RunAsync(connection.Current, message, Progress, request.Token, memory);
-                if (IsOpen) { currentUser = null; currentActions.Clear(); Render(); Status(T("完成。可以继续聊天或安排其他操作。")); }
+                if (IsOpen)
+                {
+                    currentUser = null;
+                    currentActions.Clear();
+                    Render();
+                    Status(memory.SaveWarning ?? T("完成。可以继续聊天或安排其他操作。"));
+                }
             }
             catch (OperationCanceledException) { Finished(T("已停止；已经完成的操作保留。")); }
             catch (ApiRequestException error) { Finished(error.Message); }
@@ -277,7 +318,11 @@ namespace ProbablyAI.UI
         private void Clear()
         {
             if (busy || agent.IsRunning) { Status(T("请先停止当前请求，再清空聊天。")); return; }
-            memory.Clear(); currentActions.Clear(); currentUser = null; Render(); Status(T("聊天与保存的上下文已清空。"));
+            memory.Clear();
+            currentActions.Clear();
+            currentUser = null;
+            Render();
+            Status(memory.SaveWarning ?? T("聊天已清空。下次游戏保存时会记录此更改。"));
         }
 
         // A local arrival notice is visible here but never sent to the model.
@@ -292,8 +337,8 @@ namespace ProbablyAI.UI
             window.Get("send").SetInteractable(!value);
             window.Get("clear").SetInteractable(!value);
             window.Get("stop").SetInteractable(value);
-            window.Get("quick-pick").SetInteractable(!value);
-            window.Get("quick-appraise").SetInteractable(!value);
+            for (int slot = 0; slot < quickReplies.Length; slot++)
+                window.Get("quick_" + slot).SetInteractable(!value);
         }
         private void Status(string text) { if (IsOpen) window.Get("status").SetText(text); }
         private void Cancel() => pending?.Cancel();

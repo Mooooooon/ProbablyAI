@@ -50,6 +50,28 @@ internal static partial class Program
             var error = Expect<ArgumentException>(() => store.Save(invalid));
             Assert(error.Message.Contains("16000") && writes == 1 && store.Current.SystemPrompt == valid.SystemPrompt, "invalid prompt saved or configuration replaced");
         });
+        await Check("settings preserve edited and hidden quick replies alongside localized defaults", () =>
+        {
+            string persisted = "{\"Model\":\"saved-model\"}";
+            var store = new ConnectionSettingsStore(() => persisted, text => persisted = text);
+            var options = store.Current;
+            Assert(options.GetQuickReply(0).IsEnabled && options.GetQuickReply(1).IsEnabled, "legacy settings lost the original shortcuts");
+            var water = options.GetQuickReply(2);
+            Assert(water.IsEnabled && water.Message.Contains("3000 mL") && water.Message.Contains("紫外线灯") && water.Message.Contains("两片净水药片"),
+                "water preset did not include the repeatable workflow");
+            Assert(!options.GetQuickReply(3).IsEnabled, "unused slot had an active preset");
+            options.QuickReplies[0] = new QuickReply("", "");
+            options.QuickReplies[3] = new QuickReply("整理后仓", "先查看后仓。\n再整理空水罐。");
+            store.Save(options);
+            options.QuickReplies[3] = null;
+
+            var restored = new ConnectionSettingsStore(() => persisted, _ => { }).Current;
+            Assert(!restored.GetQuickReply(0).IsEnabled, "hidden preset came back after reload");
+            Assert(restored.GetQuickReply(2).Message == water.Message, "editing a different shortcut changed the preset");
+            Assert(restored.GetQuickReply(3).Label == "整理后仓" && restored.GetQuickReply(3).Message == "先查看后仓。\n再整理空水罐。",
+                "custom label or multiline message was not restored");
+            Assert(store.Current.GetQuickReply(3).IsEnabled, "draft mutation changed the active shortcuts");
+        });
         await Check("task-focused prompts finish the job without closing questions", () =>
         {
             Assert(AssistantPrompt.ChineseDefault.Contains("主人的任务优先") &&
@@ -269,6 +291,34 @@ internal static partial class Program
             options.SystemPrompt = ""; // Same normalization path as clearing the editor and saving.
             await agent.RunAsync(options, "再打个招呼", null, default, memory);
             Assert(memory.TurnCount == 1, "old persona exchange retained");
+        });
+        await Check("saved player tips append to the system prompt without clearing prior turns", async () =>
+        {
+            string persisted = null;
+            var store = new ConnectionSettingsStore(() => null, text => persisted = text);
+            var options = new ConnectionOptions { SystemPrompt = "自定义人设" };
+            var memory = new ConversationMemory();
+            const string tips = "先查后仓。\n空水罐留一个自用。";
+            int requests = 0;
+            var transport = new FakeTransport((messages, token) =>
+            {
+                string system = (string)messages[0]["content"];
+                if (requests++ == 0)
+                    Assert(system == options.SystemPrompt, "blank tips changed the system prompt");
+                else
+                {
+                    Assert(system == options.SystemPrompt + "\n\n玩家自定义游戏技巧\n" + tips, "tips were not appended as multiline system text");
+                    Assert(messages.Any(message => (string)message["content"] == "第一条消息"), "changing tips cleared prior context");
+                }
+                return new ChatTurn { Text = "收到。" };
+            });
+            var agent = new HandsAgent(transport, new HandsService(new FakeHands()));
+            await agent.RunAsync(options, "第一条消息", null, default, memory);
+            options.PlayerTips = tips;
+            store.Save(options);
+            var restored = new ConnectionSettingsStore(() => persisted, _ => { }).Current;
+            await agent.RunAsync(restored, "继续", null, default, memory);
+            Assert(memory.TurnCount == 2, "updating tips discarded the previous turn");
         });
     }
 }

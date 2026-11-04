@@ -43,7 +43,7 @@
 ```text
 ModEntry.Init                 定义原生设置，不提前读取游戏本地化
   → ModEntry.OnEnable        创建客户端、连接配置存储与 AssistantController
-  → OnGameLoaded             创建原生适配器、注册工具、恢复当前存档槽的聊天历史
+  → OnGameLoaded             读档完成 / 新开档时创建原生适配器、注册工具、恢复存档中的聊天
   → ChatWindow / HandsWindow 接收指令
   → HandsAgent.RunAsync      配置快照、实况刷新、历史裁剪、多轮模型请求与取消
   → OpenAiApiClient          解析 Chat Completions 的文本和 tool_calls
@@ -56,7 +56,7 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 
 立绘聊天传入 `ConversationMemory` 保留多轮历史；F7 手动操作页的助手指令不传记忆，是独立请求。F7 的测试对话经 `IAssistantService` / `OpenAiAssistantService` 调用普通聊天接口，不走游戏工具循环。不要把这三个入口混为一处修改。
 
-原生物品 / 容器 / 客人访问在 Unity 主线程执行。`HandsAgent` 保留 Unity 同步上下文；不要把工具分发放进 `Task.Run`。场景卸载时控制器取消请求、关闭窗口并使旧适配器失效，物品 ID 只在当前载入中有效。
+原生物品 / 容器 / 客人访问在 Unity 主线程执行。`HandsAgent` 保留 Unity 同步上下文；不要把工具分发放进 `Task.Run`。读档开始或场景卸载时，控制器解除旧会话的持久化绑定、取消请求、关闭窗口并使旧适配器失效。物品 ID 只在当前载入中有效。
 
 ## 按任务找代码与测试
 
@@ -94,13 +94,13 @@ ModEntry.Init                 定义原生设置，不提前读取游戏本地�
 | `dist/workshop/<version>/` | `preview.jpg`、`workshop.vdf`、`package-inventory.json` 位于 content 之外 |
 | `workshop/release-<version>.inventory.json` | 纳入 Git 的发布哈希快照；必须对应实际上传包 |
 | `<data>/ModConfigs/probably_ai.json` | 原生 `ModConfig` 设置：立绘、快捷键和提醒；入口 `AssistantSettings` |
-| `<data>/ModData/probably_ai/connection.local.json` | F7 连接、可选密钥、提示词、思考级别、历史及工具限制；入口 `ModEntry` / `ConnectionSettingsStore` |
-| `<data>/ModData/probably_ai/chat-history-<saveSlotId>.local.json` | 当前存档槽完整聊天历史；无槽位时使用 `chat-history.local.json`；入口 `AssistantController.CreateConversation` |
+| `<data>/ModData/probably_ai/connection.local.json` | F7 连接、可选密钥、提示词、玩家技巧、快捷发言、思考级别、历史及工具限制。入口 `ModEntry` / `ConnectionSettingsStore` |
+| 存档内的原生 Mod 数据键 `probably_ai:chat-history` | 已完成的聊天轮次，随游戏保存并随对应存档恢复。入口 `AssistantController.OnGameLoaded` |
 | `<data>/ModData/probably_ai/chat-window.local.json` | 聊天窗口位置；入口 `UI/ChatWindow.cs` |
 | `<data>/Player.log` | 游戏运行日志，Mod 日志带品牌名称前缀 |
 | `.cache/workshop-publisher/` | 本机可选 Steamworks 上传工具；不在 Git 中，缺失时按发布文档使用 SteamCMD |
 
-这些玩家配置和历史路径仅用于定位，不应修改、提交或打包。Mod ID 固定为 `probably_ai`，安装文件夹使用 `ProbablyAI`，不要混用两者。
+旧版的 `chat-history-<saveSlotId>.local.json` 和 `chat-history.local.json` 保留在原处。旧文件只记录了槽位的最新对话，缺少可用于回档的快照时间点。玩家配置和历史仅用于定位，不应修改、提交或打包。Mod ID 固定为 `probably_ai`，安装文件夹使用 `ProbablyAI`，不要混用两者。
 
 ## 常见修改步骤
 
@@ -133,7 +133,7 @@ dotnet build .\ProbablyAI.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\st
 dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release '-p:GameDirectory=D:\SteamLibrary\steamapps\common\Probably Stolen'
 ```
 
-主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **234 项**，以后以实际输出为准。
+主项目通过 `src/**/*.cs` 收集源码；测试项目使用显式 Compile 列表并链接部分生产源码和原生接口桩。新增源码或测试时检查 `tests/ProbablyAI.Tests.csproj`；新增测试组还要接入 `Program.cs` 或已有测试组。使用 `dotnet run`，不要用 `dotnet test` 的无输出代替通过证明。当前基线为 **237 项**，以后以实际输出为准。
 
 测试覆盖纯逻辑、模拟 HTTP、工具循环及部分用原生接口桩执行的生产适配逻辑；并不等于完整 Unity 集成测试。`GameHandsBackend` 的实际场景遍历、窗口显示和物品原生回调仍需游戏实测。新增逻辑优先补可模拟测试，不为单纯文档修改新增运行时测试。
 

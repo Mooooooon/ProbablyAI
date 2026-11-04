@@ -1,3 +1,4 @@
-v0.7.16
-- Xiaojing can inspect machine compartments and state and use native controls for blending, heating, recipe selection, output and feed processing.
-- Chain machines together and wait for a target output quantity or for materials to dry before transferring them. If a machine step fails, later operations in that batch are skipped.
+v0.7.17
+- Chat history now travels with each game save. Loading a checkpoint restores both the chat window and the assistant's context from that save.
+- Save your own game tips in the F7 Assistant prompt tab. The assistant appends them to its system prompt.
+- Edit five one-click chat shortcuts in F7. The new default water purification example runs two 3,000 mL batches.

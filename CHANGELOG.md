@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.7.17 — 2026-11-04
+
+### 中文
+
+- 聊天随游戏存档保存。回档时，聊天窗口和助手上下文一起恢复到对应存档保存时的状态。
+- F7 的助手提示词页可以记录自己的游戏技巧。保存后的技巧会附在系统提示词末尾。
+- F7 可编辑五组快捷发言，点聊天按钮即可发送。默认加入两批净水示例，每批 3000 mL。
+
+### English
+
+- Chat history now travels with each game save. Loading a checkpoint restores both the chat window and the assistant's context from that save.
+- Save your own game tips in the F7 Assistant prompt tab. The assistant appends them to its system prompt.
+- Edit five one-click chat shortcuts in F7. The new default water purification example runs two 3,000 mL batches.
+
 ## 0.7.16 — 2026-11-04
 
 ### 中文

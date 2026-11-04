@@ -126,6 +126,32 @@ internal static partial class Program
                 (string)JObject.Parse((string)readProjection[3]["content"])["code"] == "historical_read_omitted",
                 "restored read projection did not omit its stale result");
         });
+        await Check("loading a checkpoint restores only its own chat and rejects late commits from the old run", () =>
+        {
+            // The game snapshots its current mod data on save and replaces it on load.
+            string activeData = null;
+            var store = new ConversationStore(() => activeData, text => activeData = text, () => activeData = null);
+            var current = new ConversationMemory(store: store);
+            current.Commit(Exchange("before save", "saved"));
+            string checkpoint = activeData;
+            current.Commit(Exchange("after save", "rolled back"));
+            Assert(activeData != checkpoint, "later chat did not reach live mod data");
+
+            current.DetachStore();
+            activeData = checkpoint;
+            var restored = new ConversationMemory(store: store);
+            current.Commit(Exchange("old request finishing", "discarded"));
+            Assert(activeData == checkpoint, "old request overwrote the loaded save");
+            var restoredContext = restored.ContextMessages(8, 32000, _ => false);
+            Assert(restoredContext.Count == 2 && (string)restoredContext[0]["content"] == "before save",
+                "model context did not roll back with the game");
+
+            restored.Clear();
+            Assert(activeData == null, "clear did not update the next save");
+            Assert(new ConversationMemory(store: store).TurnCount == 0, "empty save inherited chat from another run");
+            activeData = checkpoint;
+            Assert(new ConversationMemory(store: store).TurnCount == 1, "clearing live chat changed an earlier checkpoint");
+        });
         await Check("stored history belongs to one connection and can be cleared manually", () =>
         {
             var store = new FakeConversationStore();

@@ -2,7 +2,7 @@ using System;
 
 namespace ProbablyAI.Services
 {
-    // The conversation file is injected so tests never touch the player's ModData folder.
+    // Inject the persistence callbacks so tests can use independent save snapshots.
     public interface IConversationStore
     {
         string Load();
@@ -15,11 +15,8 @@ namespace ProbablyAI.Services
         private readonly Func<string> read;
         private readonly Action<string> write;
         private readonly Action delete;
-        public string FileName { get; }
-
-        public ConversationStore(string fileName, Func<string> read, Action<string> write, Action delete)
+        public ConversationStore(Func<string> read, Action<string> write, Action delete)
         {
-            FileName = fileName;
             this.read = read;
             this.write = write;
             this.delete = delete;

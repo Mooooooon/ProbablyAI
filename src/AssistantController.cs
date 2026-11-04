@@ -19,6 +19,7 @@ namespace ProbablyAI
 {
     public sealed class AssistantController : MonoBehaviour
     {
+        private const string ConversationDataKey = "chat-history";
         private AssistantSettings settings;
         private ModLog log;
         private IAssistantService service;
@@ -51,7 +52,9 @@ namespace ProbablyAI
             this.service = service;
             this.connection = connection;
             this.transport = transport;
+            ModHook.OnGameLoadedInit += OnGameLoadStarting;
             ModHook.OnGameLoadedLate += OnGameLoaded;
+            ModHook.OnNewGameStarted += OnNewGameStarted;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             subscribed = true;
             languageRoutine = StartCoroutine(RefreshLanguageWhenReady());
@@ -95,12 +98,18 @@ namespace ProbablyAI
             if (ModEntry.RefreshLanguage()) ClosePanel();
         }
 
+        private void OnGameLoadStarting()
+        {
+            EndGameSession();
+            // LoadInto leaves absent fields alone, so an older save must start without our live data.
+            ModHelper.RemoveModData(ModEntry.ModId, ConversationDataKey);
+        }
+
+        private void OnNewGameStarted(string scenarioId) => OnGameLoaded();
+
         private void OnGameLoaded()
         {
-            ClosePanel();
             gameReady = true;
-            handsBackend?.Invalidate();
-            customerBackend?.Invalidate();
             handsBackend = new GameHandsBackend(CanShow);
             hands = new HandsService(handsBackend);
             Tools = ToolRegistry.ForHands(hands);
@@ -116,24 +125,16 @@ namespace ProbablyAI
             new LabelService(new GameLabelBackend(handsBackend)).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);
             agent = new HandsAgent(transport, Tools, refreshShopContext: true);
-            conversation = CreateConversation();
+            var store = new ConversationStore(
+                () => ModHelper.GetModData(ModEntry.ModId, ConversationDataKey),
+                text => ModHelper.SetModData(ModEntry.ModId, ConversationDataKey, text),
+                () => ModHelper.RemoveModData(ModEntry.ModId, ConversationDataKey));
+            conversation = new ConversationMemory(store: store);
             if (!string.IsNullOrEmpty(conversation.LoadWarning)) log.Warning(conversation.LoadWarning);
             nextBuildAttempt = 0f;
             nextVisitCheck = 0f;
             notifiedVisitId = null;
             TryBuildPortrait();
-        }
-
-        private ConversationMemory CreateConversation()
-        {
-            var playerStore = PlayerStore.Instance;
-            int slot = playerStore == null ? -1 : playerStore.saveSlotId;
-            string file = slot >= 0 ? "chat-history-" + slot + ".local.json" : "chat-history.local.json";
-            var store = new ConversationStore(file,
-                () => ModHelper.ReadModDataFileText(ModEntry.ModId, file),
-                text => ModHelper.WriteModDataFileText(ModEntry.ModId, file, text),
-                () => ModHelper.DeleteModDataFile(ModEntry.ModId, file));
-            return new ConversationMemory(store: store);
         }
 
         private bool InStore()
@@ -208,7 +209,7 @@ namespace ProbablyAI
         {
             if (panel != null && panel.IsOpen) { panel.Focus(); return; }
             panel?.Dispose();
-            panel = new ConnectionWindow(connection, service, OpenHands, OpenChat);
+            panel = new ConnectionWindow(connection, service, OpenHands, OpenChat, () => chatPanel?.RefreshQuickReplies());
             panel.Show();
         }
 
@@ -266,9 +267,14 @@ namespace ProbablyAI
             visitNotice = new VisitNoticeView(text);
         }
 
-        private void OnSceneUnloaded(Scene scene)
+        private void OnSceneUnloaded(Scene scene) => EndGameSession();
+
+        private void EndGameSession()
         {
             gameReady = false;
+            // A canceled request can commit its final turn after the next save has loaded.
+            conversation?.DetachStore();
+            conversation = null;
             handsBackend?.Invalidate();
             customerBackend?.Invalidate();
             ClosePanel();
@@ -293,19 +299,13 @@ namespace ProbablyAI
             }
             if (subscribed)
             {
+                ModHook.OnGameLoadedInit -= OnGameLoadStarting;
                 ModHook.OnGameLoadedLate -= OnGameLoaded;
+                ModHook.OnNewGameStarted -= OnNewGameStarted;
                 SceneManager.sceneUnloaded -= OnSceneUnloaded;
                 subscribed = false;
             }
-            gameReady = false;
-            handsBackend?.Invalidate();
-            customerBackend?.Invalidate();
-            ClosePanel();
-            visitNotice?.Dispose();
-            visitNotice = null;
-            notifiedVisitId = null;
-            portrait?.Dispose();
-            portrait = null;
+            EndGameSession();
         }
 
         private void OnDestroy() => Shutdown();

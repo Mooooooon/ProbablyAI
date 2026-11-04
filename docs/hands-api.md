@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.16）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.17）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -335,7 +335,7 @@ void RegisterTools(ProbablyAI.Tools.ToolRegistry registry)
 
 ## 聊天会话
 
-点击立绘使用 `ConversationMemory` 保留完整历史，包括完整的工具调用和结果。`Messages()` 用于原始界面记录，`MessagesForModel()` 在副本中省略历史只读查询数据，并给过去的操作结果加上 `historical=true`；保持调用配对和原有对话。取消途中会给尚未执行的调用补充 `not_executed` 结果，避免下次对话出现悬空的 tool call；并记录已完成动作。完整记录按存档槽保存在本机 `ModData/probably_ai/chat-history-<saveSlotId>.local.json`（没有槽位时使用 `chat-history.local.json`），重启或重新载入存档后恢复；只有手动“清空聊天”或更换连接 / 提示词才会删除。F7 的对话轮次上限（1–50）与历史 token 上限（1,000–200,000）只决定每次发送给模型的历史：`ContextMessages()` 从最新完整轮次向前选择，超出预算的旧轮次只是不发送，不从聊天记录或本机文件删除；不会截断工具调用与结果配对。token 是估算值，不含系统提示词、工具定义和本轮实况。历史文件不包含 API Key，只保存公开连接哈希和聊天消息。同一助手不能并发执行两个工具循环。
+点击立绘使用 `ConversationMemory` 保留完整历史，包括完整的工具调用和结果。`Messages()` 用于原始界面记录，`MessagesForModel()` 在副本中省略历史只读查询数据，并给过去的操作结果加上 `historical=true`；保持调用配对和原有对话。取消途中会给尚未执行的调用补充 `not_executed` 结果，避免下次对话出现悬空的 tool call；并记录已完成动作。已完成的轮次通过游戏的 Mod 数据接口写入当前会话，随下一次游戏保存写入该份存档。读档时恢复对应快照中的聊天和上下文。缺少快照的存档从空白对话开始。旧版的槽位历史文件保留在原处。“清空聊天”或更换连接 / 提示词后，清空会记录在下一次游戏保存中。F7 的对话轮次上限（1–50）与历史 token 上限（1,000–200,000）只决定每次发送给模型的历史：`ContextMessages()` 从最新完整轮次向前选择，超出预算的旧轮次只是不发送，仍保留在聊天记录中；不会截断工具调用与结果配对。token 是估算值，不含系统提示词、工具定义和本轮实况。聊天数据保存连接哈希和聊天消息。连接设置中的 API Key 不会写入存档。同一助手不能并发执行两个工具循环。
 
 游戏中的 `HandsAgent` 启用 `refreshShopContext`：每条消息先通过现有 `get_current_customer` 和 `list_container(counter, limit=100)` 工具同步读取实况，作为临时 `shop_observation` 数据发给模型。它不修改自定义系统提示词，不伪造模型的思考或工具调用，不加入可见聊天或历史，也不会自动执行移动或未来扩展工具。刷新失败保留明确的失败结果，分页保留 `total` / `has_more`，不把未知部分解释为空或用旧记录补齐。成交可能只修改所有权；`owned=false` 的物品不属于待售自有货物。普通金额回复无需例行重复解释来源，只有影响判断或用户询问时再说明。
 

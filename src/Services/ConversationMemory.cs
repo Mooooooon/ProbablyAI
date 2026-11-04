@@ -9,15 +9,14 @@ using static ProbablyAI.Localization.Text;
 
 namespace ProbablyAI.Services
 {
-    // Keeps the complete visible transcript in memory and on disk. The turn/token limits only
-    // select which complete turns are sent to the model; they never delete stored history.
-    // Only an explicit Clear (or a connection/persona change) removes the archive.
+    // Stages completed turns for the next game save. Turn/token limits only select
+    // which complete turns are sent to the model.
     public sealed class ConversationMemory
     {
         private const int FormatVersion = 1;
         private const int MaxStoredCharacters = 16 * 1024 * 1024;
         private readonly Queue<JArray> turns = new Queue<JArray>();
-        private readonly IConversationStore store;
+        private IConversationStore store;
         private int maxTurns;
         private int maxTokens;
         private int noticeLifetimeTurns;
@@ -37,6 +36,8 @@ namespace ProbablyAI.Services
             Configure(maxTurns, maxTokens);
             Restore();
         }
+
+        public void DetachStore() => store = null;
 
         // Limits are per request and measured on the projected model transcript. They do not
         // remove turns from the visible or stored conversation.
@@ -237,7 +238,7 @@ namespace ProbablyAI.Services
             string text = root.ToString(Formatting.None);
             if (text.Length > MaxStoredCharacters)
             {
-                SaveWarning = T("聊天记录过大，未写入本机；本次对话仍可继续。请手动清空聊天记录。");
+                SaveWarning = T("聊天记录过大，最新对话无法随游戏保存。清空聊天后可继续记录。");
                 return;
             }
             if (text == lastSaved) return;
@@ -249,14 +250,18 @@ namespace ProbablyAI.Services
             }
             catch (Exception)
             {
-                SaveWarning = T("聊天记录保存失败；本次对话仍可继续，但重启后可能丢失。");
+                SaveWarning = T("聊天记录更新失败。读档后可能缺少最新对话。");
             }
         }
 
         private void DeleteStore()
         {
-            try { store?.Delete(); }
-            catch (Exception) { SaveWarning = T("聊天记录删除失败；下次启动可能重新载入旧对话。"); }
+            try
+            {
+                store?.Delete();
+                SaveWarning = null;
+            }
+            catch (Exception) { SaveWarning = T("聊天记录清除失败。读档后可能恢复旧对话。"); }
         }
 
         // The local watcher posts these; they are shown in the chat window but never sent to the model.

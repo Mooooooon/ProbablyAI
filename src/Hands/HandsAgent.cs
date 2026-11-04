@@ -45,7 +45,7 @@ namespace ProbablyAI.Hands
             {
                 memory?.BindConnection(connection);
                 var history = memory?.ContextMessages(connection.MaxHistoryTurns, connection.MaxHistoryTokens, registry.ChangesState);
-                var prefix = new JArray { new JObject { ["role"] = "system", ["content"] = connection.SystemPrompt } };
+                var prefix = new JArray { new JObject { ["role"] = "system", ["content"] = connection.ComposeSystemPrompt() } };
                 if (history != null) foreach (var message in history) prefix.Add(message.DeepClone());
                 if (refreshShopContext)
                 {

@@ -16,18 +16,21 @@ namespace ProbablyAI.UI
         private readonly ConnectionOptions draft;
         private readonly Action openHands;
         private readonly Action openChat;
+        private readonly Action refreshQuickReplies;
         private readonly List<string> models = new List<string>();
         private CustomUIWindow window;
         private CancellationTokenSource pending;
         private bool busy;
         public bool IsOpen => window != null && window.IsAlive && window.IsVisible;
 
-        public ConnectionWindow(ConnectionSettingsStore store, IAssistantService service, Action openHands = null, Action openChat = null)
+        public ConnectionWindow(ConnectionSettingsStore store, IAssistantService service, Action openHands = null,
+            Action openChat = null, Action refreshQuickReplies = null)
         {
             this.store = store;
             this.service = service;
             this.openHands = openHands;
             this.openChat = openChat;
+            this.refreshQuickReplies = refreshQuickReplies;
             draft = store.Current;
         }
 
@@ -38,7 +41,9 @@ namespace ProbablyAI.UI
             window = builder.Handle;
             window.root.SetActive(false);
             builder.OnClose(OnClosed)
-                .BeginScroll(620f)
+                .BeginTabs()
+                .BeginTab(T("连接与上下文"))
+                .BeginScroll(575f)
                     .AddButton(T("打开聊天"), () => openChat?.Invoke())
                     .AddButton(T("物品与容器 / 助手操作"), () => openHands?.Invoke())
                     .AddHeader(T("OpenAI 兼容接口"))
@@ -65,7 +70,7 @@ namespace ProbablyAI.UI
                     .AddInput("8", draft.MaxHistoryTurns.ToString(), id: "max_turns")
                     .AddLabel(T("历史 token 上限（1000–200000，估算）"))
                     .AddInput("32000", draft.MaxHistoryTokens.ToString(), id: "max_tokens")
-                    .AddLabel(T("这两个上限只决定发送给模型的历史；完整聊天记录保存在本机，直到手动清空。超限时从最旧的完整轮次开始省略，不会截断工具调用与结果配对。token 数量为估算。"))
+                    .AddLabel(T("这两个上限只决定发送给模型的历史。超限时从最旧的完整轮次开始省略，不会截断工具调用与结果配对。聊天记录随游戏存档保存，token 数量为估算。"))
                     .AddSeparator(verticalPadding: 10)
                     .AddHeader(T("工具调用上限"))
                     .AddLabel(T("每条消息处理轮数（1–1000）"))
@@ -73,11 +78,16 @@ namespace ProbablyAI.UI
                     .AddLabel(T("每条消息工具调用次数（1–10000）"))
                     .AddInput("48", draft.MaxToolCalls.ToString(), id: "max_tool_calls")
                     .AddLabel(T("一轮是一次模型请求，一轮可调用多个工具；消息开始时的自动实况查询不计入次数。复杂重复操作可调高这两个上限，可能增加耗时和 API 费用。保存后下次发送生效，执行中仍可停止。"))
-                    .AddSeparator(verticalPadding: 10)
-                    .AddHeader(T("助手提示词"))
+                .End().End()
+                .BeginTab(T("助手提示词"))
+                .BeginScroll(575f)
+                    .AddHeader(T("系统提示词"))
                     .AddLabel(T("可编辑完整系统提示词，最多 16000 字。保存后用于之后的聊天与助手操作；留空使用默认值。"))
-                    .AddInput(T("留空使用默认女仆助手提示词"), "", id: "system_prompt", onTyping: value => draft.SystemPrompt = value)
+                    .AddInput(T("留空使用默认女仆助手提示词"), "", id: "system_prompt")
                     .AddButton(T("恢复默认提示词"), ResetPrompt, "reset_prompt")
+                    .AddHeader(T("玩家自定义游戏技巧"))
+                    .AddLabel(T("可以记录自己的游戏技巧、物品摆放习惯或操作流程，最多 16000 字。每次请求都会把这里的内容附加到系统提示词末尾。"))
+                    .AddInput(T("例如：优先从后仓取空水罐，给客人挑货时留一罐自用。"), "", id: "player_tips")
                     .AddSeparator(verticalPadding: 10)
                     .AddHeader(T("测试对话"))
                     .AddLabel(T("使用上方连接与提示词发送测试消息，可在保存前预览效果；不会自动附带存档数据。"))
@@ -86,7 +96,17 @@ namespace ProbablyAI.UI
                     .BeginScroll(145f)
                         .AddLabel(T("回复将显示在这里。"), "reply")
                     .End()
-                .End()
+                .End().End()
+                .BeginTab(T("快捷发言"))
+                .BeginScroll(575f)
+                    .AddLabel(T("设置按钮名称和发送内容。保存后，点击聊天里的按钮会立即发送全文。两项都留空可隐藏该按钮。"));
+            for (int slot = 0; slot < QuickReply.SlotCount; slot++)
+            {
+                builder.AddHeader(F("快捷发言 {0}", slot + 1))
+                    .AddInput(T("按钮名称"), "", id: "quick_label_" + slot)
+                    .AddInput(T("要发送的内容"), "", id: "quick_message_" + slot);
+            }
+            builder.End().End().EndTabs()
                 .AddLabel(store.LoadWarning ?? T("填写后点击“保存配置”。只有点击获取或发送时才会联网。"), "status")
                 .BeginRow()
                     .AddButton(T("保存配置"), Save, "save")
@@ -102,8 +122,16 @@ namespace ProbablyAI.UI
             ConfigureNumberInput("max_tool_rounds", 4);
             ConfigureNumberInput("max_tool_calls", 5);
             ConfigureInput("system_prompt", AssistantPrompt.MaxLength, multiline: true);
+            ConfigureInput("player_tips", AssistantPrompt.MaxLength, multiline: true);
             // Configure multiline before assigning text so TMP does not strip paragraph breaks.
             window.Get("system_prompt").SetString(draft.SystemPrompt);
+            window.Get("player_tips").SetString(draft.PlayerTips);
+            for (int slot = 0; slot < QuickReply.SlotCount; slot++)
+            {
+                ConfigureInput("quick_label_" + slot, QuickReply.MaxLabelLength);
+                ConfigureInput("quick_message_" + slot, QuickReply.MaxMessageLength, multiline: true, multilineHeight: 120f);
+            }
+            FillQuickReplies(draft);
             ConfigureInput("test_message", 2000);
             SetPlainText("status");
             SetPlainText("reply");
@@ -111,7 +139,7 @@ namespace ProbablyAI.UI
             builder.Show();
         }
 
-        private void ConfigureInput(string id, int limit, bool password = false, bool multiline = false)
+        private void ConfigureInput(string id, int limit, bool password = false, bool multiline = false, float multilineHeight = 240f)
         {
             var element = window.Get(id);
             if (element?.input == null) return;
@@ -130,7 +158,17 @@ namespace ProbablyAI.UI
                 if (element.input.placeholder is TMP_Text placeholder) placeholder.alignment = TextAlignmentOptions.TopLeft;
             }
             element.input.ForceLabelUpdate();
-            element.SetPreferredSize(-1f, multiline ? 240f : 36f);
+            element.SetPreferredSize(-1f, multiline ? multilineHeight : 36f);
+        }
+
+        private void FillQuickReplies(ConnectionOptions options)
+        {
+            for (int slot = 0; slot < QuickReply.SlotCount; slot++)
+            {
+                var reply = options.GetQuickReply(slot);
+                window.Get("quick_label_" + slot).SetString(reply.Label);
+                window.Get("quick_message_" + slot).SetString(reply.Message);
+            }
         }
 
         private void ResetPrompt()
@@ -240,7 +278,7 @@ namespace ProbablyAI.UI
             });
         }
 
-        private ConnectionOptions ReadDraft()
+        private ConnectionOptions ReadDraft(bool includeQuickReplies = false)
         {
             // Read widgets at action time, including the field that still has keyboard focus.
             draft.BaseUrl = window.Get("base_url").GetString();
@@ -248,6 +286,7 @@ namespace ProbablyAI.UI
             draft.Model = window.Get("model").GetString();
             draft.ThinkingLevel = ThinkingLevels.All[Math.Max(0, Math.Min(ThinkingLevels.All.Length - 1, window.Get("thinking").GetIndex()))];
             draft.SystemPrompt = window.Get("system_prompt").GetString();
+            draft.PlayerTips = window.Get("player_tips").GetString();
             draft.MaxHistoryTurns = ReadLimit("max_turns", ConnectionOptions.HistoryTurnsMin,
                 ConnectionOptions.HistoryTurnsMax, T("对话轮次上限应为 1–50。"));
             draft.MaxHistoryTokens = ReadLimit("max_tokens", ConnectionOptions.HistoryTokensMin,
@@ -257,7 +296,16 @@ namespace ProbablyAI.UI
                 ConnectionOptions.ToolRoundsMax, T("每条消息处理轮数应为 1–1000。"));
             draft.MaxToolCalls = ReadLimit("max_tool_calls", ConnectionOptions.ToolCallsMin,
                 ConnectionOptions.ToolCallsMax, T("每条消息工具调用次数应为 1–10000。"));
-            return draft.Copy();
+            var options = draft.Copy();
+            if (!includeQuickReplies) return options;
+            for (int slot = 0; slot < QuickReply.SlotCount; slot++)
+            {
+                var edited = new QuickReply(window.Get("quick_label_" + slot).GetString(),
+                    window.Get("quick_message_" + slot).GetString());
+                var preset = QuickReply.DefaultForSlot(slot);
+                options.QuickReplies[slot] = edited.Label == preset.Label && edited.Message == preset.Message ? null : edited;
+            }
+            return options;
         }
 
         private int ReadLimit(string id, int min, int max, string error)
@@ -271,12 +319,14 @@ namespace ProbablyAI.UI
         {
             try
             {
-                store.Save(ReadDraft());
+                store.Save(ReadDraft(includeQuickReplies: true));
                 var saved = store.Current;
                 window.Get("base_url").SetString(saved.BaseUrl);
                 window.Get("model").SetString(saved.Model);
                 window.Get("thinking")?.SetIndex(Math.Max(0, Array.IndexOf(ThinkingLevels.All, saved.ThinkingLevel)));
                 window.Get("system_prompt").SetString(saved.SystemPrompt);
+                window.Get("player_tips").SetString(saved.PlayerTips);
+                FillQuickReplies(saved);
                 window.Get("max_turns").SetString(saved.MaxHistoryTurns.ToString());
                 window.Get("max_tokens").SetString(saved.MaxHistoryTokens.ToString());
                 window.Get("max_tool_rounds").SetString(saved.MaxToolRounds.ToString());
@@ -285,13 +335,16 @@ namespace ProbablyAI.UI
                 draft.Model = saved.Model;
                 draft.ThinkingLevel = saved.ThinkingLevel;
                 draft.SystemPrompt = saved.SystemPrompt;
+                draft.PlayerTips = saved.PlayerTips;
+                draft.QuickReplies = saved.QuickReplies;
                 draft.MaxHistoryTurns = saved.MaxHistoryTurns;
                 draft.MaxHistoryTokens = saved.MaxHistoryTokens;
                 draft.MaxToolRounds = saved.MaxToolRounds;
                 draft.MaxToolCalls = saved.MaxToolCalls;
+                refreshQuickReplies?.Invoke();
                 Status(saved.RememberApiKey
-                    ? T("配置、提示词与上下文上限已保存，下次发送生效；API Key 保存在本机。")
-                    : T("配置、提示词与上下文上限已保存，下次发送生效；API Key 仅本次运行有效。"));
+                    ? T("设置已保存，下次发送生效。API Key 已保存在本机。")
+                    : T("设置已保存，下次发送生效。API Key 仅本次运行有效。"));
             }
             catch (ArgumentException error) { Status(error.Message); }
             catch (InvalidOperationException error) { Status(error.Message); }
@@ -320,8 +373,13 @@ namespace ProbablyAI.UI
         private void SetBusy(bool value)
         {
             busy = value;
-            foreach (var id in new[] { "base_url", "api_key", "model", "thinking", "remember_key", "max_turns", "max_tokens", "max_tool_rounds", "max_tool_calls", "fetch_models", "system_prompt", "reset_prompt", "test_message", "test", "save" })
+            foreach (var id in new[] { "base_url", "api_key", "model", "thinking", "remember_key", "max_turns", "max_tokens", "max_tool_rounds", "max_tool_calls", "fetch_models", "system_prompt", "player_tips", "reset_prompt", "test_message", "test", "save" })
                 window.Get(id)?.SetInteractable(!value);
+            for (int slot = 0; slot < QuickReply.SlotCount; slot++)
+            {
+                window.Get("quick_label_" + slot).SetInteractable(!value);
+                window.Get("quick_message_" + slot).SetInteractable(!value);
+            }
             window.Get("models")?.SetInteractable(!value && models.Count > 0);
             window.Get("cancel")?.SetInteractable(value);
         }

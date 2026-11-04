@@ -42,7 +42,7 @@ namespace ProbablyAI.Services
         public Task<string> ReplyAsync(ConnectionOptions options, string message, AssistantContext context, CancellationToken cancellationToken)
         {
             var connection = options.Normalized();
-            var prompt = connection.SystemPrompt;
+            var prompt = connection.ComposeSystemPrompt();
             if (context != null)
                 prompt += F(" 当前是第 {0} 天，持有 {1} 信用点，当铺内：{2}。", context.Day, context.Cash, context.InStore);
             return client.CompleteAsync(connection, message, prompt, cancellationToken);

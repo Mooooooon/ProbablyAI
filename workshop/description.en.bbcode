@@ -11,15 +11,15 @@ The mod is in [b]early development[/b]. Suggestions and bug reports are welcome 
 [*]🏭 [b]Machine Production Chains[/b]. Ask Xiaojing to load and operate machines, wait for products or drying, and move materials to the next device.
 [*]👥 [b]Customer & Budget Inquiries[/b]: Ask about current visitor intent, remaining budget, refusal rules, and special barter/procurement/gunsmith orders; can also read recorder dialogue from the current visit.
 [*]🔍 [b]Item Visual Inspection[/b]: After unlocking inspection, Xiaojing assists in reading visible details on mechanical hands, Ribwiches, Plasma Cartridges, cigarettes, food stamps, injectors, and water containers to detect defects and counterfeits (read-only; does not submit quotes).
-[*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Quick buttons for picking and appraising goods. Alerts flag wanted or augmented visitors, excluding on-duty security.
+[*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Edit up to five shortcuts in F7. Defaults include picking goods, appraising items, and purifying two batches of water. Alerts flag wanted or augmented visitors, excluding on-duty security.
 [*]📖 [b]Read Notes, Books & Guides[/b]: Read-only access to mentor notes, intel slips, book pages, and visible text on guide cards and wanted posters.
 [*]💧 [b]Liquid Handling[/b]: Pour water or wine, dump a container at the drain, or fill bottles at the faucet in plain language. Uses the native item-on-item logic and respects ownership, locks, capacity, filters and faucet unlocks, reporting actual volumes and remaining levels.
 [*]💊 [b]Item Use[/b]: Perform native non-combat item-on-item and use/activate actions like a player: test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted. Weapons can slaughter animals (such as rats), but are never used on customers or enemies, and the shotgun shooting mode is not automated; trading and save editing remain excluded.
-[*]💾 [b]Persistent Chat & Adjustable Context[/b]: Chat history is stored locally per save slot. F7 sets how much the model receives (1–50 turns and 1,000–200,000 estimated tokens). Older turns stay in the saved transcript.
+[*]💾 [b]Persistent Chat & Adjustable Context[/b]: Chat history is saved with the game. Loading an earlier save also restores the chat and assistant context from that checkpoint. F7 sets how much the model receives (1–50 turns and 1,000–200,000 estimated tokens). Older turns stay in the saved transcript.
 [*]🏷️ [b]Labels & Custom Names[/b]: Use a standard label printer to edit allowed labels, or a blue labeler to set/clear custom names. Queries choices and verifies results through native rules. Labels do not change real properties or water quality.
 [*]🔧 [b]Generic Item Durability[/b]: Query current/maximum durability, percentage and exhaustion for filters and all items using native durability. Displayed and tested values are distinguished; F7 manual details show it too.
 [*]🔁 [b]Adjustable Tool Limits[/b]: F7 sets rounds per message (1–1000, default 16) and tool calls (1–10000, default 48). Higher limits may increase time and API costs. You can stop a running task.
-[*]⚙️ [b]API & Persona Settings (F7)[/b]: Set an OpenAI-compatible endpoint, thinking level and system prompt. Supports hosted services such as DeepSeek and local models via Ollama/vLLM.
+[*]⚙️ [b]API & Persona Settings (F7)[/b]: Set an OpenAI-compatible endpoint and thinking level, edit the system prompt, and append your own game tips. Supports hosted services such as DeepSeek and local models via Ollama/vLLM.
 [*]🌐 [b]Automatic Bilingual Support[/b]: Mod UI and prompts automatically switch with the game's Chinese/English locale.
 [/list]
 
@@ -36,6 +36,13 @@ Try giving Xiaojing the following instructions. Unlock the faucet first and have
 The tablets may take time to react. Ask Xiaojing to use a test strip or scanner if you want to check the final water quality. For several batches, you can raise the round and tool-call limits in F7.
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.17[/b]
+[list]
+[*]Chat history now travels with each game save. Loading a checkpoint restores both the chat window and the assistant's context from that save.
+[*]Save your own game tips in the F7 Assistant prompt tab. The assistant appends them to its system prompt.
+[*]Edit five one-click chat shortcuts in F7. The new default water purification example runs two 3,000 mL batches.
+[/list]
+
 [b]v0.7.16[/b]
 [list]
 [*]Xiaojing can inspect machine compartments and state and use native controls for blending, heating, recipe selection, output and feed processing.
@@ -52,18 +59,6 @@ The tablets may take time to react. Ask Xiaojing to use a test strip or scanner 
 [list]
 [*]Added label editing: the assistant queries native choices, uses a real standard label printer and verifies the result. Changing a label does not change real properties or water quality.
 [*]Added blue-labeler naming: set or clear custom item names through the native editor and verify the result. Ownership, locks, target and input limits apply; an editor already in use is left untouched.
-[/list]
-
-[b]v0.7.13[/b]
-[list]
-[*]F7 now lets you set model rounds and tool calls per message for complex repeated tasks. Defaults remain 16 rounds / 48 calls, adjustable up to 1000 rounds / 10000 calls; saved limits survive restarts.
-[*]Item queries now show generic visible durability: current/maximum values, remaining percentage and exhaustion, for filters and all items using native durability. Displayed and tested readings are distinguished. F7 manual details show it too; requery after using an item or filtering water.
-[/list]
-
-[b]v0.7.12[/b]
-[list]
-[*]Corrected the game-mechanics description: this is not a traditional combat game; weapons are mainly used to slaughter animals (such as rats) for meat, and the only combat-like action is the special shotgun shooting mode against augmented customers.
-[*]The assistant may use weapons on animals, but never on customers, enemies or other characters, and never automates the shotgun kill.
 [/list]
 
 [i]Older versions are listed in the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url].[/i]
