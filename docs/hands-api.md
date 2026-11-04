@@ -1,4 +1,4 @@
-# 深空AI：可能是DeepSeek · 工具接口（v0.7.15）
+# 深空AI：可能是DeepSeek · 工具接口（v0.7.16）
 
 手动面板和模型工具共用 `HandsService.Execute(toolName, JObject arguments)`，由 `IHandsBackend` 对接游戏。游戏适配器只接受主线程调用，只能在当铺正常操作状态使用。模型不接触任意 C#、文件系统或反射调用。
 
@@ -237,6 +237,34 @@
 | `large` | 2000 ml | 11 | 累计升级 9 次 |
 
 工具在主线程使用玩家拥有的打印机，调用原生按钮处理放置与耗电。打印成功后，空瓶留在机器的 `output` 分区，结果返回成品的 `item_id`、`identifier`、`name`、`container_id`、`path` 和本次新增的 `quantity`。缺少可用电源时返回 `printer_no_power`，规格未解锁时返回 `bottle_size_locked`。成品区没有新增水瓶时返回 `print_no_output`。收到 `print_unverified` 时，先查询成品区并核对电量。
+
+## 机器控制与生产链
+
+聊天和 F7 助手指令可以按当前库存串联机器。先用 `find_items` 找到机器实例（固定设备加 `include_pinned=true`），再用 `inspect_machine`（`item_id`）查询各分区 ID、现有物品、可用控制，以及适用的电量、液体体积、温度、配方或进度。装电池、装模组、投料和转运仍用 `move_item` 或 `move_items`。
+
+`operate_machine` 每次执行一个当前可用的 `action`。`value` 只用于需要参数的控制。操作结果带执行后的状态及可核实的新增成品 ID。出料前检查机器的原生放置规则，收到 `machine_unverified` 时先核对物品和分区再决定是否重试。
+
+| 设备 | 操作 |
+| --- | --- |
+| 搅拌机 `blender` | `blend` 将当前原料区内的可搅拌物料加工进容器 |
+| 加热板 `heating_plate` | `heat_off`、`heat_low`、`heat_high`。装足模组后，`decrease_temperature`、`increase_temperature` 各按一次原生调温按钮 |
+| 化学成品机 `chem_finisher` | `set_recipe` 的 `value` 是查询列出的配方 ID。`produce` 按已选配方出料 |
+| 盒子分配器 `box_dispenser` | `dispense_box` |
+| 饲料机 `livestock_feed_dispenser` | `blend_feed`、`auto_blend_on`、`auto_blend_off`。`set_feed_target` 的 `value` 是 0–100 的整数，步长为 5 |
+| 循环水养殖系统 `ras`、畜笼 `animal_cage` | `blend_feed` 加工所装饲料机的物料 |
+| 自动屠宰机 `auto_butcher` | `butcher_now` 在装入畜笼或循环水养殖系统后按当前设置运行。`butcher_contents` 加工输出托盘里的尸体。仅在玩家明确要求屠宰加工时使用 |
+| DNA 操作机 `plant_dna_manipulator` | `eject_disk`、`keep_disk` 设置是否弹出圆盘。DNA 加工仍由游戏按周期处理 |
+
+水瓶打印机仍用 `print_bottle`。熔炉、3D 打印机、蒸发器等设备在满足原生条件后按游戏周期处理，通常只需投料、供电并留出成品空间。
+
+`wait_for_machine` 使用 `item_id`、`container_id` 和 `condition`，默认等 15 秒，`timeout_seconds` 可设 1–60。等待可停止，超时会返回最后一次读取的状态。本批内遇到机器步骤失败时，后续写操作会跳过。
+
+| 条件 | 达成标准 |
+| --- | --- |
+| `output` | 在机器的 `output` 或 `eject` 分区查找指定 `identifier` 的自有成品，达到 `quantity`。这是分区内总数，包含等待前已有的成品 |
+| `dry` | 在加热板或蒸发器的 `container` 分区跟踪同一个原料容器，等到内容物达到原生干燥标准且仍有剩余 |
+
+例如，搅拌原料后可把容器移入蒸发器，等内容物干燥后再移入化学成品机，选择配方、出料并把核实的成品移入指定储藏区。遇到缺电、缺料、空间不足或游戏周期尚未到达时，后续步骤以实况结果为准。
 
 ## 标签打印机与改名
 

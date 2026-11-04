@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ProbablyAI.Items;
 using ProbablyAI.Liquids;
+using ProbablyAI.Machines;
 
 namespace ProbablyAI.Localization
 {
@@ -8,6 +9,41 @@ namespace ProbablyAI.Localization
     {
         internal static readonly Dictionary<string, string> Values = new Dictionary<string, string>
         {
+            [MachineService.InspectDescription] = "Read the current state, compartment IDs and available production controls of an owned machine. First find its item ID with find_items (set include_pinned=true for pinned machines). Automatic machines run under native conditions. Use move_item or move_items for loading materials, power, modules and transferring products.",
+            [MachineService.OperateDescription] = "Execute one action returned by inspect_machine on an owned machine. Pass value as specified by that control and prepare materials, power and output space first. Use butcher controls only when the owner explicitly requests butchering. Use print_bottle for the bottle printer. Read the operation result before issuing dependent calls.",
+            [MachineService.WaitDescription] = "Wait for a condition before continuing the production chain. output waits until the total owned quantity of the specified identifier in the specified output compartment reaches quantity. Existing items count, so check the baseline first. dry waits for the same vessel in the specified compartment to meet the native dryness threshold while still containing material. A call waits up to 60 seconds. Read the wait result before issuing dependent calls.",
+            [MachineService.ItemIdDescription] = "Actual machine item ID from an item query.",
+            [MachineService.ActionDescription] = "Control action returned by inspect_machine.",
+            [MachineService.ValueDescription] = "Value required by the control. A recipe ID is a string and a feed target percentage is an integer. Omit this field for other controls.",
+            [MachineService.ContainerDescription] = "Target compartment ID from inspect_machine.",
+            [MachineService.IdentifierDescription] = "Native product identifier for the output condition.",
+            [MachineService.QuantityDescription] = "Target total quantity for the output condition, including existing products in the compartment.",
+            [MachineService.TimeoutDescription] = "Maximum wait in seconds, from 1 to 60. Defaults to 15.",
+            ["机器工具参数无效，请检查分区、控制和参数值。"] = "Invalid machine tool arguments. Check the compartment, control and parameter values.",
+            ["已达到机器等待条件。"] = "The machine reached the requested condition.",
+            ["等待时间已到，机器尚未达到条件。"] = "The machine did not reach the condition before the timeout.",
+            ["正在等待机器…"] = "Waiting for the machine…",
+            ["前面的机器步骤未成功，已跳过本批后续操作。请先核对机器状态。"] = "An earlier machine step failed, so subsequent operations in this batch were skipped. Check the machine state first.",
+            ["当前机器没有这个可用控制，请重新查询。"] = "This control is unavailable on the machine. Inspect it again.",
+            ["未能核实机器操作结果，请先重新查询机器和分区。"] = "The machine operation could not be verified. Inspect the machine and its compartments again.",
+            ["机器状态已变化，但未核实新增成品，请检查后再继续。"] = "The machine state changed, but no new product was verified. Check the machine before continuing.",
+            ["已执行机器控制并读取当前状态。"] = "Executed the machine control and read its current state.",
+            ["机器已处于要求的设置。"] = "The machine already has the requested setting.",
+            ["机器没有可核实的变化，请检查原料、供电和成品空间。"] = "No machine change could be verified. Check materials, power and output space.",
+            ["目标分区不属于当前机器，或已锁定。"] = "The target compartment is locked or does not belong to this machine.",
+            ["请选择机器的实际成品分区。"] = "Select an output compartment of the machine.",
+            ["干燥等待需要加热板或蒸发器的原料容器分区。"] = "The dryness condition requires the material vessel compartment of a heating plate or evaporator.",
+            ["机器内的原料容器不存在、不是自有物品或已被替换。"] = "The material vessel is missing, unowned or has been replaced.",
+            ["原料容器已空，没有可继续加工的内容物。"] = "The vessel is empty and contains no material to process.",
+            ["请选择带有生产分区的机器。"] = "Select a machine with production compartments.",
+            ["只能操作玩家拥有的机器。"] = "You can only operate player-owned machines.",
+            ["无法完整读取机器和分区，请重新查询。"] = "Could not fully read the machine and its compartments. Inspect it again.",
+            ["机器没有足够的电量。"] = "The machine has insufficient power.",
+            ["机器的原料、容器或电池不可用，或所在分区已锁定。"] = "The machine's material, vessel or battery is unavailable, or its compartment is locked.",
+            ["配方 ID 不在这台机器的配方列表中。"] = "The recipe ID is absent from this machine's recipe list.",
+            ["配方窗口当前不可用或正在使用。"] = "The recipe window is currently unavailable or in use.",
+            ["请检查已选配方、原料体积和干燥要求。"] = "Check the selected recipe, material volume and dryness requirement.",
+            ["机器成品区没有足够空间。"] = "The machine output compartment has insufficient space.",
             [BottlePrinterService.Description] = "Use a player-owned bottle printer (bottle_printer) to print one empty water bottle. First search for bottle_printer with find_items (set include_pinned=true for pinned machines), then pass its actual item ID and size: small, normal or large. The game enforces size unlocks, power and output capacity. The bottle stays in the printer output, and the result includes the actual item and container IDs.",
             [BottlePrinterService.PrinterIdDescription] = "Actual bottle printer item ID from an item query.",
             [BottlePrinterService.SizeDescription] = "Empty water bottle size: small, normal or large.",
@@ -45,7 +81,7 @@ namespace ProbablyAI.Localization
             ["自定义名称已设置并核实。"] = "The custom name was set and verified.",
             ["标签操作未完成，请重新查询物品与标签状态，不要盲目重复执行。"] = "The label action did not complete. Query the item and labels again; do not repeat blindly.",
             ["请提供有效的标签机、目标和选项 ID；名称最多 200 字且不能包含换行或控制字符，不接受多余参数。"] = "Provide valid labeler, target and choice IDs. Names must be at most 200 characters without line breaks or control characters. Extra parameters are not accepted.",
-            ["点击女仆助手立绘聊天，查询客人预算与需求，用自然语言整理当铺、倒取液体、使用物品和鉴定物品，查看道具可见耐久、修改标签和自定义名称，并用水瓶打印机打印空瓶。F7 可编辑提示词、配置连接、思考级别、上下文及每条消息的处理轮数 / 工具调用次数上限；聊天记录按存档槽保存在本机。F6 显隐立绘。支持嵌套容器、机器投料和手动操作。"] = "Click the maid portrait to chat, check customer budgets and needs, organize the pawnshop, handle liquids, use and inspect items, read visible durability, edit labels and custom names, and print empty bottles. F7 configures prompts, connections, thinking, context and per-message model-round/tool-call limits. Chat history is saved locally per save slot. F6 toggles the portrait. Supports nested containers, machine inputs and manual controls.",
+            ["点击女仆助手立绘聊天，查询客人预算与需求，用自然语言整理当铺、倒取液体、使用物品和鉴定物品，查看道具可见耐久、修改标签和自定义名称，并用水瓶打印机打印空瓶。F7 可编辑提示词、配置连接、思考级别、上下文及每条消息的处理轮数 / 工具调用次数上限；聊天记录按存档槽保存在本机。F6 显隐立绘。支持嵌套容器、机器投料、按钮控制、等待成品或原料干燥，以及手动操作。"] = "Click the maid portrait to chat, check customer budgets and needs, organize the pawnshop, handle liquids, use and inspect items, read visible durability, edit labels and custom names, and print empty bottles. F7 configures prompts, connections, thinking, context and per-message model-round/tool-call limits. Chat history is saved locally per save slot. F6 toggles the portrait. Supports nested containers, machine loading and controls, waiting for products or materials to dry, and manual controls.",
             [" · 已耗尽"] = " · Depleted",
             ["显示值，未鉴定"] = "Displayed value, untested",
             ["已鉴定"] = "Tested",

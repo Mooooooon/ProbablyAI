@@ -1,5 +1,17 @@
 # 更新日志 / Changelog
 
+## 0.7.16 — 2026-11-04
+
+### 中文
+
+- 小鲸可以查询机器分区和状态，操作搅拌、加热、选配方、出料、饲料加工等原生控制。
+- 可以把多台设备串起来，等成品达到目标数量或原料干燥后再转运。机器步骤失败时会跳过同批后续操作。
+
+### English
+
+- Xiaojing can inspect machine compartments and state and use native controls for blending, heating, recipe selection, output and feed processing.
+- Chain machines together and wait for a target output quantity or for materials to dry before transferring them. If a machine step fails, later operations in that batch are skipped.
+
 ## 0.7.15 — 2026-11-04
 
 ### 中文

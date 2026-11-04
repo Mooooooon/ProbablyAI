@@ -1,3 +1,3 @@
-v0.7.15
-- Xiaojing can use the bottle printer to make small, standard or large empty bottles as each size is unlocked.
-- The Workshop description now includes a batch water purification example with durability checks, filter replacement, UV treatment, tablets and transfer to storage.
+v0.7.16
+- Xiaojing can inspect machine compartments and state and use native controls for blending, heating, recipe selection, output and feed processing.
+- Chain machines together and wait for a target output quantity or for materials to dry before transferring them. If a machine step fails, later operations in that batch are skipped.

@@ -21,6 +21,7 @@
     <Compile Include="InspectionNativeStubs.cs" />
     <Compile Include="LiquidTests.cs" />
     <Compile Include="ItemUseTests.cs" />
+    <Compile Include="MachineTests.cs" />
     <Compile Include="DocumentTests.cs" />
     <Compile Include="LabelTests.cs" />
     <Compile Include="..\src\Labels\LabelContracts.cs" Link="Labels\LabelContracts.cs" />
@@ -41,6 +42,7 @@
     <Compile Include="..\src\Items\ItemUseProtocol.cs" Link="Items\ItemUseProtocol.cs" />
     <Compile Include="..\src\Items\ItemUseService.cs" Link="Items\ItemUseService.cs" />
     <Compile Include="..\src\Items\BottlePrinterService.cs" Link="Items\BottlePrinterService.cs" />
+    <Compile Include="..\src\Machines\MachineService.cs" Link="Machines\MachineService.cs" />
     <Compile Include="..\src\Localization\*.cs" Link="Localization\%(Filename)%(Extension)" />
     <Compile Include="..\src\Customers\CustomerContracts.cs" Link="CustomerContracts.cs" />
     <Compile Include="..\src\Customers\CustomerProtocol.cs" Link="CustomerProtocol.cs" />

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using ProbablyAI.Hands;
 using static ProbablyAI.Localization.Text;
@@ -14,18 +16,28 @@ namespace ProbablyAI.Tools
         {
             public JObject Definition;
             public Func<JObject, HandsResult> Execute;
+            public Func<JObject, CancellationToken, Task<HandsResult>> ExecuteAsync;
             public bool ChangesState;
         }
         private readonly Dictionary<string, Entry> entries = new Dictionary<string, Entry>(StringComparer.Ordinal);
 
         public void Register(JObject definition, Func<JObject, HandsResult> execute, bool changesState = false)
+            => Add(definition, execute, null, changesState);
+
+        internal void RegisterAsync(JObject definition, Func<JObject, CancellationToken, Task<HandsResult>> execute)
+            => Add(definition, null, execute, false);
+
+        private void Add(JObject definition, Func<JObject, HandsResult> execute,
+            Func<JObject, CancellationToken, Task<HandsResult>> executeAsync, bool changesState)
         {
             var name = (string)definition?["function"]?["name"];
             if (string.IsNullOrEmpty(name) || !Regex.IsMatch(name, "^[a-zA-Z0-9_-]{1,64}$") ||
-                (string)definition["type"] != "function" || !(definition["function"]?["parameters"] is JObject) || execute == null)
+                (string)definition["type"] != "function" || !(definition["function"]?["parameters"] is JObject) ||
+                execute == null && executeAsync == null)
                 throw new ArgumentException(T("工具必须提供有效的 function 名称、参数 Schema 和处理函数。"));
             if (entries.ContainsKey(name)) throw new ArgumentException(T("工具名称重复：") + name);
-            entries.Add(name, new Entry { Definition = (JObject)definition.DeepClone(), Execute = execute, ChangesState = changesState });
+            entries.Add(name, new Entry { Definition = (JObject)definition.DeepClone(), Execute = execute,
+                ExecuteAsync = executeAsync, ChangesState = changesState });
         }
 
         public JArray Definitions()
@@ -39,9 +51,26 @@ namespace ProbablyAI.Tools
 
         public HandsResult Execute(string name, JObject arguments)
         {
-            if (name == null || !entries.TryGetValue(name, out var entry)) return HandsResult.Fail("unknown_tool", T("这个工具当前不可用。"));
+            if (name == null || !entries.TryGetValue(name, out var entry) || entry.Execute == null)
+                return HandsResult.Fail("unknown_tool", T("这个工具当前不可用。"));
             if (arguments == null) return HandsResult.Fail("invalid_arguments", T("工具参数必须是 JSON 对象。"));
             try { return entry.Execute(arguments) ?? HandsResult.Fail("empty_tool_result", T("工具没有返回结果，请检查当前状态。")); }
+            catch (HandsException error) { return HandsResult.Fail(error.Code, error.Message); }
+            catch (Exception) { return HandsResult.Fail("tool_error", T("工具执行未完成，请检查当前状态后继续。")); }
+        }
+
+        internal async Task<HandsResult> ExecuteAsync(string name, JObject arguments, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (name == null || !entries.TryGetValue(name, out var entry) || entry.ExecuteAsync == null)
+                return Execute(name, arguments);
+            if (arguments == null) return HandsResult.Fail("invalid_arguments", T("工具参数必须是 JSON 对象。"));
+            try
+            {
+                return await entry.ExecuteAsync(arguments, cancellationToken) ??
+                    HandsResult.Fail("empty_tool_result", T("工具没有返回结果，请检查当前状态。"));
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (HandsException error) { return HandsResult.Fail(error.Code, error.Message); }
             catch (Exception) { return HandsResult.Fail("tool_error", T("工具执行未完成，请检查当前状态后继续。")); }
         }

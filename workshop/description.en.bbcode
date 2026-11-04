@@ -8,6 +8,7 @@ The mod is in [b]early development[/b]. Suggestions and bug reports are welcome 
 [list]
 [*]💬 [b]Interactive Portrait & Natural Language Chat[/b]: Xiaojing stays on the left side of your shop (press [b]F6[/b] to toggle). Naturally breathes without floating feet. Click her portrait to chat freely.
 [*]📦 [b]Stock Handling[/b]: Ask her to move food from your bag to the counter or put scrap metal into the furnace. Supports nested storage, tabs and machine compartments.
+[*]🏭 [b]Machine Production Chains[/b]. Ask Xiaojing to load and operate machines, wait for products or drying, and move materials to the next device.
 [*]👥 [b]Customer & Budget Inquiries[/b]: Ask about current visitor intent, remaining budget, refusal rules, and special barter/procurement/gunsmith orders; can also read recorder dialogue from the current visit.
 [*]🔍 [b]Item Visual Inspection[/b]: After unlocking inspection, Xiaojing assists in reading visible details on mechanical hands, Ribwiches, Plasma Cartridges, cigarettes, food stamps, injectors, and water containers to detect defects and counterfeits (read-only; does not submit quotes).
 [*]⚡ [b]Quick Replies & Arrival Alerts[/b]: Quick buttons for picking and appraising goods. Alerts flag wanted or augmented visitors, excluding on-duty security.
@@ -35,6 +36,12 @@ Try giving Xiaojing the following instructions. Unlock the faucet first and have
 The tablets may take time to react. Ask Xiaojing to use a test strip or scanner if you want to check the final water quality. For several batches, you can raise the round and tool-call limits in F7.
 
 [h2]📝 Changelog[/h2]
+[b]v0.7.16[/b]
+[list]
+[*]Xiaojing can inspect machine compartments and state and use native controls for blending, heating, recipe selection, output and feed processing.
+[*]Chain machines together and wait for a target output quantity or for materials to dry before transferring them. If a machine step fails, later operations in that batch are skipped.
+[/list]
+
 [b]v0.7.15[/b]
 [list]
 [*]Xiaojing can use the bottle printer to make small, standard or large empty bottles as each size is unlocked. The game handles power consumption and output capacity.
@@ -57,12 +64,6 @@ The tablets may take time to react. Ask Xiaojing to use a test strip or scanner 
 [list]
 [*]Corrected the game-mechanics description: this is not a traditional combat game; weapons are mainly used to slaughter animals (such as rats) for meat, and the only combat-like action is the special shotgun shooting mode against augmented customers.
 [*]The assistant may use weapons on animals, but never on customers, enemies or other characters, and never automates the shotgun kill.
-[/list]
-
-[b]v0.7.11[/b]
-[list]
-[*]Opened all non-combat item actions: use any non-combat item on another item or character, or use/activate a single item. Test strips, scanners, books, medical items, surgery, animals, food, machines and tools can be attempted.
-[*]Weapons, attacks, enemy targets and item actions during combat remain excluded; trading, dialogue choices and save editing remain manual.
 [/list]
 
 [i]Older versions are listed in the [url=https://github.com/Mooooooon/ProbablyAI/blob/main/CHANGELOG.md]GitHub changelog[/url].[/i]

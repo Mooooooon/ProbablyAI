@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ProbablyAI.Machines;
 using ProbablyAI.Services;
 using ProbablyAI.Tools;
 using static ProbablyAI.Localization.Text;
@@ -73,14 +74,23 @@ namespace ProbablyAI.Hands
                         if (!callIds.Add(call.Id)) throw new ApiRequestException(T("模型重复了调用 ID，已停止。请检查操作记录。"));
                     exchange.Add(turn.Message.DeepClone());
                     outstanding.AddRange(turn.ToolCalls);
+                    bool machineStepFailed = false;
                     foreach (var call in turn.ToolCalls)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         result.ToolCalls++;
                         modelToolCalls++;
                         HandsResult outcome;
-                        try { outcome = registry.Execute(call.Name, JObject.Parse(call.Arguments)); }
-                        catch (JsonException) { outcome = HandsResult.Fail("invalid_arguments", T("工具参数不是有效的 JSON 对象，请修正参数。")); }
+                        if (machineStepFailed && registry.ChangesState(call.Name))
+                            outcome = HandsResult.Fail("not_executed", "前面的机器步骤未成功，已跳过本批后续操作。请先核对机器状态。");
+                        else
+                        {
+                            if (call.Name == MachineService.WaitTool) progress?.Invoke(T("正在等待机器…"));
+                            try { outcome = await registry.ExecuteAsync(call.Name, JObject.Parse(call.Arguments), cancellationToken); }
+                            catch (JsonException) { outcome = HandsResult.Fail("invalid_arguments", T("工具参数不是有效的 JSON 对象，请修正参数。")); }
+                        }
+                        if (!outcome.Success && (call.Name == MachineService.WaitTool || call.Name == MachineService.OperateTool))
+                            machineStepFailed = true;
                         exchange.Add(ToolReply(call.Id, outcome));
                         outstanding.Remove(call);
                         if (registry.ChangesState(call.Name)) result.Operations.Add(outcome.Message);

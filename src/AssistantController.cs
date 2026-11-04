@@ -9,6 +9,7 @@ using ProbablyAI.Inspection;
 using ProbablyAI.Items;
 using ProbablyAI.Liquids;
 using ProbablyAI.Labels;
+using ProbablyAI.Machines;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
@@ -109,6 +110,8 @@ namespace ProbablyAI
             new LiquidService(new GameLiquidBackend(handsBackend)).Register(Tools);
             new ItemUseService(new GameItemUseBackend(handsBackend)).Register(Tools);
             new BottlePrinterService(new GameBottlePrinter(handsBackend).Print).Register(Tools);
+            var machines = new GameMachineBackend(handsBackend);
+            new MachineService(machines.Inspect, machines.Operate, machines.Observe).Register(Tools);
             new DocumentService(new GameDocumentBackend(handsBackend)).Register(Tools);
             new LabelService(new GameLabelBackend(handsBackend)).Register(Tools);
             ModEntry.NotifyToolsReady(Tools);

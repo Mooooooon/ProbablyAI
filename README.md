@@ -1,6 +1,6 @@
 # 深空AI：可能是DeepSeek
 
-Probably Stolen 原生 Mod，当前版本 0.7.15。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
+Probably Stolen 原生 Mod，当前版本 0.7.16。针对本机 `VERSION 100-Rev3` / Unity 2021.3.45f2 / 应用版本 0.46D 编译。内部 Mod ID 仍为 `probably_ai`，因此改名不会重置连接配置和立绘设置。English guide: [README.en.md](README.en.md)。
 
 Steam 创意工坊：[深空AI：可能是DeepSeek / Deep Space AI: Probably DeepSeek](https://steamcommunity.com/sharedfiles/filedetails/?id=3830081737)。
 GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Mooooooon/ProbablyAI)。
@@ -101,6 +101,10 @@ GitHub 仓库：[https://github.com/Mooooooon/ProbablyAI](https://github.com/Moo
 ## 水瓶打印机
 
 可以说“用水瓶打印机打一只小号空水瓶”。助手会找到玩家的打印机，使用已解锁的规格并按游戏规则消耗电量。打印完成的空瓶留在成品区。
+
+## 机器控制与生产链
+
+小鲸可以在一条指令里为机器投料、操作原生按钮，等成品或原料干燥后再转运。可以让她先搅拌原料，再送入蒸发器干燥，最后用化学成品机选配方并出料。各设备的控制和等待条件见 [工具接口](docs/hands-api.md#机器控制与生产链)。
 
 ## 标签打印机与物品改名
 
@@ -233,7 +237,7 @@ dotnet run --project .\tests\ProbablyAI.Tests.csproj -c Release
 
 ## 创意工坊发布包
 
-执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.15/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
+执行 `scripts/Prepare-Workshop.ps1` 生成独立的 `dist/workshop/0.7.16/content`，只按允许列表复制 6 个文件：Mod DLL、manifest、中英文指南、立绘和封面。不会从安装目录或个人配置目录打包。`scripts/Verify-WorkshopPackage.ps1` 会拒绝多余文件、链接、疑似密钥和本机用户路径；上传描述、VDF、预览 JPG 和校验清单放在 content 之外。Release DLL 不附带调试符号，编译路径映射为 `/src`。具体上传与更新步骤见 [docs/workshop-publishing.md](docs/workshop-publishing.md)。
 
 ## 版本管理
 
